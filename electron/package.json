@@ -1,6 +1,6 @@
 {
   "name": "mosaic-electron",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "private": true,
   "author": "mosaic contributors",
   "main": "main.js",
