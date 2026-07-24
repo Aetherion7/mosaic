@@ -1,0 +1,145 @@
+{
+  "name": "mosaic",
+  "version": "1.0.1",
+  "description": "A local-first, widget-based personal dashboard — boards full of tasks, notes, calendars, trackers and more, running entirely in your browser or as a desktop app. No account, no server, your data never leaves your device (except the optional BYOK AI assistant).",
+  "author": "mosaic contributors",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "homepage": "https://github.com/Aetherion7/mosaic#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Aetherion7/mosaic.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Aetherion7/mosaic/issues"
+  },
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "lint": "eslint",
+    "test": "vitest run",
+    "electron:dev": "concurrently -k -n NEXT,ELECTRON -c blue,magenta \"npm run dev\" \"wait-on http://localhost:3001 && cross-env MOSAIC_DEV_URL=http://localhost:3001 electron .\"",
+    "electron:pack": "npm run build && electron-builder --dir",
+    "electron:dist": "npm run build && electron-builder",
+    "electron:release": "npm run build && electron-builder --publish always"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@tiptap/extension-code-block-lowlight": "^3.27.1",
+    "@tiptap/extension-image": "^3.27.1",
+    "@tiptap/extension-link": "^3.27.1",
+    "@tiptap/extension-placeholder": "^3.27.1",
+    "@tiptap/extension-task-item": "^3.27.1",
+    "@tiptap/extension-task-list": "^3.27.1",
+    "@tiptap/react": "^3.27.1",
+    "@tiptap/starter-kit": "^3.27.1",
+    "@types/leaflet": "^1.9.21",
+    "epubjs": "^0.3.93",
+    "framer-motion": "^12.39.0",
+    "html-to-image": "^1.11.13",
+    "leaflet": "^1.9.4",
+    "lowlight": "^3.3.0",
+    "next": "16.2.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-pdf": "^10.4.1",
+    "tiptap-markdown": "^0.9.0",
+    "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "concurrently": "^10.0.3",
+    "cross-env": "^10.1.0",
+    "electron": "^43.1.1",
+    "electron-builder": "^26.15.3",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.6",
+    "fake-indexeddb": "^6.2.5",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^4.1.10",
+    "wait-on": "^9.0.10"
+  },
+  "optionalDependencies": {
+    "lightningcss": "^1.32.0"
+  },
+  "build": {
+    "appId": "app.mosaic.desktop",
+    "productName": "mosaic",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release",
+      "buildResources": "electron/build",
+      "app": "electron"
+    },
+    "files": [
+      "**/*",
+      "!build${/*}"
+    ],
+    "extraResources": [
+      {
+        "from": ".next/standalone",
+        "to": "standalone",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": ".next/static",
+        "to": "standalone/.next/static",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "public",
+        "to": "standalone/public",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "releaseType": "release"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "electron/build/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "electron/build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "electron/build/icon.png",
+      "category": "Office",
+      "maintainer": "Aetherion7 <Aetherion7@users.noreply.github.com>"
+    }
+  }
+}

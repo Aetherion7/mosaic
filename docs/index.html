@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mosaic — a personal dashboard you actually own</title>
+<meta name="description" content="A local-first, widget-based personal dashboard. 17 widgets, 18 themes, an optional BYOK AI assistant, and native desktop apps — no account, no server, your data stays on your device.">
+<link rel="icon" href="mosaiclogo.png">
+<style>
+@font-face {
+  font-family: 'Guavine';
+  src: url('fonts/guavine.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+/* ── Design tokens — copied 1:1 from the app's "Deep Space" theme ─────────── */
+:root {
+  --bg:       #09090f;
+  --surface:  #12131e;
+  --surface2: #191a2c;
+  --surface3: #21223a;
+  --border:   #2c2d4a;
+  --accent:   #7c6fe8;
+  --accent2:  #4ecdc4;
+  --text1:    #edeaf8;
+  --text2:    #8986a8;
+  --text3:    #6b6990;
+  --amber:    #fbbf24;
+  --radius:   16px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text1);
+  font-family: Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+  /* Gleiches gepunktetes Canvas-Muster wie im echten Board (Deep-Space-Theme) */
+  background-image: radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+a { color: inherit; }
+img { max-width: 100%; display: block; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+header .wrap { display: flex; align-items: center; gap: 12px; height: 64px; }
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.logo img { width: 34px; height: 34px; border-radius: 50%; }
+.logo span { font-family: 'Guavine', serif; font-size: 24px; font-weight: 400; color: var(--text1); }
+header nav { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+header nav a {
+  font-size: 13px; font-weight: 600; color: var(--text2); text-decoration: none;
+  padding: 8px 14px; border-radius: 10px; transition: all .15s;
+}
+header nav a:hover { color: var(--text1); background: var(--surface2); }
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 700; text-decoration: none;
+  padding: 9px 18px; border-radius: 10px; border: 1px solid transparent;
+  transition: all .15s; cursor: pointer;
+}
+.btn-accent { background: var(--accent); color: white; box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 45%, transparent); }
+.btn-accent:hover { background: color-mix(in srgb, var(--accent) 88%, white); }
+.btn-outline { background: var(--surface2); border-color: var(--border); color: var(--text1); }
+.btn-outline:hover { background: var(--surface3); }
+
+/* ── Hero ───────────────────────────────────────────────────────────────── */
+.hero { padding: 96px 0 64px; text-align: center; }
+.pill svg { flex-shrink: 0; }
+.pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 11.5px; font-weight: 700; letter-spacing: .04em;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  padding: 6px 14px; border-radius: 999px; margin-bottom: 28px;
+}
+.hero h1 { font-family: 'Guavine', serif; font-size: clamp(40px, 6.5vw, 68px); font-weight: 400; letter-spacing: -0.01em; line-height: 1.1; margin-bottom: 22px; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero p.sub { font-size: 18px; color: var(--text2); max-width: 640px; margin: 0 auto 36px; line-height: 1.65; }
+.hero .ctas { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 56px; }
+.hero .ctas .btn { padding: 13px 24px; font-size: 14.5px; }
+.hero-shot {
+  border-radius: 20px; overflow: hidden; border: 1px solid var(--border);
+  box-shadow: 0 40px 100px rgba(0,0,0,.55), 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
+  max-width: 1000px; margin: 0 auto;
+}
+
+/* ── Sections ───────────────────────────────────────────────────────────── */
+section { padding: 88px 0; }
+.eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+h2 { font-family: 'Guavine', serif; font-size: clamp(30px, 4vw, 42px); font-weight: 400; letter-spacing: 0; margin-bottom: 14px; }
+.section-sub { font-size: 15.5px; color: var(--text2); max-width: 620px; line-height: 1.7; margin-bottom: 48px; }
+
+/* Feature grid */
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 24px; transition: border-color .15s;
+}
+.card:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+.card .ic {
+  width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); margin-bottom: 16px;
+}
+.card h3 { font-size: 15.5px; font-weight: 700; margin-bottom: 7px; }
+.card p { font-size: 13.5px; color: var(--text2); line-height: 1.6; }
+
+/* Widget tag cloud */
+.tagcloud { display: flex; flex-wrap: wrap; gap: 9px; }
+.tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 600; color: var(--text1);
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 8px 14px; border-radius: 999px;
+}
+.tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+
+/* Screenshot showcase */
+.showcase { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+.showcase .shot { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); background: var(--surface); }
+.showcase .stack { display: flex; flex-direction: column; gap: 16px; }
+.shot figcaption { padding: 14px 16px; font-size: 12.5px; color: var(--text3); border-top: 1px solid var(--border); }
+
+/* Download */
+.downloads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+.dl-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 26px 22px; text-align: center; text-decoration: none; color: var(--text1);
+  transition: all .15s;
+}
+.dl-card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); transform: translateY(-2px); }
+.dl-card .plat-ic { font-size: 30px; margin-bottom: 12px; }
+.dl-card .plat-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.dl-card .plat-sub { font-size: 12px; color: var(--text3); }
+.note-box {
+  background: color-mix(in srgb, var(--amber) 8%, var(--surface)); border: 1px solid color-mix(in srgb, var(--amber) 25%, transparent);
+  border-radius: 12px; padding: 14px 18px; font-size: 13px; color: var(--text2); line-height: 1.6;
+}
+.note-box strong { color: var(--text1); }
+
+/* Privacy */
+.priv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.priv-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+.priv-card.ok { border-color: color-mix(in srgb, var(--accent2) 30%, var(--border)); }
+.priv-card h3 { font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.priv-card ul { list-style: none; font-size: 13px; color: var(--text2); line-height: 1.9; }
+.priv-card li::before { content: '—'; color: var(--text3); margin-right: 8px; }
+
+/* Support / donate */
+.support { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.support-card {
+  flex: 1; min-width: 220px; max-width: 280px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 24px; text-align: center; text-decoration: none; color: var(--text1);
+  transition: all .15s;
+}
+.support-card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.support-card .emoji { margin-bottom: 10px; display: flex; align-items: center; justify-content: center; }
+.support-card h3 { font-size: 14.5px; margin-bottom: 5px; }
+.support-card p { font-size: 12px; color: var(--text3); }
+
+/* License strip */
+.license-strip {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 28px 32px; display: flex; align-items: center; gap: 24px; justify-content: space-between; flex-wrap: wrap;
+}
+.license-strip p { font-size: 13.5px; color: var(--text2); max-width: 560px; line-height: 1.65; }
+.license-strip p strong { color: var(--text1); }
+
+footer { border-top: 1px solid var(--border); padding: 40px 0; }
+footer .wrap { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+footer .fmeta { font-size: 12.5px; color: var(--text3); }
+footer .flinks { display: flex; gap: 20px; }
+footer .flinks a { font-size: 12.5px; color: var(--text2); text-decoration: none; }
+footer .flinks a:hover { color: var(--text1); }
+
+@media (max-width: 860px) {
+  .grid, .showcase, .priv-grid, .downloads { grid-template-columns: 1fr; }
+  header nav a:not(.btn) { display: none; }
+  .hero { padding: 64px 0 40px; }
+  section { padding: 56px 0; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a href="#" class="logo"><img src="mosaiclogo.png" alt=""><span>mosaic</span></a>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#screenshots">Screenshots</a>
+      <a href="#download">Download</a>
+      <a href="#privacy">Privacy</a>
+      <a class="btn btn-outline" href="https://github.com/Aetherion7/mosaic">GitHub</a>
+      <a class="btn btn-accent" href="#download">Get mosaic</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <span class="pill"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="6.5" rx="1.3"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg> Local-first · no account · no server</span>
+      <h1>A personal dashboard<br>you actually <em>own</em>.</h1>
+      <p class="sub">
+        Arrange tasks, notes, a calendar, trackers, a reader, and more onto boards that look and work
+        exactly the way you want. Everything lives in your browser — nothing to sign up for, nothing
+        that can lock you out of your own data.
+      </p>
+      <div class="ctas">
+        <a class="btn btn-accent" href="#download"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8"/><polyline points="4.5,7 8,10.5 11.5,7"/><line x1="3" y1="13.5" x2="13" y2="13.5"/></svg> Download for free</a>
+        <a class="btn btn-outline" href="https://github.com/Aetherion7/mosaic">View source on GitHub</a>
+      </div>
+      <div class="hero-shot">
+        <img src="screenshots/board.png" alt="A mosaic board with task, calendar, water tracker, weather, note, clock and chart widgets arranged together">
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="eyebrow">What you get</div>
+      <h2>Everything a dashboard should be — nothing it shouldn't.</h2>
+      <p class="section-sub">
+        mosaic is built around a simple idea: your dashboard, your rules. No forced layout, no
+        subscription, no telemetry.
+      </p>
+      <div class="grid">
+        <div class="card">
+          <div class="ic"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg></div>
+          <h3>17 widget types</h3>
+          <p>Tasks &amp; habits, notes, calendar, spreadsheet with real formulas, drawboard, PDF/EPUB
+          reader with highlighting, charts, weather, map, clock, timer, water &amp; sleep tracking,
+          agenda, quicklinks, images, and free text.</p>
+        </div>
+        <div class="card">
+          <div class="ic"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14a6 6 0 1 1 6-6c0 1-.6 2-2 2h-1.3a1 1 0 0 0-.7 1.7 1 1 0 0 1-.7 1.7A6 6 0 0 1 8 14z"/><circle cx="5.2" cy="7" r="0.7" fill="currentColor" stroke="none"/><circle cx="7" cy="4.7" r="0.7" fill="currentColor" stroke="none"/><circle cx="10" cy="5.3" r="0.7" fill="currentColor" stroke="none"/></svg></div>
+          <h3>18 themes, endless styling</h3>
+          <p>From Deep Space to Soft Light, every theme ships its own accent colors and background
+          pattern. Style any widget individually on top — color, gradient, border, shadow, glow.</p>
+        </div>
+        <div class="card">
+          <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg></div>
+          <h3>AI assistant, bring your own key</h3>
+          <p>Connect your own Anthropic/OpenAI/Gemini (or any OpenAI-compatible) API key. The
+          assistant can build and edit boards with you, or work scoped to a single widget. Fully
+          optional — your key never touches anything but your chosen provider.</p>
+        </div>
+        <div class="card">
+          <div class="ic"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2.5" width="13" height="8.5" rx="1.2"/><line x1="5.5" y1="14" x2="10.5" y2="14"/><line x1="8" y1="11" x2="8" y2="14"/></svg></div>
+          <h3>Desktop apps, auto-updating</h3>
+          <p>Native builds for Windows, macOS and Linux via Electron, with automatic background
+          updates — or just use it straight in the browser, no install required.</p>
+        </div>
+        <div class="card">
+          <div class="ic"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="6.5" rx="1.3"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg></div>
+          <h3>Actually local-first</h3>
+          <p>Boards, widgets and settings live in IndexedDB on your device. There is no mosaic
+          server — self-host it, run it offline, export a full backup as JSON anytime.</p>
+        </div>
+        <div class="card">
+          <div class="ic"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><ellipse cx="8" cy="8" rx="2.6" ry="6"/><line x1="2" y1="8" x2="14" y2="8"/><path d="M3 5h10M3 11h10"/></svg></div>
+          <h3>Bilingual, undo everywhere</h3>
+          <p>Full English/German UI switchable anytime, plus proper undo/redo, board templates,
+          folders, and search across every widget on a board.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="widgets">
+    <div class="wrap">
+      <div class="eyebrow">Widget catalog</div>
+      <h2>Mix and match — 17 widgets, one board.</h2>
+      <div class="tagcloud">
+        <span class="tag"><span class="dot"></span>Task &amp; habits</span>
+        <span class="tag"><span class="dot"></span>Calendar</span>
+        <span class="tag"><span class="dot"></span>Notes</span>
+        <span class="tag"><span class="dot"></span>Spreadsheet</span>
+        <span class="tag"><span class="dot"></span>Drawboard</span>
+        <span class="tag"><span class="dot"></span>PDF/EPUB reader</span>
+        <span class="tag"><span class="dot"></span>Charts</span>
+        <span class="tag"><span class="dot"></span>Weather</span>
+        <span class="tag"><span class="dot"></span>Map</span>
+        <span class="tag"><span class="dot"></span>Clock</span>
+        <span class="tag"><span class="dot"></span>Timer</span>
+        <span class="tag"><span class="dot"></span>Water tracker</span>
+        <span class="tag"><span class="dot"></span>Sleep tracker</span>
+        <span class="tag"><span class="dot"></span>Agenda</span>
+        <span class="tag"><span class="dot"></span>Quicklinks</span>
+        <span class="tag"><span class="dot"></span>Image</span>
+        <span class="tag"><span class="dot"></span>Text</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="screenshots">
+    <div class="wrap">
+      <div class="eyebrow">See it for yourself</div>
+      <h2>Real screenshots, not mockups.</h2>
+      <p class="section-sub">Every image on this page is a real screenshot of the app running — nothing staged.</p>
+      <div class="showcase">
+        <figure class="shot">
+          <img src="screenshots/themes.png" alt="Theme picker showing 18 built-in themes plus background and grid pattern options">
+          <figcaption>18 built-in themes, dark and light, with background and pattern controls</figcaption>
+        </figure>
+        <div class="stack">
+          <figure class="shot">
+            <img src="screenshots/ai-assistant.png" alt="The AI assistant panel, ready to connect a BYOK API key">
+            <figcaption>The AI assistant — bring your own key, fully optional</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="screenshots/home.png" alt="The board overview page showing a list of boards">
+            <figcaption>Board overview — search, sort, and organize into folders</figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="download">
+    <div class="wrap">
+      <div class="eyebrow">Get mosaic</div>
+      <h2>Download, or just run it in your browser.</h2>
+      <p class="section-sub">Native desktop apps update themselves automatically — install once, forget about it.</p>
+      <div class="downloads">
+        <a class="dl-card" href="https://github.com/Aetherion7/mosaic/releases/latest">
+          <div class="plat-ic"><svg width="30" height="30" viewBox="0 0 16 16" fill="currentColor" style="margin:0 auto"><rect x="1" y="1" width="6.3" height="6.3"/><rect x="8.3" y="1" width="6.3" height="6.3"/><rect x="1" y="8.3" width="6.3" height="6.3"/><rect x="8.3" y="8.3" width="6.3" height="6.3"/></svg></div>
+          <div class="plat-name">Windows</div>
+          <div class="plat-sub">.exe installer</div>
+        </a>
+        <a class="dl-card" href="https://github.com/Aetherion7/mosaic/releases/latest">
+          <div class="plat-ic"><svg width="30" height="30" viewBox="0 0 16 16" fill="currentColor" style="margin:0 auto"><path d="M10.9 5.3c-.9 0-1.7.5-2.2.5-.6 0-1.3-.5-2.1-.5-1.6 0-3.2 1.3-3.2 3.8 0 2.7 2 5.6 3.4 5.6.6 0 .9-.4 1.9-.4s1.2.4 1.9.4c1.1 0 2.2-1.6 2.9-3-1.4-.6-1.6-2.5-.3-3.4-.6-.8-1.5-1.3-2.3-1z"/><path d="M8.3 4.6c.2-.9.9-1.6 1.7-1.7.1.9-.7 1.9-1.7 1.7z"/></svg></div>
+          <div class="plat-name">macOS</div>
+          <div class="plat-sub">.dmg, Apple Silicon &amp; Intel</div>
+        </a>
+        <a class="dl-card" href="https://github.com/Aetherion7/mosaic/releases/latest">
+          <div class="plat-ic"><svg width="30" height="30" viewBox="0 0 16 16" fill="currentColor" style="margin:0 auto"><ellipse cx="8" cy="6" rx="2.6" ry="3"/><path d="M5.5 8c-1.5 1-2.3 3.5-1.8 5.5.3 1 1.2 1.3 1.8.5.3-.4.6-.6 1-.6h2.9c.4 0 .8.2 1 .6.6.8 1.5.5 1.8-.5.5-2-.3-4.5-1.8-5.5-.6 1-1.4 1.6-2.5 1.6S6.1 9 5.5 8z"/><circle cx="7" cy="5.3" r="0.35" fill="#09090f"/><circle cx="9" cy="5.3" r="0.35" fill="#09090f"/><path d="M7.6 6.4h.8l-.4.6z" fill="#fbbf24"/></svg></div>
+          <div class="plat-name">Linux</div>
+          <div class="plat-sub">.AppImage / .deb</div>
+        </a>
+      </div>
+      <div class="note-box">
+        <strong>Unsigned builds:</strong> Windows SmartScreen and macOS Gatekeeper will warn about an
+        "unknown publisher" on first launch — that's expected for a build without a paid code-signing
+        certificate, not a sign of anything wrong. Prefer no install at all? Clone the
+        <a href="https://github.com/Aetherion7/mosaic" style="color:var(--accent)">repository</a>
+        and run <code class="mono">npm install &amp;&amp; npm run dev</code> — mosaic works entirely in the browser.
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="wrap">
+      <div class="eyebrow">Privacy</div>
+      <h2>Local by default, honest about the exceptions.</h2>
+      <p class="section-sub">No tracking, no analytics, no ads — ever. Here's exactly what stays on your device and what doesn't.</p>
+      <div class="priv-grid">
+        <div class="priv-card ok">
+          <h3><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="6.5" rx="1.3"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg> Always local</h3>
+          <ul>
+            <li>Boards, widgets and layout (IndexedDB)</li>
+            <li>Settings, themes, your AI API key if you set one (localStorage)</li>
+            <li>Files and images you add to widgets</li>
+            <li>Works fully offline for all of the above</li>
+          </ul>
+        </div>
+        <div class="priv-card">
+          <h3><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><ellipse cx="8" cy="8" rx="2.6" ry="6"/><line x1="2" y1="8" x2="14" y2="8"/><path d="M3 5h10M3 11h10"/></svg> Only when you use them</h3>
+          <ul>
+            <li>Map &amp; weather widgets — OpenStreetMap / Open-Meteo</li>
+            <li>Quicklinks widget — favicon lookup via DuckDuckGo</li>
+            <li>AI assistant, if enabled — your chosen provider only</li>
+            <li>None of it passes through a mosaic server, because none exists</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="support">
+    <div class="wrap" style="text-align:center">
+      <div class="eyebrow">Support</div>
+      <h2>Free to use. Free to stay that way.</h2>
+      <p class="section-sub" style="margin-left:auto;margin-right:auto;text-align:center">
+        mosaic will always be free for personal use. If it's useful to you, a donation helps — but
+        using it, starring the repo, or reporting a bug is just as appreciated.
+      </p>
+      <div class="support">
+        <a class="support-card" href="https://ko-fi.com/mosaicboard">
+          <div class="emoji"><img src="badges/kofi.png" alt="Ko-fi" style="height:34px;width:auto"></div>
+          <!-- leeres h3 statt keinem: hält dieselbe Zeilenhöhe wie bei den anderen zwei Karten, sonst rutscht der Text darunter nach oben -->
+          <h3>&nbsp;</h3>
+          <p>One-time or monthly</p>
+        </a>
+        <a class="support-card" href="https://github.com/sponsors/Aetherion7">
+          <!-- github.png ist ein weißer Kreis mit transparent ausgeschnittenem Octocat — braucht einen dunklen Hintergrund, sonst verschwindet er -->
+          <div class="emoji"><span style="background:#0d1117;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center"><img src="badges/github.png" alt="GitHub" style="width:78%;height:78%"></span></div>
+          <h3>GitHub Sponsors</h3>
+          <p>Sponsor development directly</p>
+        </a>
+        <a class="support-card" href="https://github.com/Aetherion7/mosaic">
+          <div class="emoji"><img src="badges/github-star.webp" alt="" style="height:34px;width:auto"></div>
+          <h3>Star on GitHub</h3>
+          <p>Costs nothing, helps a lot</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="license">
+    <div class="wrap">
+      <div class="license-strip">
+        <p>
+          <strong>Source-available, not commercial.</strong> mosaic is published under the
+          PolyForm Noncommercial License 1.0.0 — free to use, modify and self-host for personal,
+          educational or nonprofit purposes; not for resale or commercial hosting.
+        </p>
+        <a class="btn btn-outline" href="https://github.com/Aetherion7/mosaic/blob/main/LICENSE.md">Read the license</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="fmeta">© 2026 mosaic contributors · built with Next.js, React &amp; Electron</span>
+    <div class="flinks">
+      <a href="https://github.com/Aetherion7/mosaic">GitHub</a>
+      <a href="https://github.com/Aetherion7/mosaic/issues">Issues</a>
+      <a href="https://github.com/Aetherion7/mosaic/blob/main/LICENSE.md">License</a>
+      <a href="https://github.com/Aetherion7/mosaic/blob/main/CONTRIBUTING.md">Contributing</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

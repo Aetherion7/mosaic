@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Guavine';
+  src: url('/fonts/guavine.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+:root {
+  --bg:       #0d0d14;
+  --surface:  #16192b;
+  --surface2: #1e2236;
+  --surface3: #252840;
+  --border:   #2a2d45;
+  --accent:   #8b74f0;
+  --accent2:  #5eead4;
+  --text1:    #ede9f8;
+  --text2:    #9795b5;
+  --text3:    #4a4869;
+  --danger:   #f87171;
+  --success:  #4ade80;
+  --amber:    #fbbf24;
+
+  /* Widget layout system */
+  --w-pad:    10px 12px;
+  --w-gap:    8px;
+  --w-radius: 8px;
+
+  /* Programm-Schrift — Einstellungen → Erscheinungsbild (s. src/lib/fonts.ts).
+     Wird von MotionProvider zur Laufzeit anhand von settingsStore.programFont
+     gesetzt; dieser Wert ist nur der Default vor der Hydration. */
+  --font-app: var(--font-inter), system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  width: 100%; height: 100%;
+  font-family: var(--font-app);
+  background: var(--bg);
+  color: var(--text1);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); color: inherit; }
+
+/* Scrollable elements that should stay scrollable but never show a scrollbar
+   (e.g. the AI assistant's auto-growing textarea) */
+.hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Color picker hue slider thumb */
+.hue-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 2px solid rgba(0,0,0,0.35);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4); cursor: pointer;
+}
+.hue-slider::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 2px solid rgba(0,0,0,0.35);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4); cursor: pointer;
+}
+
+button { cursor: pointer; }
+
+/* ── Animationen global aus (Einstellung „Animationen") ──────────────────────
+   Tötet sämtliche CSS-Transitions und Keyframe-Animationen inkl. Pseudo-
+   Elemente (KI-Verlaufsrahmen, Puls-Ringe, Spinner, Hover-Übergänge).
+   framer-motion wird separat über MotionGlobalConfig.skipAnimations
+   übersprungen (MotionProvider.tsx). */
+html[data-no-anim] *,
+html[data-no-anim] *::before,
+html[data-no-anim] *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+@keyframes pulse-ring {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50%       { opacity: 0.7;  transform: scale(1.025); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes timer-dash {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ── KI-Panel: animierter Verlaufs-Rahmen ────────────────────────────────────
+   Der Winkel des conic-gradient läuft über die Custom Property
+   --ai-border-angle. Damit sie interpolierbar ist, muss sie als <angle>
+   registriert sein — das passiert per CSS.registerProperty im AiPanel
+   (eine @property-Regel hier würde vom CSS-Bundler entfernt).
+   Ohne Registrierung bleibt es ein statischer Verlaufsrahmen. */
+@keyframes ai-border-spin {
+  from { --ai-border-angle: 0deg; }
+  to   { --ai-border-angle: 360deg; }
+}
+/* Der Verlauf wird per Maske auf den Rand-Ring beschränkt (Padding-Bereich
+   des Rahmens) — läge er als Element-Hintergrund unter der ganzen Fläche,
+   würde er bei transparentem Panel (Crystal Glass) komplett durchscheinen. */
+.ai-border-frame { position: relative; }
+.ai-border-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: inherit;
+  background: conic-gradient(from var(--ai-border-angle), var(--accent), color-mix(in srgb, var(--accent) 30%, white), var(--accent));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: ai-border-spin 4s linear infinite;
+  pointer-events: none;
+}
+
+input, textarea {
+  background: none;
+  border: none;
+  outline: none;
+  color: inherit;
+  font: inherit;
+  resize: none;
+}
+input::placeholder, textarea::placeholder { color: var(--text3); }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* Calendar delete button */
+.cal-delete-btn:hover { background: rgba(239,68,68,0.25) !important; color: #ef4444 !important; border-radius: 3px; }
+.cal-delete-btn:active { background: rgba(239,68,68,0.45) !important; }
+
+/* Keyboard focus — visible ring for keyboard users, hidden for mouse */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* Skip-to-content link for keyboard navigation */
+.skip-link {
+  position: fixed; top: -100%; left: 8px; z-index: 9999;
+  padding: 6px 14px; background: var(--accent); color: white;
+  border-radius: 0 0 8px 8px; font-size: 13px; font-weight: 600;
+  text-decoration: none; transition: top 0.1s;
+}
+.skip-link:focus { top: 0; }
+
+/* Mobile improvements */
+@media (max-width: 767px) {
+  html, body { overscroll-behavior: none; }
+  * { -webkit-tap-highlight-color: transparent; }
+  ::-webkit-scrollbar { display: none; }
+}

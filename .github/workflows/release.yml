@@ -1,0 +1,64 @@
+name: Release desktop apps
+
+# Baut die Windows-/macOS-/Linux-Desktop-App und veröffentlicht sie als
+# GitHub Release, sobald ein Tag wie "v1.2.0" gepusht wird:
+#
+#   git tag v1.2.0
+#   git push origin v1.2.0
+#
+# Jede der drei Plattformen wird auf ihrem jeweils "echten" Runner gebaut
+# (macos-latest für den Mac-Build usw.) — Cross-Compiling für macOS/Windows
+# von Linux aus ist zwar teilweise möglich, aber unzuverlässig, besonders für
+# code-signierte Builds. electron-updater (electron/main.js) prüft bei jedem
+# App-Start automatisch gegen die neuesten GitHub-Releases-Assets — ein neues
+# Release hier reicht, alle drei Plattformen ziehen sich das Update selbst.
+#
+# Ohne Code-Signing-Zertifikate (siehe unten) sind die Builds funktionsfähig,
+# aber Windows SmartScreen / macOS Gatekeeper warnen beim ersten Start vor
+# "unbekanntem Herausgeber" — das ist normal für unsignierte Builds und kein
+# Fehler in diesem Workflow. Siehe GITHUB_SETUP.md → "Code-Signing (optional)".
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: cd electron && npm ci --omit=dev
+
+      - name: Build + publish (${{ matrix.os }})
+        run: npm run electron:release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optionale Code-Signing-Zertifikate — wirken nur, wenn die Secrets
+          # gesetzt sind (sonst baut electron-builder klaglos unsigniert).
+          # macOS:   CSC_LINK / CSC_KEY_PASSWORD (Apple Developer ID .p12)
+          # Windows: WIN_CSC_LINK / WIN_CSC_KEY_PASSWORD (Code-Signing .pfx)
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          # Ohne CSC_LINK versucht electron-builder auf macOS trotzdem, eine
+          # Signing-Identität aus dem (leeren) CI-Keychain aufzulösen, sobald
+          # mac.hardenedRuntime aktiv ist — das bricht den Build mit einem
+          # kryptischen "not a file"-Fehler ab. Explizit deaktivieren, solange
+          # kein echtes Zertifikat hinterlegt ist; sobald CSC_LINK gesetzt
+          # wird, verwendet electron-builder ohnehin direkt dieses Zertifikat.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
