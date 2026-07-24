@@ -9,47 +9,29 @@ import { useT } from '@/hooks/useT'
 import { useIsDesktop } from '@/hooks/useIsDesktop'
 import { SectionTitle } from './shared'
 
-function StorageBar() {
-  const [usage, setUsage]   = useState<number | null>(null)
-  const [quota, setQuota]   = useState<number | null>(null)
+// Zeigt nur, wie viel Platz mosaics eigene Daten belegen — kein Vergleich
+// gegen die Storage-Quota mehr (navigator.storage.estimate()'s `quota` ist
+// in der Desktop-App und im Browser gleichermaßen eine große, für Nutzer:innen
+// bedeutungslose Zahl, die eher wie "Speicherplatz der ganzen Festplatte"
+// wirkt als wie ein sinnvoller Vergleichswert).
+function StorageInfo() {
+  const [usage, setUsage] = useState<number | null>(null)
   const t = useT()
   const isDesktop = useIsDesktop()
 
   useEffect(() => {
     if (!navigator.storage?.estimate) return
-    navigator.storage.estimate().then(est => {
-      setUsage(est.usage ?? null)
-      setQuota(est.quota ?? null)
-    })
+    navigator.storage.estimate().then(est => setUsage(est.usage ?? null))
   }, [])
 
-  if (usage === null || quota === null) return null
+  if (usage === null) return null
 
-  const pct     = Math.min(1, usage / quota)
-  const usedMB  = (usage / 1024 / 1024).toFixed(1)
-  const totalMB = quota >= 1024 * 1024 * 1024
-    ? `${(quota / 1024 / 1024 / 1024).toFixed(1)} GB`
-    : `${(quota / 1024 / 1024).toFixed(0)} MB`
-
-  const color = pct > 0.8 ? '#ef4444' : pct > 0.5 ? '#f59e0b' : 'var(--accent)'
+  const usedMB = (usage / 1024 / 1024).toFixed(1)
 
   return (
-    <div style={{ padding: '14px 16px', borderRadius: 12, background: 'var(--surface2)', border: '1px solid var(--border)', marginBottom: 4 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text1)' }}>{t(isDesktop ? 'Local storage' : 'Browser storage')}</span>
-        <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace' }}>
-          {usedMB} MB / {totalMB}
-        </span>
-      </div>
-      <div style={{ height: 6, borderRadius: 3, background: 'var(--border)', overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${pct * 100}%`, borderRadius: 3, background: color, transition: 'width 0.4s ease' }} />
-      </div>
-      {pct > 0.8 && (
-        <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          {t('Storage almost full — export regularly')}
-        </div>
-      )}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: 12, background: 'var(--surface2)', border: '1px solid var(--border)', marginBottom: 4 }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text1)' }}>{t(isDesktop ? 'Local storage' : 'Browser storage')}</span>
+      <span style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'monospace' }}>{usedMB} MB</span>
     </div>
   )
 }
@@ -222,7 +204,7 @@ export default function DatenPanel() {
         ))}
       </div>
 
-      <StorageBar />
+      <StorageInfo />
 
       <SectionTitle>{t('Export')}</SectionTitle>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

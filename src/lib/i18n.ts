@@ -197,7 +197,6 @@ export const de: Record<string, string> = {
   // ── DatenPanel ──
   'Browser storage': 'Browser-Speicher',
   'Local storage': 'Lokaler Speicher',
-  'Storage almost full — export regularly': 'Speicher fast voll — regelmäßig exportieren',
   'Today': 'Heute',
   'Yesterday': 'Gestern',
   '{n} days ago': 'Vor {n} Tagen',

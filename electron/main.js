@@ -42,16 +42,31 @@ function waitForServer(url, timeoutMs = 20000) {
 }
 
 async function startStandaloneServer() {
-  // Freien Port suchen, statt einen festen zu riskieren (Konflikt mit
-  // anderen lokalen Diensten)
+  // IndexedDB/localStorage are scoped per full origin — scheme + host +
+  // PORT included. Picking a fresh random port on every launch (the old
+  // behavior here) therefore put every single restart on a brand-new
+  // origin: nothing was ever actually deleted, but the browser storage
+  // from the previous launch was permanently orphaned under a port that's
+  // never revisited again — from the user's side that looks exactly like
+  // "close the app, reopen it, every board is gone". Using a fixed,
+  // dedicated port keeps the origin (and with it, the storage) stable
+  // across restarts; the random-port fallback still exists for the rare
+  // case something else on the machine is already bound to it.
   const net = require('net')
+  const PREFERRED_PORT = 47893
   serverPort = await new Promise((resolve, reject) => {
-    const srv = net.createServer()
-    srv.listen(0, '127.0.0.1', () => {
-      const { port } = srv.address()
-      srv.close(() => resolve(port))
+    const preferred = net.createServer()
+    preferred.once('error', () => {
+      const fallback = net.createServer()
+      fallback.once('error', reject)
+      fallback.listen(0, '127.0.0.1', () => {
+        const { port } = fallback.address()
+        fallback.close(() => resolve(port))
+      })
     })
-    srv.on('error', reject)
+    preferred.listen(PREFERRED_PORT, '127.0.0.1', () => {
+      preferred.close(() => resolve(PREFERRED_PORT))
+    })
   })
 
   const serverEntry = path.join(process.resourcesPath, 'standalone', 'server.js')
