@@ -65,6 +65,26 @@ money — see [GITHUB_SETUP.md](GITHUB_SETUP.md)), so Windows SmartScreen and ma
 warn about an "unknown publisher" on first launch. That's expected for an unsigned build, not a
 sign anything is wrong.
 
+### Linux install
+
+Only `.deb` and `.AppImage` are published — no `.rpm` or Arch package, so the command depends on
+your distro's base:
+
+**Debian-based** (Debian, Ubuntu, Linux Mint, Pop!_OS, elementary OS, ...):
+```sh
+wget https://github.com/Aetherion7/mosaic/releases/latest/download/mosaic-<version>-linux-x64.deb
+sudo apt install ./mosaic-<version>-linux-x64.deb
+```
+`apt install ./file.deb` (not `dpkg -i`) resolves and pulls in missing dependencies automatically.
+
+**Arch-based, Fedora-based, openSUSE, or anything else** — run the universal `.AppImage` instead:
+```sh
+wget https://github.com/Aetherion7/mosaic/releases/latest/download/mosaic-<version>-linux-x64.AppImage
+chmod +x mosaic-<version>-linux-x64.AppImage
+./mosaic-<version>-linux-x64.AppImage
+```
+Replace `<version>` with the version shown on the [releases page](https://github.com/Aetherion7/mosaic/releases/latest) — asset filenames include it and it changes with every release.
+
 ## Features
 
 <table>

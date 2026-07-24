@@ -947,7 +947,13 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
 
   const activeBrushLabel = BRUSH_DEFS.find(b => b.id === brushType)?.label ?? brushType
 
-  const PenPanel = () => (
+  // Inlined directly (not a nested component): PenPanel/FormatPanel are each
+  // used exactly once and hold no state of their own — every value they
+  // show comes from this component's own state/closures. A nested
+  // component defined in the render body would get a new type identity on
+  // every render (remount instead of update); since there's no separate
+  // component here at all, that concern doesn't apply.
+  const penPanel = (
     <div style={{ background: 'color-mix(in srgb, var(--surface) 40%, var(--bg))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid var(--border)', borderRadius: 10, padding: 10, width: 220, boxShadow: '0 6px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', gap: 10 }}
       onPointerDown={e => e.stopPropagation()}>
 
@@ -988,7 +994,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
     </div>
   )
 
-  const FormatPanel = () => (
+  const formatPanel = (
     <div style={{ background: 'color-mix(in srgb, var(--surface) 40%, var(--bg))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid var(--border)', borderRadius: 10, padding: 10, width: 200, boxShadow: '0 6px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', gap: 8 }}
       onPointerDown={e => e.stopPropagation()}>
       <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Shapes')}</div>
@@ -1036,7 +1042,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
             <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><path d="M1 2l3 4 3-4z"/></svg>
           </button>
           <PortalPopover open={showPenOpts} anchorRef={penGroupRef} onClose={() => setShowPenOpts(false)}>
-            <PenPanel />
+            {penPanel}
           </PortalPopover>
         </div>
 
@@ -1048,7 +1054,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
             <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><path d="M1 2l3 4 3-4z"/></svg>
           </button>
           <PortalPopover open={showFormat} anchorRef={formatGroupRef} onClose={() => setShowFormat(false)}>
-            <FormatPanel />
+            {formatPanel}
           </PortalPopover>
         </div>
 
