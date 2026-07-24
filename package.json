@@ -1,6 +1,6 @@
 {
   "name": "mosaic",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A local-first, widget-based personal dashboard — boards full of tasks, notes, calendars, trackers and more, running entirely in your browser or as a desktop app. No account, no server, your data never leaves your device (except the optional BYOK AI assistant).",
   "author": "mosaic contributors",
   "license": "SEE LICENSE IN LICENSE.md",
@@ -23,7 +23,8 @@
     "electron:dev": "concurrently -k -n NEXT,ELECTRON -c blue,magenta \"npm run dev\" \"wait-on http://localhost:3001 && cross-env MOSAIC_DEV_URL=http://localhost:3001 electron .\"",
     "electron:pack": "npm run build && electron-builder --dir",
     "electron:dist": "npm run build && electron-builder",
-    "electron:release": "npm run build && electron-builder --publish always"
+    "electron:release": "npm run build && electron-builder --publish always",
+    "electron:ci-build": "npm run build && electron-builder --publish never"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

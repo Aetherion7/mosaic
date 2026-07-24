@@ -18,6 +18,9 @@ const eslintConfig = defineConfig([
     "electron/**",
     // Release-Build-Ausgabe von electron-builder
     "release/**",
+    // Vendorte/minifizierte Drittanbieter-Datei (pdf.js-Worker) — kein
+    // eigener Quellcode, erzeugt nur sinnlose Warnungen als minifiziertes Bundle
+    "public/*.mjs",
   ]),
 ]);
 

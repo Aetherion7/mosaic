@@ -13,6 +13,15 @@ name: Release desktop apps
 # App-Start automatisch gegen die neuesten GitHub-Releases-Assets — ein neues
 # Release hier reicht, alle drei Plattformen ziehen sich das Update selbst.
 #
+# Zwei Jobs statt einem: jede Matrix-Plattform baut nur (--publish never) und
+# lädt ihr Ergebnis als Artifact hoch; ein einzelner Folge-Job sammelt alle
+# drei Artifacts ein und erstellt EIN GitHub-Release daraus. Vorher rief
+# jede Plattform parallel "electron-builder --publish always" auf und alle
+# drei versuchten gleichzeitig, dasselbe Release-Objekt anzulegen/zu
+# aktualisieren — ein bekanntes electron-builder-Problem bei Matrix-Builds,
+# das dazu führte, dass Jobs als "erfolgreich" durchliefen, das Release aber
+# leer oder unsichtbar blieb.
+#
 # Ohne Code-Signing-Zertifikate (siehe unten) sind die Builds funktionsfähig,
 # aber Windows SmartScreen / macOS Gatekeeper warnen beim ersten Start vor
 # "unbekanntem Herausgeber" — das ist normal für unsignierte Builds und kein
@@ -26,7 +35,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  build:
     strategy:
       fail-fast: false
       matrix:
@@ -43,10 +52,9 @@ jobs:
       - run: npm ci
       - run: cd electron && npm ci --omit=dev
 
-      - name: Build + publish (${{ matrix.os }})
-        run: npm run electron:release
+      - name: Build (${{ matrix.os }})
+        run: npm run electron:ci-build
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Optionale Code-Signing-Zertifikate — wirken nur, wenn die Secrets
           # gesetzt sind (sonst baut electron-builder klaglos unsigniert).
           # macOS:   CSC_LINK / CSC_KEY_PASSWORD (Apple Developer ID .p12)
@@ -62,3 +70,40 @@ jobs:
           # kein echtes Zertifikat hinterlegt ist; sobald CSC_LINK gesetzt
           # wird, verwendet electron-builder ohnehin direkt dieses Zertifikat.
           CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.zip
+            release/*.AppImage
+            release/*.deb
+            release/*.blockmap
+            release/*.yml
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    # Läuft auch, wenn eine einzelne Plattform in der Matrix oben fehlschlägt
+    # (fail-fast: false lässt die anderen ohnehin weiterlaufen) — die anderen
+    # zwei Installer sollen trotzdem veröffentlicht werden, statt dass ein
+    # einzelner kaputter Build (z. B. macOS) das ganze Release blockiert.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          draft: false
+          fail_on_unmatched_files: true
+          files: dist/*
