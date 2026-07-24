@@ -55,6 +55,11 @@ async function startStandaloneServer() {
   })
 
   const serverEntry = path.join(process.resourcesPath, 'standalone', 'server.js')
+  // stdout/stderr werden mitgeschnitten (statt 'ignore'): stürzt server.js
+  // selbst ab (z. B. ein natives Modul mit falscher ABI), war das vorher
+  // unsichtbar — waitForServer() lief einfach in den Timeout, ohne den
+  // eigentlichen Grund preiszugeben.
+  let serverOutput = ''
   serverProcess = fork(serverEntry, [], {
     env: {
       ...process.env,
@@ -68,14 +73,22 @@ async function startStandaloneServer() {
       // rejects with no .catch() anywhere in the chain).
       ELECTRON_RUN_AS_NODE: '1',
     },
-    stdio: 'ignore',
+    stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
   })
+  serverProcess.stdout.on('data', d => { serverOutput += d.toString() })
+  serverProcess.stderr.on('data', d => { serverOutput += d.toString() })
   serverProcess.on('exit', code => {
-    if (code !== 0 && code !== null) console.error(`[mosaic] standalone server exited with code ${code}`)
+    if (code !== 0 && code !== null) console.error(`[mosaic] standalone server exited with code ${code}\n${serverOutput}`)
   })
 
   const url = `http://127.0.0.1:${serverPort}`
-  await waitForServer(url)
+  try {
+    await waitForServer(url)
+  } catch (err) {
+    // Den mitgeschnittenen Output an den Timeout-Fehler anhängen, damit er
+    // im Fehlerdialog (app.whenReady-Handler unten) tatsächlich sichtbar wird.
+    throw new Error(`${err.message}\n\n${serverOutput || '(no output from standalone server)'}`)
+  }
   return url
 }
 
