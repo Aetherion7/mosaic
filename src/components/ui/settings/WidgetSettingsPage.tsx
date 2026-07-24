@@ -6,72 +6,6 @@ import { TYPE_LABELS } from '@/components/board/TileWrapper'
 import type { WidgetType } from '@/types'
 import { Row, SectionTitle } from './shared'
 import { BUILT_IN_WIDGETS } from './widgetCatalog'
-import { useBlobUrl, deleteBlob } from '@/lib/blobStore'
-
-// Note-Bilder werden als Standard-Markdown-Bildsyntax im content-String
-// gespeichert (tiptap-markdown serialisiert @tiptap/extension-image über
-// prosemirror-markdown's defaultMarkdownSerializer.nodes.image — kein Custom-
-// Serialize wie bei PdfRef nötig, siehe NoteWidget.tsx). Referenzen werden
-// hier direkt aus content geparst statt in einem separaten Feld dupliziert
-// zu werden — content bleibt einzige Quelle der Wahrheit.
-const NOTE_IMAGE_RE = /!\[([^\]]*)\]\((idb-blob:\/\/[^)]+)\)/g
-
-function NoteImagesSection() {
-  const board        = useBoardStore(selectBoard)
-  const updateWidget  = useBoardStore(s => s.updateWidget)
-  const t = useT()
-
-  const entries = Object.values(board?.widgets ?? {})
-    .filter(w => w.type === 'note')
-    .flatMap(w => {
-      const content = (w.data.content as string) ?? ''
-      return Array.from(content.matchAll(NOTE_IMAGE_RE)).map(m => ({
-        wid: w.id, noteTitle: (w.data.title as string) || t('Note'),
-        alt: m[1], ref: m[2], match: m[0],
-      }))
-    })
-
-  if (entries.length === 0)
-    return <div style={{ fontSize: 11, color: 'var(--text3)', padding: '4px 0' }}>{t('No images in any note yet.')}</div>
-
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: 8 }}>
-      {entries.map((e, i) => (
-        <NoteImageThumb key={i} entry={e} onRemove={() => {
-          const w = board?.widgets[e.wid]
-          if (!w) return
-          const content = ((w.data.content as string) ?? '').replace(e.match, '')
-          updateWidget(e.wid, { data: { ...w.data, content } })
-          deleteBlob(e.ref)
-        }} />
-      ))}
-    </div>
-  )
-}
-
-function NoteImageThumb({ entry, onRemove }: { entry: { noteTitle: string; ref: string; alt: string }; onRemove: () => void }) {
-  const t = useT()
-  const resolved = useBlobUrl(entry.ref)
-  return (
-    <div style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--surface)' }}>
-      {resolved
-        ? <img src={resolved} alt={entry.alt} style={{ width: '100%', height: 64, objectFit: 'cover', display: 'block' }} />
-        : <div style={{ width: '100%', height: 64, background: 'var(--surface2)' }} />}
-      <div style={{ fontSize: 9, color: 'var(--text3)', padding: '3px 5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={entry.noteTitle}>
-        {entry.noteTitle}
-      </div>
-      <button
-        onClick={onRemove}
-        title={t('Remove')}
-        style={{
-          position: 'absolute', top: 3, right: 3, width: 18, height: 18, borderRadius: 6,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.55)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 12, lineHeight: 1,
-        }}
-      >×</button>
-    </div>
-  )
-}
 
 // Eigene Unterseite je Widget-Typ (Sidebar → "WIDGETS" → einzelner Eintrag):
 // Kopf mit Icon/Name/Beschreibung + Ein/Aus-Schalter, darunter typ-spezifische
@@ -189,12 +123,6 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
         </>
       )}
 
-      {type === 'note' && (
-        <>
-          <SectionTitle>{t('Images')}</SectionTitle>
-          <NoteImagesSection />
-        </>
-      )}
     </div>
   )
 }

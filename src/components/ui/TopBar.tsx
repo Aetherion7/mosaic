@@ -21,7 +21,6 @@ export default function TopBar() {
   const t              = useT()
 
   const showKbdHints  = useSettings(s => s.showKbdHints)
-  const compactHeader = useSettings(s => s.compactHeader)
   const headerStyle   = useSettings(s => s.headerStyle)
   const aiEnabled     = useSettings(s => s.aiEnabled)
   const isIsland      = headerStyle === 'island'
@@ -122,7 +121,7 @@ export default function TopBar() {
     else setNameVal(board?.name ?? '')
   }
 
-  const headerHeight = isMobile ? (compactHeader ? 42 : 48) : (compactHeader ? 44 : 52)
+  const headerHeight = isMobile ? 48 : 52
 
   const islandPill: React.CSSProperties = isIsland ? {
     // Mit --bg gemischt statt transparent: bleibt auch über weißem Inhalt

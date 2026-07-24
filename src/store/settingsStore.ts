@@ -45,7 +45,6 @@ export type AiProvider = 'anthropic' | 'openai' | 'gemini'
 export interface AppSettings {
   showKbdHints:           boolean
   animations:             boolean
-  compactHeader:          boolean
   headerStyle:            'default' | 'island'
   programFont:            string   // Schrift der gesamten Oberfläche (Startseite, Einstellungen, Boards ohne eigene Board-Schrift)
   disabledWidgetTypes:    string[]
@@ -62,7 +61,6 @@ export interface AppSettings {
   homeThemeMode:          'dark' | 'light' | 'system'
   folders:                string[]                 // Existierende Ordner der Board-Übersicht (auch leere)
   folderColors:           Record<string, string>   // Ordnerfarben der Board-Übersicht (Name → Hex)
-  hasSeenBackupWarning:   boolean
   hasSeenTutorial:        boolean
   hasSeenHomeTutorial:    boolean
   lastExportAt:           number | null
@@ -93,7 +91,6 @@ export const useSettings = create<SettingsStore>()(
     (set) => ({
       showKbdHints:           true,
       animations:             true,
-      compactHeader:          false,
       headerStyle:            'default',
       programFont:            'inter',
       disabledWidgetTypes:    [],
@@ -108,7 +105,6 @@ export const useSettings = create<SettingsStore>()(
       homeThemeMode:          'dark',
       folders:                [],
       folderColors:           {},
-      hasSeenBackupWarning:   false,
       hasSeenTutorial:        false,
       hasSeenHomeTutorial:    false,
       lastExportAt:           null,

@@ -36,15 +36,12 @@ export const de: Record<string, string> = {
   'General': 'Allgemein',
   'German': 'Deutsch',
   'English': 'Englisch',
-  'Behavior': 'Verhalten',
   'My palette': 'Meine Palette',
   'Pick color from screen': 'Farbe aus Bildschirm aufnehmen',
   'Turns decorative transitions and effects on or off across the entire app': 'Schaltet dekorative Übergänge und Effekte in der gesamten App ein oder aus',
   'Animations': 'Animationen',
   'Keyboard shortcut hints': 'Tastaturkürzel-Hinweise',
   'Shows shortcuts like [E] in the header': 'Zeigt Kürzel wie [E] im Header an',
-  'Compact header': 'Kompakter Header',
-  'Slightly slimmer top bar': 'Etwas schmalere obere Leiste',
   'Custom themes': 'Eigene Themes',
   'Reset': 'Zurücksetzen',
   'Reset all settings': 'Alle Einstellungen zurücksetzen',
@@ -134,8 +131,6 @@ export const de: Record<string, string> = {
   'events': 'Termine',
   'event': 'Termin',
   'Remove': 'Entfernen',
-  'Images': 'Bilder',
-  'No images in any note yet.': 'Noch keine Bilder in Notizen.',
   'Location & forecast': 'Standort & Vorhersage',
   'OpenStreetMap, markers & routes': 'OpenStreetMap, Marker & Routen',
   'Tasks & habit tracking': 'Aufgaben & Gewohnheits-Tracking',
@@ -198,7 +193,7 @@ export const de: Record<string, string> = {
   'Zoom': 'Zoom',
 
   // ── DatenPanel ──
-  'Browser storage': 'Browser-Speicher',
+  'Local storage': 'Lokaler Speicher',
   'Storage almost full — export regularly': 'Speicher fast voll — regelmäßig exportieren',
   'Today': 'Heute',
   'Yesterday': 'Gestern',
@@ -242,11 +237,11 @@ export const de: Record<string, string> = {
   // ── DatenschutzPanel ──
   'stores': 'speichert',
   'all data exclusively locally': 'alle Daten ausschließlich lokal',
-  'in your browser. mosaic has no server of its own and never collects or transmits your data.':
-    'in deinem Browser. mosaic hat keinen eigenen Server und sammelt oder überträgt deine Daten nie.',
+  'on your device — on disk, not in the cloud. mosaic has no server of its own and never collects or transmits your data.':
+    'auf deinem Gerät — auf der Festplatte, nicht in der Cloud. mosaic hat keinen eigenen Server und sammelt oder überträgt deine Daten nie.',
   'Exception: some widgets need the internet.': 'Ausnahme: manche Widgets brauchen das Internet.',
-  'The map, weather and quicklinks widgets fetch data directly from the external services listed below when you use them — and the optional AI assistant sends your messages straight to the provider you configured. None of this ever passes through a mosaic server, because none exists; requests go directly from your browser to the respective third party.':
-    'Das Karten-, Wetter- und Quicklinks-Widget rufen bei Nutzung direkt Daten von den unten gelisteten externen Diensten ab — und der optionale KI-Assistent schickt deine Nachrichten direkt an den von dir konfigurierten Anbieter. Nichts davon läuft über einen mosaic-Server, denn den gibt es nicht; die Anfragen gehen direkt aus deinem Browser an den jeweiligen Drittanbieter.',
+  'The map, weather and quicklinks widgets fetch data directly from the external services listed below when you use them — and the optional AI assistant sends your messages straight to the provider you configured. None of this ever passes through a mosaic server, because none exists; requests go directly from your device to the respective third party.':
+    'Das Karten-, Wetter- und Quicklinks-Widget rufen bei Nutzung direkt Daten von den unten gelisteten externen Diensten ab — und der optionale KI-Assistent schickt deine Nachrichten direkt an den von dir konfigurierten Anbieter. Nichts davon läuft über einen mosaic-Server, denn den gibt es nicht; die Anfragen gehen direkt von deinem Gerät an den jeweiligen Drittanbieter.',
   'External services contacted': 'Kontaktierte externe Dienste',
   'Map widget': 'Karten-Widget',
   'Weather widget': 'Wetter-Widget',
@@ -398,8 +393,6 @@ export const de: Record<string, string> = {
   'they move back to the overview.': 'sie wandern zurück in die Übersicht.',
   'Also delete contained boards': 'Enthaltene Boards mitlöschen',
   'Delete folder & boards': 'Ordner & Boards löschen',
-  'Your data lives exclusively in this browser. Export a backup regularly under': 'Deine Daten liegen ausschließlich in diesem Browser. Exportiere regelmäßig eine Sicherung unter',
-  'Got it': 'Verstanden',
 
   // ── TutorialTour ──
   'Welcome to mosaic': 'Willkommen bei mosaic',
@@ -558,7 +551,6 @@ export const de: Record<string, string> = {
 
   // ── NoteWidget ──
   '# Heading\n\nNote here…': '# Überschrift\n\nNotiz hier…',
-  'Insert image': 'Bild einfügen',
 
   // ── TimerWidget ──
   'Timer finished': 'Timer abgelaufen',

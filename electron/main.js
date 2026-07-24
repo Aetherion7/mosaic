@@ -125,36 +125,33 @@ async function createWindow() {
   mainWindow.on('closed', () => { mainWindow = null })
 }
 
-// ── Minimales, plattformübliches App-Menü ───────────────────────────────────
+// ── App-Menü ─────────────────────────────────────────────────────────────
+// mosaic hat seine eigene Oberfläche (TopBar, Einstellungen-Panel mit GitHub-
+// Links im Über-Bereich) für alles, was Edit/View/Window/Help sonst anbieten
+// würden — die native Menüleiste (auf Windows/Linux als eigene Zeile über dem
+// Fenster sichtbar) bleibt deshalb bewusst leer. Auf macOS bleibt nur das
+// System-übliche Minimum (App-Name-Menü mit About/Hide/Quit) bestehen, weil
+// das dort Plattform-Konvention ist, nicht ein zusätzliches Feature.
 function buildMenu() {
   const isMac = process.platform === 'darwin'
-  const template = [
-    ...(isMac ? [{
-      label: app.getName(),
-      submenu: [
-        { role: 'about' },
-        { type: 'separator' },
-        { label: 'Check for Updates…', click: () => checkForUpdates(true) },
-        { type: 'separator' },
-        { role: 'services' },
-        { type: 'separator' },
-        { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' },
-        { type: 'separator' },
-        { role: 'quit' },
-      ],
-    }] : []),
-    { role: 'editMenu' },
-    { role: 'viewMenu' },
-    { role: 'windowMenu' },
-    {
-      role: 'help',
-      submenu: [
-        { label: 'mosaic on GitHub', click: () => shell.openExternal('https://github.com/Aetherion7/mosaic') },
-        { label: 'Report an issue', click: () => shell.openExternal('https://github.com/Aetherion7/mosaic/issues') },
-        ...(!isMac ? [{ label: 'Check for Updates…', click: () => checkForUpdates(true) }] : []),
-      ],
-    },
-  ]
+  if (!isMac) {
+    Menu.setApplicationMenu(null)
+    return
+  }
+  const template = [{
+    label: app.getName(),
+    submenu: [
+      { role: 'about' },
+      { type: 'separator' },
+      { label: 'Check for Updates…', click: () => checkForUpdates(true) },
+      { type: 'separator' },
+      { role: 'services' },
+      { type: 'separator' },
+      { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' },
+      { type: 'separator' },
+      { role: 'quit' },
+    ],
+  }]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 

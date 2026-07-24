@@ -568,7 +568,6 @@ export default function HomePage() {
   const removeCustomTemplate = useSettings(s => s.removeCustomTemplate)
 
   const animations = useSettings(s => s.animations)
-  const hasSeenBackupWarning = useSettings(s => s.hasSeenBackupWarning)
   const lastExportAt = useSettings(s => s.lastExportAt)
   const setSetting = useSettings(s => s.setSetting)
 
@@ -1789,43 +1788,6 @@ export default function HomePage() {
           Warnung je nach Board-Anzahl irgendwo mit dem Inhalt mit statt
           sichtbar zu bleiben. bottom:84 statt 24, damit sie nicht mit dem
           Papierkorb-Button (fixed, bottom:24, rechts) kollidiert. */}
-      <AnimatePresence>
-        {!hasSeenBackupWarning && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.2 }}
-            style={{
-              position: 'fixed', left: 36, right: 36, bottom: 84, zIndex: 1100,
-              padding: '11px 16px',
-              borderRadius: 12,
-              background: 'color-mix(in srgb, rgba(245,158,11,0.16) 92%, var(--bg))',
-              backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-              border: '1px solid rgba(245,158,11,0.35)',
-              boxShadow: '0 6px 24px rgba(0,0,0,0.35)',
-              display: 'flex', alignItems: 'center', gap: 12,
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            <span style={{ fontSize: 13, color: 'var(--text2)', flex: 1, lineHeight: 1.5 }}>
-              {t('Your data lives exclusively in this browser. Export a backup regularly under')} <strong>{t('Settings')} → {t('Data')}</strong>.
-            </span>
-            <button
-              onClick={() => setSetting({ hasSeenBackupWarning: true })}
-              style={{
-                flexShrink: 0, padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-                border: '1px solid rgba(245,158,11,0.5)', background: 'rgba(245,158,11,0.15)',
-                color: '#f59e0b', cursor: 'pointer',
-              }}
-            >
-              {t('Got it')}
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <style>{`
         .delete-btn { opacity: 0; transition: opacity 0.15s; }

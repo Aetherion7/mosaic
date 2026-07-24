@@ -1,11 +1,10 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
+import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
 import Placeholder from '@tiptap/extension-placeholder'
-import Image from '@tiptap/extension-image'
 import { Markdown } from 'tiptap-markdown'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { mergeAttributes, Extension, Mark } from '@tiptap/core'
@@ -15,35 +14,9 @@ import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { useShallow } from 'zustand/react/shallow'
 import { useT } from '@/hooks/useT'
-import { compressImage } from '@/lib/imageUtils'
-import { saveBlob, useBlobUrl } from '@/lib/blobStore'
-import { IconImage } from '@/components/ui/Icons'
 import type { Widget, NotePdfLink } from '@/types'
 
 const lowlight = createLowlight(common)
-
-// ── Bild-Node ─────────────────────────────────────────────────────────────────
-// @tiptap/extension-image speichert `src` normal im Markdown (kein eigener
-// serialize-Hook nötig, anders als bei PdfRef unten). Die eingebettete
-// idb-blob://-Referenz ist aber kein direkt ladbares Bild — die NodeView löst
-// sie beim Rendern über useBlobUrl() zur echten Object-URL auf (identisches
-// Muster zu ImageWidget.tsx).
-function NoteImageView({ node }: ReactNodeViewProps) {
-  const resolved = useBlobUrl(node.attrs.src as string)
-  return (
-    <NodeViewWrapper as="span" style={{ display: 'inline-block', maxWidth: '100%' }}>
-      {resolved
-        ? <img src={resolved} alt={(node.attrs.alt as string) ?? ''} style={{ maxWidth: '100%', borderRadius: 8, display: 'block' }} />
-        : <span style={{ display: 'block', width: 160, height: 100, borderRadius: 8, background: 'var(--surface2)' }} />}
-    </NodeViewWrapper>
-  )
-}
-
-const NoteImage = Image.extend({
-  addNodeView() {
-    return ReactNodeViewRenderer(NoteImageView)
-  },
-})
 
 // Fallback: consume Tab/Shift-Tab so they never escape the editor.
 // Runs at low priority (50) so CodeBlockHighlight's Tab handler (priority 100) fires first.
@@ -267,32 +240,7 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
     CodeBlockHighlight.configure({ lowlight, defaultLanguage: 'plaintext' }),
     PreventTabEscape,
     PdfRef.configure({ onNavigate: (r, p) => navigateRef.current(r, p) }),
-    NoteImage.configure({ inline: false }),
   ])
-
-  // Datei → komprimieren → als Blob speichern → als Bild-Node einfügen.
-  // Gleicher Ablauf wie ImageWidget.tsx, nur über editor.chain() statt Store.
-  async function insertImageFile(file: File) {
-    const ed = editorRef.current
-    if (!ed) return
-    try {
-      const compressed = await compressImage(file)
-      ed.chain().focus().setImage({ src: await saveBlob(compressed) }).run()
-    } catch {
-      try {
-        ed.chain().focus().setImage({ src: await saveBlob(file) }).run()
-      } catch { /* Blob-Speicher nicht verfügbar */ }
-    }
-  }
-
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  function handleImageFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0]
-    e.target.value = ''
-    if (!f) return
-    if (f.size > 20 * 1024 * 1024) return
-    insertImageFile(f)
-  }
 
   const editor = useEditor({
     extensions,
@@ -303,23 +251,6 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
       const md = (editor.storage as any).markdown.getMarkdown()
       editorGeneratedContent.current = md
       updateNoteContent(widget.id, md)
-    },
-    editorProps: {
-      handlePaste(_view, event) {
-        const file = Array.from(event.clipboardData?.items ?? [])
-          .find(it => it.type.startsWith('image/'))?.getAsFile()
-        if (!file) return false
-        event.preventDefault()
-        insertImageFile(file)
-        return true
-      },
-      handleDrop(_view, event) {
-        const file = Array.from(event.dataTransfer?.files ?? []).find(f => f.type.startsWith('image/'))
-        if (!file) return false
-        event.preventDefault()
-        insertImageFile(file)
-        return true
-      },
     },
   })
 
@@ -391,22 +322,6 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 4 }}>
-      {mode === 'edit' && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', flexShrink: 0, paddingBottom: 2 }} onPointerDown={e => e.stopPropagation()}>
-          <button
-            title={t('Insert image')}
-            onClick={() => fileInputRef.current?.click()}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: 22, height: 22, borderRadius: 6, border: 'none',
-              background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer',
-            }}
-          >
-            <IconImage size={12} />
-          </button>
-          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageFileChange} style={{ display: 'none' }} />
-        </div>
-      )}
       <div
         onPointerDown={e => e.stopPropagation()}
         className="note-md-wrap"

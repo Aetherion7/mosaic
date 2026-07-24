@@ -34,7 +34,7 @@ function StorageBar() {
   return (
     <div style={{ padding: '14px 16px', borderRadius: 12, background: 'var(--surface2)', border: '1px solid var(--border)', marginBottom: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text1)' }}>{t('Browser storage')}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text1)' }}>{t('Local storage')}</span>
         <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace' }}>
           {usedMB} MB / {totalMB}
         </span>

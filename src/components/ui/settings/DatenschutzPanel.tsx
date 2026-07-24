@@ -22,7 +22,7 @@ export default function DatenschutzPanel() {
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         </svg>
         <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.7 }}>
-          mosaic {t('stores')} <strong style={{ color: 'var(--text1)' }}>{t('all data exclusively locally')}</strong> {t('in your browser. mosaic has no server of its own and never collects or transmits your data.')}
+          mosaic {t('stores')} <strong style={{ color: 'var(--text1)' }}>{t('all data exclusively locally')}</strong> {t('on your device — on disk, not in the cloud. mosaic has no server of its own and never collects or transmits your data.')}
         </div>
       </div>
 
@@ -34,7 +34,7 @@ export default function DatenschutzPanel() {
           <path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
         </svg>
         <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.7 }}>
-          <strong style={{ color: 'var(--text1)' }}>{t('Exception: some widgets need the internet.')}</strong> {t('The map, weather and quicklinks widgets fetch data directly from the external services listed below when you use them — and the optional AI assistant sends your messages straight to the provider you configured. None of this ever passes through a mosaic server, because none exists; requests go directly from your browser to the respective third party.')}
+          <strong style={{ color: 'var(--text1)' }}>{t('Exception: some widgets need the internet.')}</strong> {t('The map, weather and quicklinks widgets fetch data directly from the external services listed below when you use them — and the optional AI assistant sends your messages straight to the provider you configured. None of this ever passes through a mosaic server, because none exists; requests go directly from your device to the respective third party.')}
         </div>
       </div>
 

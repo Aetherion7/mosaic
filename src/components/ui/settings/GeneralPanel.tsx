@@ -19,6 +19,7 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
   const homeThemeMode = useSettings(s => s.homeThemeMode)
   const language = useSettings(s => s.language)
   const animations = useSettings(s => s.animations)
+  const showKbdHints = useSettings(s => s.showKbdHints)
   const setSetting = useSettings(s => s.setSetting)
   const t = useT()
 
@@ -70,6 +71,12 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
         desc={t('Turns decorative transitions and effects on or off across the entire app')}
         value={animations}
         onChange={v => setSetting({ animations: v })}
+      />
+      <Row
+        label={t('Keyboard shortcut hints')}
+        desc={t('Shows shortcuts like [E] in the header')}
+        value={showKbdHints}
+        onChange={v => setSetting({ showKbdHints: v })}
       />
 
       <SectionTitle>{t('Help')}</SectionTitle>

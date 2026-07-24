@@ -23,24 +23,24 @@ function PluginIcon() {
 }
 
 const TYPE_ICON_MAP: Record<string, React.ReactNode> = {
-  task:        <IconTask size={32} />,
-  note:        <IconNote size={32} />,
-  timer:       <IconTimer size={32} />,
-  water:       <IconWater size={32} />,
-  image:       <IconImage size={32} />,
-  calendar:    <IconCalendar size={32} />,
-  chart:       <IconChart size={32} />,
-  text:        <IconText size={32} />,
-  spreadsheet: <IconTable size={32} />,
-  drawboard:   <IconDraw size={32} />,
-  clock:       <IconClock size={32} />,
-  weather:     <IconWeather size={32} />,
-  map:         <IconMap size={32} />,
-  reader:      <IconReader size={32} />,
+  task:        <IconTask size={18} />,
+  note:        <IconNote size={18} />,
+  timer:       <IconTimer size={18} />,
+  water:       <IconWater size={18} />,
+  image:       <IconImage size={18} />,
+  calendar:    <IconCalendar size={18} />,
+  chart:       <IconChart size={18} />,
+  text:        <IconText size={18} />,
+  spreadsheet: <IconTable size={18} />,
+  drawboard:   <IconDraw size={18} />,
+  clock:       <IconClock size={18} />,
+  weather:     <IconWeather size={18} />,
+  map:         <IconMap size={18} />,
+  reader:      <IconReader size={18} />,
   plugin:      <PluginIcon />,
-  sleep:       <IconSleep size={32} />,
-  agenda:      <IconAgenda size={32} />,
-  quicklinks:  <IconLinks size={32} />,
+  sleep:       <IconSleep size={18} />,
+  agenda:      <IconAgenda size={18} />,
+  quicklinks:  <IconLinks size={18} />,
 }
 
 interface Result {
@@ -190,7 +190,7 @@ export default function SearchModal({ onClose }: Props) {
             >
               <span style={{
                 flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 38, height: 38, borderRadius: 10,
+                width: 32, height: 32, borderRadius: 9,
                 background: 'var(--surface2)', border: '1px solid var(--border)',
                 color: 'var(--text2)',
               }}>

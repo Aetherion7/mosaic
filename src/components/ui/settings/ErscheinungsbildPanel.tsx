@@ -7,13 +7,11 @@ import type { CustomFont } from '@/store/settingsStore'
 import { FONT_OPTIONS, customFontStack, type FontOption } from '@/lib/fonts'
 import { saveBlob, deleteBlob } from '@/lib/blobStore'
 import { useT } from '@/hooks/useT'
-import { SectionTitle, Row, HeaderStyleCard, AddCardButton, TemplateBox, THEME_JSON_TEMPLATE } from './shared'
+import { SectionTitle, HeaderStyleCard, AddCardButton, TemplateBox, THEME_JSON_TEMPLATE } from './shared'
 
 export default function ErscheinungsbildPanel() {
   const headerStyle    = useSettings(s => s.headerStyle)
   const setSetting     = useSettings(s => s.setSetting)
-  const showKbdHints    = useSettings(s => s.showKbdHints)
-  const compactHeader   = useSettings(s => s.compactHeader)
   const t = useT()
   return (
     <div>
@@ -60,10 +58,6 @@ export default function ErscheinungsbildPanel() {
       <SectionTitle>{t('Font')}</SectionTitle>
       <FontSection />
 
-      <SectionTitle>{t('Behavior')}</SectionTitle>
-      <Row label={t('Keyboard shortcut hints')} desc={t('Shows shortcuts like [E] in the header')} value={showKbdHints} onChange={v => setSetting({ showKbdHints: v })} />
-      <Row label={t('Compact header')} desc={t('Slightly slimmer top bar')} value={compactHeader} onChange={v => setSetting({ compactHeader: v })} />
-
       <SectionTitle>{t('Custom themes')}</SectionTitle>
       <CustomThemesSection />
 
@@ -77,8 +71,6 @@ export default function ErscheinungsbildPanel() {
           setSetting({
             headerStyle:   'default',
             programFont:   'inter',
-            showKbdHints:  true,
-            compactHeader: false,
           })
         }}
         style={{
