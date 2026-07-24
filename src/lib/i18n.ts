@@ -58,6 +58,8 @@ export const de: Record<string, string> = {
   'Close': 'Schließen',
   'Failed to save a change — your browser storage may be full. Export a backup and free up space soon.':
     'Eine Änderung konnte nicht gespeichert werden — der Browser-Speicher ist möglicherweise voll. Exportiere bald ein Backup und schaffe Platz.',
+  'Failed to save a change — your local storage may be full. Export a backup and free up space soon.':
+    'Eine Änderung konnte nicht gespeichert werden — der lokale Speicher ist möglicherweise voll. Exportiere bald ein Backup und schaffe Platz.',
   'Paste JSON here — see the template above for the structure …': 'JSON hier einfügen — Aufbau siehe Vorlage oben …',
   'Preview': 'Vorschau',
   'Cancel': 'Abbrechen',
@@ -193,6 +195,7 @@ export const de: Record<string, string> = {
   'Zoom': 'Zoom',
 
   // ── DatenPanel ──
+  'Browser storage': 'Browser-Speicher',
   'Local storage': 'Lokaler Speicher',
   'Storage almost full — export regularly': 'Speicher fast voll — regelmäßig exportieren',
   'Today': 'Heute',
@@ -214,8 +217,6 @@ export const de: Record<string, string> = {
   'as JSON': 'als JSON',
   'Export all boards': 'Alle Boards exportieren',
   'as a complete backup': 'als vollständiges Backup',
-  'Export board as image': 'Board als Bild exportieren',
-  'as PNG — cropped to the widgets': 'als PNG — zugeschnitten auf die Widgets',
   'Import': 'Import',
   'Import backup': 'Backup importieren',
   'A single board or a complete backup (JSON)': 'Einzelnes Board oder vollständiges Backup (JSON)',
@@ -233,15 +234,20 @@ export const de: Record<string, string> = {
   'Yes, delete everything': 'Ja, alles löschen',
   'Delete all data': 'Alle Daten löschen',
   'Irreversibly deletes all boards, widgets and settings from the browser.': 'Löscht alle Boards, Widgets und Einstellungen unwiderruflich aus dem Browser.',
+  'Irreversibly deletes all boards, widgets and settings from this device.': 'Löscht alle Boards, Widgets und Einstellungen unwiderruflich von diesem Gerät.',
 
   // ── DatenschutzPanel ──
   'stores': 'speichert',
   'all data exclusively locally': 'alle Daten ausschließlich lokal',
   'on your device — on disk, not in the cloud. mosaic has no server of its own and never collects or transmits your data.':
     'auf deinem Gerät — auf der Festplatte, nicht in der Cloud. mosaic hat keinen eigenen Server und sammelt oder überträgt deine Daten nie.',
+  'in your browser. mosaic has no server of its own and never collects or transmits your data.':
+    'in deinem Browser. mosaic hat keinen eigenen Server und sammelt oder überträgt deine Daten nie.',
   'Exception: some widgets need the internet.': 'Ausnahme: manche Widgets brauchen das Internet.',
   'The map, weather and quicklinks widgets fetch data directly from the external services listed below when you use them — and the optional AI assistant sends your messages straight to the provider you configured. None of this ever passes through a mosaic server, because none exists; requests go directly from your device to the respective third party.':
     'Das Karten-, Wetter- und Quicklinks-Widget rufen bei Nutzung direkt Daten von den unten gelisteten externen Diensten ab — und der optionale KI-Assistent schickt deine Nachrichten direkt an den von dir konfigurierten Anbieter. Nichts davon läuft über einen mosaic-Server, denn den gibt es nicht; die Anfragen gehen direkt von deinem Gerät an den jeweiligen Drittanbieter.',
+  'The map, weather and quicklinks widgets fetch data directly from the external services listed below when you use them — and the optional AI assistant sends your messages straight to the provider you configured. None of this ever passes through a mosaic server, because none exists; requests go directly from your browser to the respective third party.':
+    'Das Karten-, Wetter- und Quicklinks-Widget rufen bei Nutzung direkt Daten von den unten gelisteten externen Diensten ab — und der optionale KI-Assistent schickt deine Nachrichten direkt an den von dir konfigurierten Anbieter. Nichts davon läuft über einen mosaic-Server, denn den gibt es nicht; die Anfragen gehen direkt aus deinem Browser an den jeweiligen Drittanbieter.',
   'External services contacted': 'Kontaktierte externe Dienste',
   'Map widget': 'Karten-Widget',
   'Weather widget': 'Wetter-Widget',

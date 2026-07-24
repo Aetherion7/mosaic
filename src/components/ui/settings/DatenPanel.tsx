@@ -6,12 +6,14 @@ import type { CustomTheme, InstalledPlugin } from '@/store/settingsStore'
 import { importBlobs } from '@/lib/blobStore'
 import { buildFullBackupPayload, buildBoardBackupPayload, downloadJson, boardExportFilename, fullBackupFilename } from '@/lib/backup'
 import { useT } from '@/hooks/useT'
+import { useIsDesktop } from '@/hooks/useIsDesktop'
 import { SectionTitle } from './shared'
 
 function StorageBar() {
   const [usage, setUsage]   = useState<number | null>(null)
   const [quota, setQuota]   = useState<number | null>(null)
   const t = useT()
+  const isDesktop = useIsDesktop()
 
   useEffect(() => {
     if (!navigator.storage?.estimate) return
@@ -34,7 +36,7 @@ function StorageBar() {
   return (
     <div style={{ padding: '14px 16px', borderRadius: 12, background: 'var(--surface2)', border: '1px solid var(--border)', marginBottom: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text1)' }}>{t('Local storage')}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text1)' }}>{t(isDesktop ? 'Local storage' : 'Browser storage')}</span>
         <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace' }}>
           {usedMB} MB / {totalMB}
         </span>
@@ -70,6 +72,7 @@ export default function DatenPanel() {
   const setSetting       = useSettings(s => s.setSetting)
   const lastExportAt     = useSettings(s => s.lastExportAt)
   const t = useT()
+  const isDesktop = useIsDesktop()
 
   const [clearConfirm, setClearConfirm] = useState(false)
   const [importError,  setImportError]  = useState<string | null>(null)
@@ -92,15 +95,6 @@ export default function DatenPanel() {
     const payload = await buildFullBackupPayload(boards, trash, s)
     downloadJson(payload, fullBackupFilename())
     setSetting({ lastExportAt: Date.now() })
-  }
-
-  // PNG-Export braucht das gerenderte Board-Grid — auf der Startseite ausblenden
-  const onBoardPage = typeof document !== 'undefined' && !!document.querySelector('[data-board-grid]')
-
-  async function exportPng() {
-    if (!currentBoard) return
-    const { exportBoardAsPng } = await import('@/lib/exportImage')
-    exportBoardAsPng(currentBoard.name)
   }
 
   async function exportCurrentBoard() {
@@ -256,19 +250,6 @@ export default function DatenPanel() {
             <span style={{ display: 'block', fontSize: 11, fontWeight: 400, color: 'var(--text3)', marginTop: 1 }}>{boardCount} {boardCount !== 1 ? t('boards') : t('board')} {t('as a complete backup')}</span>
           </span>
         </button>
-        {currentBoard && onBoardPage && (
-          <button onClick={exportPng} style={btnStyle}
-            onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface3)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface2)')}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
-            </svg>
-            <span>
-              {t('Export board as image')}
-              <span style={{ display: 'block', fontSize: 11, fontWeight: 400, color: 'var(--text3)', marginTop: 1 }}>“{currentBoard.name}” {t('as PNG — cropped to the widgets')}</span>
-            </span>
-          </button>
-        )}
       </div>
 
       <SectionTitle>{t('Import')}</SectionTitle>
@@ -328,7 +309,7 @@ export default function DatenPanel() {
       ) : (
         <div style={{ padding: 14, borderRadius: 10, border: '1px solid #ef444455', background: '#ef444408' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#ef4444', marginBottom: 4 }}>{t('Delete all data')}</div>
-          <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 10, lineHeight: 1.5 }}>{t('Irreversibly deletes all boards, widgets and settings from the browser.')}</div>
+          <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 10, lineHeight: 1.5 }}>{t(isDesktop ? 'Irreversibly deletes all boards, widgets and settings from this device.' : 'Irreversibly deletes all boards, widgets and settings from the browser.')}</div>
           <button onClick={() => setClearConfirm(true)} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #ef4444', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
             {t('Delete all data')}
           </button>
