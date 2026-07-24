@@ -68,32 +68,31 @@ sign anything is wrong.
 ### Linux install
 
 Only `.deb` and `.AppImage` are published — no native `.rpm` or Arch package — so Debian-based
-distros get a real package install, everyone else runs the portable `.AppImage`. Replace
-`<version>` with the version shown on the [releases page](https://github.com/Aetherion7/mosaic/releases/latest)
-(asset filenames include it and it changes with every release).
+distros get a real package install, everyone else runs the portable `.AppImage`. Each command
+below looks up the current release's exact asset URL itself (via the GitHub API) and pipes it
+into a plain `sh -c`, so there's no version number to edit and nothing that depends on which
+shell you're pasting into — it works the same in bash, zsh, and fish.
 
 **Debian-based** (Debian, Ubuntu, Linux Mint, Pop!_OS, elementary OS, ...):
 ```sh
-wget https://github.com/Aetherion7/mosaic/releases/latest/download/mosaic-<version>-linux-x64.deb
-sudo apt install ./mosaic-<version>-linux-x64.deb
+curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep browser_download_url | grep '\.deb"' | cut -d '"' -f4 \
+  | xargs -I{} sh -c 'wget "$1" && sudo apt install "./$(basename "$1")"' _ {}
 ```
 `apt install ./file.deb` (not `dpkg -i`) resolves and pulls in missing dependencies automatically.
 
 **Arch-based** (Arch, Manjaro, EndeavourOS, ...) — no AUR package (yet), run the `.AppImage`:
 ```sh
-wget https://github.com/Aetherion7/mosaic/releases/latest/download/mosaic-<version>-linux-x64.AppImage
-chmod +x mosaic-<version>-linux-x64.AppImage
-./mosaic-<version>-linux-x64.AppImage
+curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep browser_download_url | grep '\.AppImage"' | cut -d '"' -f4 \
+  | xargs -I{} sh -c 'wget "$1" && chmod +x "$(basename "$1")" && "./$(basename "$1")"' _ {}
 ```
 
 **Fedora-based** (Fedora, Nobara, RHEL, ...) — no `.rpm` (yet), same `.AppImage`:
 ```sh
-wget https://github.com/Aetherion7/mosaic/releases/latest/download/mosaic-<version>-linux-x64.AppImage
-chmod +x mosaic-<version>-linux-x64.AppImage
-./mosaic-<version>-linux-x64.AppImage
+curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep browser_download_url | grep '\.AppImage"' | cut -d '"' -f4 \
+  | xargs -I{} sh -c 'wget "$1" && chmod +x "$(basename "$1")" && "./$(basename "$1")"' _ {}
 ```
 
-Any other distro (openSUSE, NixOS, ...) — the same `.AppImage` runs everywhere.
+Any other distro (openSUSE, NixOS, ...) — the same `.AppImage` command runs everywhere.
 
 ## Features
 
