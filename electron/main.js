@@ -14,7 +14,7 @@
 // Nutzer gewählten Anbieter auf (BYOK, KONZEPT.md §15) — die Desktop-App ist
 // nur eine andere Hülle um dieselbe lokale Web-App, kein zusätzlicher Server.
 
-const { app, BrowserWindow, Menu, shell } = require('electron')
+const { app, BrowserWindow, Menu, shell, dialog } = require('electron')
 const path = require('path')
 const { fork } = require('child_process')
 const http = require('http')
@@ -56,7 +56,18 @@ async function startStandaloneServer() {
 
   const serverEntry = path.join(process.resourcesPath, 'standalone', 'server.js')
   serverProcess = fork(serverEntry, [], {
-    env: { ...process.env, PORT: String(serverPort), HOSTNAME: '127.0.0.1', NODE_ENV: 'production' },
+    env: {
+      ...process.env,
+      PORT: String(serverPort), HOSTNAME: '127.0.0.1', NODE_ENV: 'production',
+      // In a packaged app, process.execPath points at the mosaic/Electron
+      // binary itself, not a system node — without this, fork() tries to
+      // launch another full Electron/Chromium instance instead of just
+      // running server.js as plain Node, so the standalone server never
+      // actually starts (the packaged app silently never opens a window,
+      // since loadURL() hangs until waitForServer()'s timeout, which
+      // rejects with no .catch() anywhere in the chain).
+      ELECTRON_RUN_AS_NODE: '1',
+    },
     stdio: 'ignore',
   })
   serverProcess.on('exit', code => {
@@ -125,8 +136,8 @@ function buildMenu() {
     {
       role: 'help',
       submenu: [
-        { label: 'mosaic on GitHub', click: () => shell.openExternal('https://github.com/YOUR_GITHUB_USERNAME/mosaic') },
-        { label: 'Report an issue', click: () => shell.openExternal('https://github.com/YOUR_GITHUB_USERNAME/mosaic/issues') },
+        { label: 'mosaic on GitHub', click: () => shell.openExternal('https://github.com/Aetherion7/mosaic') },
+        { label: 'Report an issue', click: () => shell.openExternal('https://github.com/Aetherion7/mosaic/issues') },
         ...(!isMac ? [{ label: 'Check for Updates…', click: () => checkForUpdates(true) }] : []),
       ],
     },
@@ -153,7 +164,17 @@ function checkForUpdates(manual = false) {
 
 app.whenReady().then(async () => {
   buildMenu()
-  await createWindow()
+  try {
+    await createWindow()
+  } catch (err) {
+    // Without this, a startup failure (e.g. the standalone server never
+    // answering) previously meant the app just quietly never showed a
+    // window at all, with nothing in the UI to explain why.
+    console.error('[mosaic] Failed to start:', err)
+    dialog.showErrorBox('mosaic failed to start', String(err?.stack || err))
+    app.quit()
+    return
+  }
   checkForUpdates(false)
 
   app.on('activate', () => {
