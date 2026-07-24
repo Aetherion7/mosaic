@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="public/mosaiclogo.png" alt="mosaic" width="88" height="88" style="border-radius: 50%;">
+<img src="public/mosaiclogo-round.png" alt="" width="88" height="88">
 
-# mosaic
+<img src="public/mosaic-wordmark.png" alt="mosaic" height="48">
 
 **A local-first, widget-based personal dashboard.**
 Boards full of tasks, notes, calendars, trackers, and more — in your browser or as a desktop app.
