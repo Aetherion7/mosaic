@@ -1,8 +1,11 @@
 <div align="center">
 
-<img src="public/mosaiclogo-round.png" alt="" width="88" height="88">
-
-<img src="public/mosaic-wordmark.png" alt="mosaic" height="48">
+<img src="public/mosaiclogo-round.png" alt="" width="56" height="56" valign="middle">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="public/mosaic-wordmark-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="public/mosaic-wordmark-light.png">
+  <img src="public/mosaic-wordmark-dark.png" alt="mosaic" height="40" valign="middle">
+</picture>
 
 **A local-first, widget-based personal dashboard.**
 Boards full of tasks, notes, calendars, trackers, and more — in your browser or as a desktop app.
