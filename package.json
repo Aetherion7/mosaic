@@ -2,7 +2,7 @@
   "name": "mosaic",
   "version": "1.0.9",
   "description": "A local-first, widget-based personal dashboard — boards full of tasks, notes, calendars, trackers and more, running entirely in your browser or as a desktop app. No account, no server, your data never leaves your device (except the optional BYOK AI assistant).",
-  "author": "mosaic contributors",
+  "author": { "name": "Aetherion7" },
   "license": "SEE LICENSE IN LICENSE.md",
   "homepage": "https://github.com/Aetherion7/mosaic#readme",
   "repository": {

@@ -2,7 +2,9 @@
   "name": "mosaic-electron",
   "version": "1.0.9",
   "private": true,
-  "author": "mosaic contributors",
+  "author": {
+    "name": "Aetherion7"
+  },
   "main": "main.js",
   "description": "Electron shell for mosaic — kept as its own minimal package.json so electron-builder never bundles the full web-app dependency tree (react/next/tiptap/…) into the desktop app. See ../package.json build.directories.app.",
   "dependencies": {

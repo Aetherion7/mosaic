@@ -37,7 +37,7 @@ URL for them above, as well as copies of any plain-text lines
 beginning with `Required Notice:` that the licensor provided
 with the software. For example:
 
-> Required Notice: Copyright mosaic contributors (https://github.com/OWNER/mosaic)
+> Required Notice: Copyright Aetherion7 (https://github.com/Aetherion7/mosaic)
 
 ## Changes and New Works License
 
