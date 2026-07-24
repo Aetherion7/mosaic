@@ -714,7 +714,7 @@ function TileWrapperInner({ widget, gridRef, isMobile, mobileSpan = 1, onDragHan
             </span>
             {/* Selected-only actions */}
             {mode === 'edit' && isSelected && (
-              <WidgetHeaderActions mobile actions={headerActions} headerRef={headerRef} />
+              <WidgetHeaderActions mobile actions={headerActions} headerRef={headerRef} canvasZoom={canvasZoom} />
             )}
           </div>
           )}
@@ -881,7 +881,7 @@ function TileWrapperInner({ widget, gridRef, isMobile, mobileSpan = 1, onDragHan
               {t(TYPE_LABELS[widget.type])}
             </span>
             {mode === 'edit' && isSelected && (
-              <WidgetHeaderActions actions={headerActions} headerRef={headerRef} />
+              <WidgetHeaderActions actions={headerActions} headerRef={headerRef} canvasZoom={canvasZoom} />
             )}
           </div>
         )}
@@ -914,11 +914,12 @@ export default TileWrapper
 // Button, damit sie automatisch mit der jeweils sichtbaren Aktionsmenge
 // (isLocked/hasOtherBoards/aiEnabled…) mitgeht.
 function WidgetHeaderActions({
-  mobile, actions, headerRef,
+  mobile, actions, headerRef, canvasZoom,
 }: {
   mobile?: boolean
   actions: HeaderAction[]
   headerRef: React.RefObject<HTMLDivElement | null>
+  canvasZoom: number
 }) {
   const t = useT()
   const measureRef = useRef<HTMLDivElement>(null)
@@ -933,12 +934,24 @@ function WidgetHeaderActions({
     const header = headerRef.current
     const measure = measureRef.current
     if (!header || !measure) { setCollapsed(false); return }
-    const check = () => setCollapsed(measure.scrollWidth + minLeftReserve > header.clientWidth)
+    // clientWidth/scrollWidth are pre-transform LAYOUT sizes — ResizeObserver
+    // and clientWidth are both spec'd to ignore CSS transforms entirely, so
+    // they stay exactly the same no matter how far the infinite canvas is
+    // zoomed out (InfiniteCanvas applies zoom via transform: scale() on an
+    // ancestor). A widget rendered at 20% zoom could still measure "482px
+    // available" in layout space while actually occupying ~80 real screen
+    // pixels — the row would never collapse no matter how visually tiny it
+    // got. getBoundingClientRect() reports the actual on-screen (post-
+    // transform) size instead, so both sides of this comparison scale down
+    // together with zoom the way they visually do; minLeftReserve is left
+    // un-scaled on purpose since it represents a genuine minimum number of
+    // real screen pixels we want reserved, not a fraction of layout space.
+    const check = () => setCollapsed(measure.getBoundingClientRect().width + minLeftReserve > header.getBoundingClientRect().width)
     check()
     const ro = new ResizeObserver(check)
     ro.observe(header)
     return () => ro.disconnect()
-  }, [headerRef, minLeftReserve, actions.length])
+  }, [headerRef, minLeftReserve, actions.length, canvasZoom])
 
   useEffect(() => {
     if (!menuOpen) return
