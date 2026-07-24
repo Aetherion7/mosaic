@@ -82,7 +82,7 @@ jobs:
             release/*.AppImage
             release/*.deb
             release/*.blockmap
-            release/*.yml
+            release/latest*.yml
           if-no-files-found: error
 
   publish:

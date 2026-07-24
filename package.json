@@ -21,9 +21,14 @@
     "lint": "eslint",
     "test": "vitest run",
     "electron:dev": "concurrently -k -n NEXT,ELECTRON -c blue,magenta \"npm run dev\" \"wait-on http://localhost:3001 && cross-env MOSAIC_DEV_URL=http://localhost:3001 electron .\"",
+    "sync-electron-version": "node -e \"const fs=require('fs');const p=JSON.parse(fs.readFileSync('electron/package.json'));p.version=require('./package.json').version;fs.writeFileSync('electron/package.json', JSON.stringify(p, null, 2)+'\\n')\"",
+    "preelectron:pack": "npm run sync-electron-version",
     "electron:pack": "npm run build && electron-builder --dir",
+    "preelectron:dist": "npm run sync-electron-version",
     "electron:dist": "npm run build && electron-builder",
+    "preelectron:release": "npm run sync-electron-version",
     "electron:release": "npm run build && electron-builder --publish always",
+    "preelectron:ci-build": "npm run sync-electron-version",
     "electron:ci-build": "npm run build && electron-builder --publish never"
   },
   "dependencies": {
