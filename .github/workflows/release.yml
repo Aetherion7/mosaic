@@ -53,10 +53,24 @@ jobs:
       - run: cd electron && npm ci --omit=dev
 
       - name: Build (${{ matrix.os }})
-        run: npm run electron:ci-build
+        shell: bash
+        run: |
+          # electron-builder checks these env vars with `== null`, which an
+          # EMPTY STRING does not satisfy — and GitHub Actions sets a secret
+          # that doesn't exist to "" rather than omitting the var entirely.
+          # Left as "CSC_LINK=''", electron-builder still thinks a cert is
+          # configured and tries to import it, resolving the empty path to
+          # the project root ("$GITHUB_WORKSPACE not a file"). Unset whichever
+          # of these come through empty so the "no certificate" path is only
+          # taken when it's actually true.
+          [ -z "$CSC_LINK" ] && unset CSC_LINK
+          [ -z "$CSC_KEY_PASSWORD" ] && unset CSC_KEY_PASSWORD
+          [ -z "$WIN_CSC_LINK" ] && unset WIN_CSC_LINK
+          [ -z "$WIN_CSC_KEY_PASSWORD" ] && unset WIN_CSC_KEY_PASSWORD
+          npm run electron:ci-build
         env:
           # Optionale Code-Signing-Zertifikate — wirken nur, wenn die Secrets
-          # gesetzt sind (sonst baut electron-builder klaglos unsigniert).
+          # gesetzt sind (sonst baut electron-builder unsigniert).
           # macOS:   CSC_LINK / CSC_KEY_PASSWORD (Apple Developer ID .p12)
           # Windows: WIN_CSC_LINK / WIN_CSC_KEY_PASSWORD (Code-Signing .pfx)
           CSC_LINK: ${{ secrets.CSC_LINK }}
@@ -65,10 +79,9 @@ jobs:
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
           # Ohne CSC_LINK versucht electron-builder auf macOS trotzdem, eine
           # Signing-Identität aus dem (leeren) CI-Keychain aufzulösen, sobald
-          # mac.hardenedRuntime aktiv ist — das bricht den Build mit einem
-          # kryptischen "not a file"-Fehler ab. Explizit deaktivieren, solange
-          # kein echtes Zertifikat hinterlegt ist; sobald CSC_LINK gesetzt
-          # wird, verwendet electron-builder ohnehin direkt dieses Zertifikat.
+          # mac.hardenedRuntime aktiv ist. Explizit deaktivieren, solange kein
+          # echtes Zertifikat hinterlegt ist; sobald CSC_LINK gesetzt wird,
+          # verwendet electron-builder ohnehin direkt dieses Zertifikat.
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Upload build artifacts
