@@ -67,8 +67,10 @@ sign anything is wrong.
 
 ### Linux install
 
-Only `.deb` and `.AppImage` are published — no `.rpm` or Arch package, so the command depends on
-your distro's base:
+Only `.deb` and `.AppImage` are published — no native `.rpm` or Arch package — so Debian-based
+distros get a real package install, everyone else runs the portable `.AppImage`. Replace
+`<version>` with the version shown on the [releases page](https://github.com/Aetherion7/mosaic/releases/latest)
+(asset filenames include it and it changes with every release).
 
 **Debian-based** (Debian, Ubuntu, Linux Mint, Pop!_OS, elementary OS, ...):
 ```sh
@@ -77,13 +79,21 @@ sudo apt install ./mosaic-<version>-linux-x64.deb
 ```
 `apt install ./file.deb` (not `dpkg -i`) resolves and pulls in missing dependencies automatically.
 
-**Arch-based, Fedora-based, openSUSE, or anything else** — run the universal `.AppImage` instead:
+**Arch-based** (Arch, Manjaro, EndeavourOS, ...) — no AUR package (yet), run the `.AppImage`:
 ```sh
 wget https://github.com/Aetherion7/mosaic/releases/latest/download/mosaic-<version>-linux-x64.AppImage
 chmod +x mosaic-<version>-linux-x64.AppImage
 ./mosaic-<version>-linux-x64.AppImage
 ```
-Replace `<version>` with the version shown on the [releases page](https://github.com/Aetherion7/mosaic/releases/latest) — asset filenames include it and it changes with every release.
+
+**Fedora-based** (Fedora, Nobara, RHEL, ...) — no `.rpm` (yet), same `.AppImage`:
+```sh
+wget https://github.com/Aetherion7/mosaic/releases/latest/download/mosaic-<version>-linux-x64.AppImage
+chmod +x mosaic-<version>-linux-x64.AppImage
+./mosaic-<version>-linux-x64.AppImage
+```
+
+Any other distro (openSUSE, NixOS, ...) — the same `.AppImage` runs everywhere.
 
 ## Features
 
