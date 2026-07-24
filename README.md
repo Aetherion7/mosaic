@@ -80,19 +80,27 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
 ```
 `apt install ./file.deb` (not `dpkg -i`) resolves and pulls in missing dependencies automatically.
 
-**Arch-based** (Arch, Manjaro, EndeavourOS, ...) — no AUR package (yet), run the `.AppImage`:
+**Arch-based** (Arch, Manjaro, EndeavourOS, CachyOS, ...) — no AUR package (yet), run the `.AppImage`:
 ```sh
+sudo pacman -S --needed fuse2
 curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep browser_download_url | grep '\.AppImage"' | cut -d '"' -f4 \
   | xargs -I{} sh -c 'wget "$1" && chmod +x "$(basename "$1")" && "./$(basename "$1")"' _ {}
 ```
 
 **Fedora-based** (Fedora, Nobara, RHEL, ...) — no `.rpm` (yet), same `.AppImage`:
 ```sh
+sudo dnf install -y fuse
 curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep browser_download_url | grep '\.AppImage"' | cut -d '"' -f4 \
   | xargs -I{} sh -c 'wget "$1" && chmod +x "$(basename "$1")" && "./$(basename "$1")"' _ {}
 ```
 
-Any other distro (openSUSE, NixOS, ...) — the same `.AppImage` command runs everywhere.
+AppImages need the FUSE2 runtime (`libfuse.so.2`), which many current distros — including Arch
+and Fedora — no longer install by default (only FUSE3). Without it you'll get `dlopen(): error
+loading libfuse.so.2`; the `pacman`/`dnf` line above installs the missing compat library. Debian-
+based systems don't need this at all since they use the `.deb` package, not the AppImage.
+
+Any other distro (openSUSE, NixOS, ...) — same idea: install a `fuse2`/`libfuse2` compat package
+if it's missing, then run the same `.AppImage` command as above.
 
 ## Features
 
