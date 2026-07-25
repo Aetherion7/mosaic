@@ -195,6 +195,8 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
   // Inhaltsverzeichnis des EPUBs (verschachtelte Einträge flach mit Ebene)
   const [epubToc,           setEpubToc]           = useState<{ label: string; href: string; depth: number }[]>([])
   const [epubHref,          setEpubHref]          = useState('')
+  const [importToast,      setImportToast]      = useState<string | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const containerRef     = useRef<HTMLDivElement>(null)
   const viewerRef        = useRef<HTMLDivElement>(null)
@@ -764,6 +766,12 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  function showToast(msg: string) {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setImportToast(msg)
+    toastTimerRef.current = setTimeout(() => setImportToast(null), 3500)
+  }
+
   async function handleFileUpload(file: File) {
     // Datei als Blob in IndexedDB — im Board-JSON steht nur die Referenz
     try {
@@ -774,6 +782,7 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
         currentPage: 1, highlights: {}, currentCfi: undefined, epubLocations: undefined, epubLocationsRef: undefined,
       })
       setCurrentPage(1)
+      showToast(`${file.name} - ${t('added')}`)
     } catch { /* Blob-Speicher nicht verfügbar */ }
   }
 
@@ -1522,6 +1531,24 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
         )}
       </div>
 
+      {/* ── Import-Toast ── */}
+      {importToast && (
+        <div style={{
+          position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
+          background: 'color-mix(in srgb, var(--surface) 92%, transparent)',
+          border: '1px solid var(--border)', borderRadius: 10,
+          padding: '7px 14px', display: 'flex', alignItems: 'center', gap: 8,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
+          zIndex: 200, pointerEvents: 'none',
+          fontSize: 12, fontWeight: 600, color: 'var(--text1)', whiteSpace: 'nowrap',
+          backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+        }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          {importToast}
+        </div>
+      )}
     </div>
   )
 }

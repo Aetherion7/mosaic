@@ -719,8 +719,6 @@ export const de: Record<string, string> = {
   'Day': 'Tag',
   'Import ICS calendar': 'ICS-Kalender importieren',
   'Export as ICS': 'Als ICS exportieren',
-  'events exported': 'Termine exportiert',
-  'event exported': 'Termin exportiert',
   'Edit': 'Bearbeiten',
   'Add event': 'Termin hinzufügen',
   'Copy event': 'Kopieren',
@@ -763,6 +761,9 @@ export const de: Record<string, string> = {
   'Export as CSV': 'Als CSV exportieren',
   'Import CSV': 'CSV importieren',
   'table': 'tabelle',
+  'rows imported': 'Zeilen importiert',
+  'row imported': 'Zeile importiert',
+  'exported': 'exportiert',
   'Insert row above': 'Zeile oben einfügen',
   'Insert row below': 'Zeile unten einfügen',
   'Delete row': 'Zeile löschen',
@@ -867,6 +868,7 @@ export const de: Record<string, string> = {
   'Clear search': 'Suche leeren',
 
   // ── ReaderWidget ──
+  'added': 'hinzugefügt',
   'Yellow': 'Gelb',
   'Green': 'Grün',
   'Pink': 'Pink',

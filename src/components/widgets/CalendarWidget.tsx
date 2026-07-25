@@ -902,8 +902,9 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
           <button
             onClick={() => {
               const today = new Date()
-              downloadIcsFile(`mosaic-calendar-${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}.ics`, eventsToIcs(events))
-              showToast(`${events.length} ${events.length !== 1 ? t('events exported') : t('event exported')}`)
+              const filename = `mosaic-calendar-${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}.ics`
+              downloadIcsFile(filename, eventsToIcs(events))
+              showToast(`${filename} - ${t('exported')}`)
             }}
             title={t('Export as ICS')}
             style={{

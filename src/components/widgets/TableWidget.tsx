@@ -153,6 +153,8 @@ export default function TableWidget({ widget }: { widget: Widget }) {
   const [findVal,       setFindVal]       = useState('')
   const [findIdx,       setFindIdx]       = useState(0)
   const [bordersDrop,   setBordersDrop]   = useState(false)
+  const [importToast,  setImportToast]  = useState<string | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const inputRef     = useRef<HTMLInputElement>(null)
   const csvInputRef  = useRef<HTMLInputElement>(null)
@@ -620,6 +622,12 @@ export default function TableWidget({ widget }: { widget: Widget }) {
     })
   }, [selNr, d.colW, d.rowH, d.rows, d.cols, visibleRows])
 
+  function showToast(msg: string) {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setImportToast(msg)
+    toastTimerRef.current = setTimeout(() => setImportToast(null), 3500)
+  }
+
   // ── CSV export ────────────────────────────────────────────────────────────
   // Robuster CSV-Parser (RFC 4180): behandelt gequotete Felder mit
   // eingebetteten Kommas/Zeilenumbrüchen/escapten Anführungszeichen — das
@@ -680,7 +688,9 @@ export default function TableWidget({ widget }: { widget: Widget }) {
         colW: Array.from({ length: cols }, () => DEF_COL_W),
         rowH: undefined,
       })
+      showToast(`${rows} ${rows !== 1 ? t('rows imported') : t('row imported')}`)
     }
+    reader.onerror = () => showToast(t('Error reading file'))
     reader.readAsText(file)
   }
 
@@ -697,7 +707,9 @@ export default function TableWidget({ widget }: { widget: Widget }) {
     }
     const blob = new Blob([rows.join('\n')], { type: 'text/csv' })
     const url = URL.createObjectURL(blob); const a = document.createElement('a')
-    a.href = url; a.download = `${d.title || t('table')}.csv`; a.click(); URL.revokeObjectURL(url)
+    const filename = `${d.title || t('table')}.csv`
+    a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url)
+    showToast(`${filename} - ${t('exported')}`)
   }
 
   // ── Context menu items ────────────────────────────────────────────────────
@@ -731,7 +743,7 @@ export default function TableWidget({ widget }: { widget: Widget }) {
       ref={containerRef}
       data-table-widget="1"
       tabIndex={0}
-      style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', outline: 'none' }}
+      style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', outline: 'none', position: 'relative' }}
       onKeyDown={onKeyDown}
       onPointerDown={e => e.stopPropagation()}
       onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node) && editing) commitEdit() }}
@@ -1190,6 +1202,25 @@ export default function TableWidget({ widget }: { widget: Widget }) {
           />
         )}
       </div>
+
+      {/* ── Import/Export-Toast ── */}
+      {importToast && (
+        <div style={{
+          position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
+          background: 'color-mix(in srgb, var(--surface) 92%, transparent)',
+          border: '1px solid var(--border)', borderRadius: 10,
+          padding: '7px 14px', display: 'flex', alignItems: 'center', gap: 8,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
+          zIndex: 200, pointerEvents: 'none',
+          fontSize: 12, fontWeight: 600, color: 'var(--text1)', whiteSpace: 'nowrap',
+          backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+        }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          {importToast}
+        </div>
+      )}
     </div>
   )
 }
