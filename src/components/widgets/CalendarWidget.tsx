@@ -674,7 +674,14 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
   const overlayLayout = useMemo(() => {
     const weekDateStrs = viewDays.map(toDateStr)
     const lastDs       = weekDateStrs[weekDateStrs.length - 1]
-    const timedEvs     = events.filter(ev => !!ev.timeStart)
+    // Multi-day events (non-recurring) now live exclusively in the pinned
+    // multiDayBarLayout strip below instead of the hourly grid — see there.
+    // Recurring events are left alone even if they happen to carry a
+    // dateEnd: multi-day span math isn't modeled for recurring occurrences
+    // anywhere else in this file either (the recurrence branch below always
+    // treats each occurrence as a single day), so excluding them here would
+    // just silently drop them from both places.
+    const timedEvs = events.filter(ev => !!ev.timeStart && !(isMultiDay(ev) && !ev.recurrence))
     if (!timedEvs.length) return { entries: [], overlapMap: new Map<string, { slot: number; totalSlots: number }>() }
 
     const entries: Array<{ ev: CalendarEvent; colStart: number; numCols: number; effStart: string; effEnd: string }> = []
@@ -740,6 +747,50 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
     }
 
     return { entries, overlapMap }
+  }, [events, viewDays, dragOverride])
+
+  // Mehrtägige Termine (nicht wiederkehrend) — gerendert als angepinnte
+  // Leiste unter dem Tages-Header statt im Stundenraster, siehe Kommentar in
+  // overlayLayout oben. colStart/numCols wird auf viewDays geclippt, exakt
+  // dieselbe Spannlogik wie overlayLayout's else-Zweig vorher hatte.
+  // Überlappende Termine werden per einfachem Interval-Stacking auf Zeilen
+  // verteilt (gleiche Grundidee wie overlayLayout's Tages-Overlap-Map, nur
+  // eindimensional über Spalten statt Minuten).
+  const multiDayBarLayout = useMemo(() => {
+    const weekDateStrs = viewDays.map(toDateStr)
+    const lastDs = weekDateStrs[weekDateStrs.length - 1]
+    const multiDayEvs = events.filter(ev => isMultiDay(ev) && !ev.recurrence)
+    if (!multiDayEvs.length) return { entries: [], rowCount: 0 }
+
+    const raw: Array<{ ev: CalendarEvent; colStart: number; numCols: number }> = []
+    for (const ev of multiDayEvs) {
+      const eff = dragOverride?.evId === ev.id ? dragOverride : null
+      const effectiveStart   = eff?.date    ?? ev.date
+      const effectiveDateEnd = eff?.dateEnd ?? (ev.dateEnd ?? ev.date)
+      if (effectiveStart > lastDs || effectiveDateEnd < weekDateStrs[0]) continue
+      let colStart = weekDateStrs.findIndex(ds => ds >= effectiveStart)
+      if (colStart === -1) colStart = 0
+      let colEnd = -1
+      for (let i = weekDateStrs.length - 1; i >= 0; i--) {
+        if (weekDateStrs[i] <= effectiveDateEnd) { colEnd = i; break }
+      }
+      if (colEnd < 0 || colStart > colEnd) continue
+      raw.push({ ev, colStart, numCols: colEnd - colStart + 1 })
+    }
+    if (!raw.length) return { entries: [], rowCount: 0 }
+
+    // Greedy: sortiert nach colStart, jeder Termin geht in die erste Zeile,
+    // deren zuletzt belegte Spalte vor diesem colStart liegt.
+    const sorted  = [...raw].sort((a, b) => a.colStart - b.colStart)
+    const rowEnds: number[] = []
+    const entries: Array<{ ev: CalendarEvent; colStart: number; numCols: number; row: number }> = []
+    for (const e of sorted) {
+      let row = rowEnds.findIndex(end => end < e.colStart)
+      if (row === -1) { row = rowEnds.length; rowEnds.push(-1) }
+      rowEnds[row] = e.colStart + e.numCols - 1
+      entries.push({ ...e, row })
+    }
+    return { entries, rowCount: rowEnds.length }
   }, [events, viewDays, dragOverride])
 
   return (
@@ -961,6 +1012,61 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
         )}
 
         <div ref={gridScrollRef} onScroll={onGridScroll} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', userSelect: 'none' }}>
+          {/* Angepinnte Leiste für mehrtägige Termine — schwebt fix über der
+              ersten Stundenzeile statt eine eigene Zeile zu belegen: position
+              sticky (nicht absolute) auf einem direkten Kind von
+              gridScrollRef, verankert an dessen eigenem Scroll-Viewport statt
+              am Dokument. Braucht einen deckenden Hintergrund, sonst scheint
+              das darunterliegende Stundenraster durch, während es
+              wegscrollt. Prozentuale statt pixelbasierter Positionierung:
+              derselbe 34px-Gutter-dann-flex1-pro-Tag-Aufbau wie gridBodyRef
+              darunter, also entsprechen X% hier immer derselben Spalte dort. */}
+          {multiDayBarLayout.entries.length > 0 && (
+            <div style={{
+              position: 'sticky', top: 0, zIndex: 15,
+              display: 'flex', background: 'var(--surface)', paddingBottom: 3,
+            }}>
+              <div style={{ width: 34, flexShrink: 0 }} />
+              <div style={{ flex: 1, position: 'relative', height: multiDayBarLayout.rowCount * 20 }}>
+                {multiDayBarLayout.entries.map(({ ev, colStart, numCols, row }) => {
+                  const numVC     = viewDays.length
+                  const leftPct   = (colStart / numVC) * 100
+                  const widthPct  = (numCols / numVC) * 100
+                  const dateEnd   = ev.dateEnd ?? ev.date
+                  const isPast    = fadePastEvents && dateEnd < todayStr
+                  return (
+                    <div
+                      key={ev.id}
+                      onClick={() => { if (mode === 'edit') openEditPopup(ev) }}
+                      title={ev.title}
+                      style={{
+                        position: 'absolute',
+                        left: `calc(${leftPct}% + 2px)`, width: `calc(${widthPct}% - 4px)`,
+                        top: row * 20, height: 17,
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        padding: '0 3px 0 6px', borderRadius: 5,
+                        background: ev.color, color: 'white',
+                        fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap',
+                        cursor: mode === 'edit' ? 'pointer' : 'default',
+                        opacity: isPast ? 0.4 : 1,
+                      }}
+                    >
+                      <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {ev.timeStart ? `${ev.timeStart} · ` : ''}{ev.title}
+                      </span>
+                      {mode === 'edit' && (
+                        <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                          <button onClick={e => { e.stopPropagation(); openEditPopup(ev) }} style={barEvBtn} title={t('Edit')}><IconEdit size={8} /></button>
+                          <button onClick={e => { e.stopPropagation(); deleteCalendarEvent(widget.id, ev.id) }} style={barEvBtn} title={t('Delete')}><IconX size={8} /></button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Grid body */}
           <div ref={gridBodyRef} style={{ display: 'flex', position: 'relative' }}>
             {/* Time labels */}
@@ -1350,6 +1456,14 @@ const weekEvBtn: React.CSSProperties = {
   background: 'rgba(0,0,0,0.35)', border: 'none', color: 'white',
   borderRadius: 3, cursor: 'pointer', padding: 0,
   width: 16, height: 16, flexShrink: 0,
+}
+
+// Wie weekEvBtn, nur kleiner — für die dünne (17px hohe) Mehrtage-Leiste
+const barEvBtn: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  background: 'rgba(0,0,0,0.35)', border: 'none', color: 'white',
+  borderRadius: 3, cursor: 'pointer', padding: 0,
+  width: 14, height: 14, flexShrink: 0,
 }
 
 // Popup-specific styles
