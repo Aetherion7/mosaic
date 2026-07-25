@@ -100,6 +100,7 @@ export interface CalendarEvent {
   recurrence?:  CalendarRecurrence
   recurrenceUntil?: string  // YYYY-MM-DD — letzte Wiederholung (ICS UNTIL)
   copyShadow?:  boolean     // frische Kopie: mit Schatten gerendert, bis sie erstmals bewegt wird
+  reminderMinutesBefore?: number  // fehlt = keine Erinnerung; 0 = zum Zeitpunkt des Termins
 }
 
 export interface CalendarData { events: CalendarEvent[] }

@@ -4,6 +4,7 @@ import { useBoardStore } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { IconPlay, IconPause, IconReset } from '@/components/ui/Icons'
 import { useT } from '@/hooks/useT'
+import { requestNotifyPermission, fireNotification } from '@/lib/notify'
 import type { Widget, TimerData } from '@/types'
 
 function playDoneSound() {
@@ -26,18 +27,14 @@ function playDoneSound() {
 }
 
 // Hinweis auch dann, wenn der Tab im Hintergrund ist: System-Benachrichtigung
-// (falls erlaubt) + „⏰"-Präfix im Tab-Titel, bis der Tab wieder Fokus bekommt.
+// (falls erlaubt, via fireNotification aus lib/notify) + „⏰"-Präfix im
+// Tab-Titel, bis der Tab wieder Fokus bekommt. Das "nur wenn Tab
+// unsichtbar"-Gate bleibt hier (TimerWidget-spezifisch — nur stören, wenn
+// man weggeschaut hat) statt in der geteilten Funktion selbst, siehe dortiger
+// Kommentar.
 function notifyDone(timerName: string, t: (s: string) => string) {
   if (typeof document === 'undefined' || !document.hidden) return
-  try {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      const n = new Notification(t('Timer finished'), {
-        body: timerName ? `"${timerName}" ${t('is done.')}` : t('Your timer is done.'),
-        icon: '/mosaiclogo.png',
-      })
-      n.onclick = () => { window.focus(); n.close() }
-    }
-  } catch { /* Notification nicht verfügbar */ }
+  fireNotification(t('Timer finished'), timerName ? `"${timerName}" ${t('is done.')}` : t('Your timer is done.'))
   const original = document.title
   if (original.startsWith('⏰')) return
   document.title = `⏰ ${t('Timer finished')} — ${original}`
@@ -46,15 +43,6 @@ function notifyDone(timerName: string, t: (s: string) => string) {
     document.removeEventListener('visibilitychange', restore)
   }
   document.addEventListener('visibilitychange', restore)
-}
-
-// Berechtigung einmalig beim Timer-Start anfragen (User-Geste → Prompt erlaubt)
-function requestNotifyPermission() {
-  try {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
-  } catch { /* Notification nicht verfügbar */ }
 }
 
 export default function TimerWidget({ widget }: { widget: Widget }) {

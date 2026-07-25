@@ -3,6 +3,7 @@ import { Inter, Roboto, Poppins, Space_Grotesk, Merriweather, Lora, Fira_Code } 
 import MotionProvider from '@/components/MotionProvider'
 import CustomFontLoader from '@/components/CustomFontLoader'
 import StorageErrorBanner from '@/components/ui/StorageErrorBanner'
+import ReminderScheduler from '@/components/ReminderScheduler'
 import './globals.css'
 
 // Alle wählbaren Programm-/Board-Schriften (Einstellungen → Erscheinungsbild,
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CustomFontLoader />
         <MotionProvider>{children}</MotionProvider>
         <StorageErrorBanner />
+        <ReminderScheduler />
       </body>
     </html>
   )
