@@ -10,6 +10,17 @@ import SlidingTabs from '@/components/ui/SlidingTabs'
 import SearchModal   from '@/components/ui/SearchModal'
 import { useT } from '@/hooks/useT'
 
+// Einheitliches Tastaturkürzel-Badge — oben rechts über dem jeweiligen Button
+// angedockt (A, E, ⌘K, I). Muss überall dieselbe Position/Optik haben, sonst
+// wirken die Center- und Right-Buttons wie zwei verschiedene UI-Sprachen.
+const kbdBadgeStyle: React.CSSProperties = {
+  position: 'absolute', top: -6, right: -4,
+  fontSize: 8, fontWeight: 700, color: 'var(--text3)',
+  background: 'var(--surface2)', border: '1px solid var(--border)',
+  borderRadius: 4, padding: '1px 3px', pointerEvents: 'none',
+  lineHeight: 1,
+}
+
 export default function TopBar() {
   const board          = useBoardStore(selectBoard)
   const setBoardName   = useBoardStore(s => s.setBoardName)
@@ -245,24 +256,33 @@ export default function TopBar() {
             transition: 'padding 0.3s ease',
           } : {}),
         }}>
-          {/* + Button mit max-width Transition → Pill dehnt sich aus */}
+          {/* + Button mit max-width Transition → Pill dehnt sich aus.
+              overflowX/Y gemischt (hidden/visible) wird vom Browser zu
+              overflow-y:auto zusammengefasst (CSS-Spec-Verhalten bei
+              unterschiedlichen Achsen) — das clippt das [A]-Badge trotzdem,
+              nur eben scrollbar statt sichtbar. Stattdessen: paddingTop
+              vergrößert die Clip-Box selbst nach oben, marginTop gleicht die
+              dadurch verschobene Position wieder aus (Netto-Verschiebung 0),
+              sodass oben Platz für das nach oben herausragende Badge ist,
+              ohne dass sich der Button optisch bewegt. */}
           <div style={{
-            maxWidth: mode === 'edit' ? 52 : 0,
+            maxWidth: mode === 'edit' ? 46 : 0,
             opacity: mode === 'edit' ? 1 : 0,
             overflow: 'hidden',
+            paddingTop: 8, marginTop: -8,
             transition: 'max-width 0.3s ease, opacity 0.2s ease',
             flexShrink: 0,
             display: 'flex', alignItems: 'center',
           }}>
-            <div style={{ paddingRight: 6 }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <IconCircleBtn accent active={panel === 'addWidget'} onClick={() => openPanel(panel === 'addWidget' ? null : 'addWidget')} title={t("Add widget") + " [A]"} id="add-widget-btn">
                 <IconPlus />
               </IconCircleBtn>
+              {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>A</span>}
             </div>
-            {showKbdHints && !isMobile && <span style={{ fontSize: 10, color: 'var(--text3)', whiteSpace: 'nowrap' }}>[A]</span>}
           </div>
 
-          <div id="tour-mode-toggle" style={{ background: 'var(--surface)', borderRadius: 999, padding: 3, border: '1px solid var(--border)' }}>
+          <div id="tour-mode-toggle" style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--surface)', borderRadius: 999, padding: 3, border: '1px solid var(--border)' }}>
             <SlidingTabs
               options={[
                 { value: 'edit', icon: <IconPencil />, title: t('Edit mode') },
@@ -272,9 +292,9 @@ export default function TopBar() {
               onChange={m => useUIStore.getState().setMode(m)}
               slotW={32} slotH={32}
             />
+            {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>E</span>}
           </div>
         </div>
-        {showKbdHints && !isMobile && <span style={{ fontSize: 10, color: 'var(--text3)' }}>[E]</span>}
       </div>
 
       {/* ── Right: Search + Theme + Export + Settings ── */}
@@ -284,42 +304,30 @@ export default function TopBar() {
           <IconCircleBtn id="tour-search" active={searchOpen} onClick={() => setSearchOpen(o => !o)} title={t("Search") + " [" + t("Ctrl+K") + "]"}>
             <IconSearch />
           </IconCircleBtn>
-          {showKbdHints && !isMobile && (
-            <span style={{
-              position: 'absolute', top: -6, right: -4,
-              fontSize: 8, fontWeight: 700, color: 'var(--text3)',
-              background: 'var(--surface2)', border: '1px solid var(--border)',
-              borderRadius: 4, padding: '1px 3px', pointerEvents: 'none',
-              lineHeight: 1,
-            }}>⌘K</span>
-          )}
+          {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>⌘K</span>}
         </div>
 
-        <IconCircleBtn id="tour-theme" active={panel === 'theme'} onClick={() => openPanel(panel === 'theme' ? null : 'theme')} title={t("Theme")}>
-          <IconSun />
-        </IconCircleBtn>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <IconCircleBtn id="tour-theme" active={panel === 'theme'} onClick={() => openPanel(panel === 'theme' ? null : 'theme')} title={t("Theme") + " [T]"}>
+            <IconSun />
+          </IconCircleBtn>
+          {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>T</span>}
+        </div>
 
         {aiEnabled && (
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <IconCircleBtn id="tour-ai" active={panel === 'ai'} onClick={() => openPanel(panel === 'ai' ? null : 'ai')} title={t("AI assistant") + " [I]"}>
               <IconSparkleTopbar />
             </IconCircleBtn>
-            {showKbdHints && !isMobile && (
-              <span style={{
-                position: 'absolute', top: -6, right: -4,
-                fontSize: 8, fontWeight: 700, color: 'var(--text3)',
-                background: 'var(--surface2)', border: '1px solid var(--border)',
-                borderRadius: 4, padding: '1px 3px', pointerEvents: 'none',
-                lineHeight: 1,
-              }}>I</span>
-            )}
+            {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>I</span>}
           </div>
         )}
 
-        <div style={{ position: 'relative' }}>
-          <IconCircleBtn id="tour-settings" active={settingsOpen} onClick={() => setSettingsOpen(o => !o)} title={t("Settings")}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <IconCircleBtn id="tour-settings" active={settingsOpen} onClick={() => setSettingsOpen(o => !o)} title={t("Settings") + " [S]"}>
             <IconGear />
           </IconCircleBtn>
+          {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>S</span>}
         </div>
       </div>
     </header>
