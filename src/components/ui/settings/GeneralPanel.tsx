@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useSettings } from '@/store/settingsStore'
 import type { Lang } from '@/lib/i18n'
 import { useT } from '@/hooks/useT'
+import { useIsDesktop } from '@/hooks/useIsDesktop'
 import { SectionTitle, SettingItem, Row } from './shared'
 import SlidingTabs from '@/components/ui/SlidingTabs'
 import AddOnsPanel from './AddOnsPanel'
@@ -20,7 +21,10 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
   const language = useSettings(s => s.language)
   const animations = useSettings(s => s.animations)
   const showKbdHints = useSettings(s => s.showKbdHints)
+  const launchAtLogin = useSettings(s => s.launchAtLogin)
+  const keepRunningInBackground = useSettings(s => s.keepRunningInBackground)
   const setSetting = useSettings(s => s.setSetting)
+  const isDesktop = useIsDesktop()
   const t = useT()
 
   if (home) {
@@ -78,6 +82,24 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
         value={showKbdHints}
         onChange={v => setSetting({ showKbdHints: v })}
       />
+
+      {isDesktop && (
+        <>
+          <SectionTitle>{t('Desktop')}</SectionTitle>
+          <Row
+            label={t('Launch at login')}
+            desc={t('Automatically start mosaic when you log in to your computer')}
+            value={launchAtLogin}
+            onChange={v => setSetting({ launchAtLogin: v })}
+          />
+          <Row
+            label={t('Keep running in background')}
+            desc={t('Keep mosaic running in the background after closing the window, so reminders can still arrive')}
+            value={keepRunningInBackground}
+            onChange={v => setSetting({ keepRunningInBackground: v })}
+          />
+        </>
+      )}
 
       <SectionTitle>{t('Help')}</SectionTitle>
       <SettingItem

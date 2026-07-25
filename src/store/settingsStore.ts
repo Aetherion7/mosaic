@@ -76,6 +76,10 @@ export interface AppSettings {
   hasSeenHomeTutorial:    boolean
   lastExportAt:           number | null
   language:               'de' | 'en'
+  // ── Desktop (Electron) — s. electron/main.js, ohne Wirkung im Browser ──
+  launchAtLogin:           boolean
+  keepRunningInBackground: boolean
+  hasSeenStartupPrompt:    boolean
   // ── KI-Assistent (BYOK — Schlüssel bleibt lokal, s. KONZEPT.md §15) ──
   aiEnabled:              boolean   // aus = Button & Funktion komplett ausgeblendet
   aiProvider:             AiProvider
@@ -121,6 +125,9 @@ export const useSettings = create<SettingsStore>()(
       hasSeenHomeTutorial:    false,
       lastExportAt:           null,
       language:               'en',
+      launchAtLogin:           false,
+      keepRunningInBackground: false,
+      hasSeenStartupPrompt:    false,
       aiEnabled:              true,
       aiProvider:             'anthropic',
       aiApiKey:               '',

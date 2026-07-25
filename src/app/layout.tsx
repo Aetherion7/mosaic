@@ -4,6 +4,8 @@ import MotionProvider from '@/components/MotionProvider'
 import CustomFontLoader from '@/components/CustomFontLoader'
 import StorageErrorBanner from '@/components/ui/StorageErrorBanner'
 import ReminderScheduler from '@/components/ReminderScheduler'
+import ElectronBridge from '@/components/ElectronBridge'
+import DesktopStartupPrompt from '@/components/ui/DesktopStartupPrompt'
 import './globals.css'
 
 // Alle wählbaren Programm-/Board-Schriften (Einstellungen → Erscheinungsbild,
@@ -37,6 +39,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <MotionProvider>{children}</MotionProvider>
         <StorageErrorBanner />
         <ReminderScheduler />
+        <ElectronBridge />
+        <DesktopStartupPrompt />
       </body>
     </html>
   )

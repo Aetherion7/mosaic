@@ -14,8 +14,10 @@
 // Nutzer gewählten Anbieter auf (BYOK, KONZEPT.md §15) — die Desktop-App ist
 // nur eine andere Hülle um dieselbe lokale Web-App, kein zusätzlicher Server.
 
-const { app, BrowserWindow, Menu, shell, dialog } = require('electron')
+const { app, BrowserWindow, Menu, shell, dialog, ipcMain, Tray } = require('electron')
 const path = require('path')
+const fs = require('fs')
+const os = require('os')
 const { fork } = require('child_process')
 const http = require('http')
 
@@ -25,6 +27,29 @@ const DEV_URL = process.env.MOSAIC_DEV_URL || 'http://localhost:3001'
 let mainWindow = null
 let serverProcess = null
 let serverPort = null
+let tray = null
+let isQuitting = false
+// Vom Renderer per IPC gesetzt (ElectronBridge.tsx spiegelt den persistierten
+// Einstellungswert) — der Hauptprozess hat selbst keinen Zugriff auf den
+// zustand-Store, der im Renderer-localStorage liegt.
+let keepInBackground = false
+
+// Ohne diese Sperre würde ein Doppelklick auf das App-Icon, während bereits
+// eine Instanz im Hintergrund läuft (s. Hintergrundbetrieb unten), eine
+// komplett zweite Instanz starten, die den festen Server-Port 47893 schon
+// belegt vorfindet und auf einen zufälligen Port ausweicht — genau der
+// Datenverlust-Bug (unterschiedlicher Origin bei jedem Start), der an anderer
+// Stelle bereits gefixt wurde, nur über einen neuen Weg reproduziert.
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) {
+  app.quit()
+}
+app.on('second-instance', () => {
+  if (!mainWindow) return
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  if (!mainWindow.isVisible()) { mainWindow.show(); hideTray() }
+  mainWindow.focus()
+})
 
 // ── Next-Standalone-Server als Kindprozess starten (nur Prod) ───────────────
 function waitForServer(url, timeoutMs = 20000) {
@@ -121,11 +146,29 @@ async function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // Ohne das drosselt Chromium Timer in unsichtbaren Fenstern auf mehrere
+      // Minuten Verzögerung — würde den ganzen Sinn des Hintergrundbetriebs
+      // (rechtzeitige Kalender-Erinnerungen, s. ReminderScheduler.tsx) untergraben.
+      backgroundThrottling: false,
     },
     show: false,
   })
 
   mainWindow.once('ready-to-show', () => mainWindow.show())
+
+  // Hintergrundbetrieb: Fenster nur verstecken statt zerstören, damit der
+  // Renderer (und mit ihm der Erinnerungs-Scheduler) weiterläuft. Gilt auf
+  // allen drei Plattformen — auch macOS, wo window-all-closed zwar schon den
+  // App-Exit verhindert, das Fenster selbst aber ohne dieses Abfangen trotzdem
+  // zerstört würde. isQuitting (gesetzt in 'before-quit') lässt einen echten
+  // Beenden-Wunsch ungehindert durch.
+  mainWindow.on('close', (e) => {
+    if (keepInBackground && !isQuitting) {
+      e.preventDefault()
+      mainWindow.hide()
+      showTray()
+    }
+  })
 
   // Externe Links (z.B. der GitHub-/Spenden-Link im Über-Panel) im System-
   // Browser öffnen statt im App-Fenster
@@ -139,6 +182,64 @@ async function createWindow() {
 
   mainWindow.on('closed', () => { mainWindow = null })
 }
+
+// ── Hintergrundbetrieb: Tray-Icon ───────────────────────────────────────────
+// Erscheint nur, während das Fenster tatsächlich versteckt ist (nicht dauerhaft
+// bei aktivem Hintergrundbetrieb) — sonst gäbe es ein Tray-Icon, obwohl die App
+// die ganze Zeit normal sichtbar im Fenster läuft.
+function showTray() {
+  if (tray) return
+  const iconPath = path.join(__dirname, 'build', process.platform === 'win32' ? 'icon.ico' : 'icon.png')
+  tray = new Tray(iconPath)
+  tray.setToolTip('mosaic')
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Open mosaic', click: () => { mainWindow?.show(); hideTray() } },
+    { type: 'separator' },
+    { label: 'Quit', click: () => { isQuitting = true; app.quit() } },
+  ]))
+  tray.on('click', () => { mainWindow?.show(); hideTray() })
+}
+
+function hideTray() {
+  if (!tray) return
+  tray.destroy()
+  tray = null
+}
+
+// ── Autostart beim Systemstart ──────────────────────────────────────────────
+// Mac/Windows haben mit app.setLoginItemSettings eine eingebaute API dafür.
+// Linux wird davon nicht unterstützt (Electron-Doku) — dort wird von Hand
+// eine XDG-Autostart-Datei geschrieben/entfernt, das vom Desktop-Environment
+// (GNOME/KDE/...) beim Login gelesene Standardverfahren.
+function setLaunchAtLogin(enabled) {
+  if (process.platform === 'linux') {
+    const autostartDir = path.join(os.homedir(), '.config', 'autostart')
+    const desktopFile = path.join(autostartDir, 'mosaic.desktop')
+    if (enabled) {
+      fs.mkdirSync(autostartDir, { recursive: true })
+      // AppImage: der laufende Prozess ist nur ein temporärer AppRun-Stub in
+      // einem gemounteten Squashfs, der beim nächsten Boot nicht mehr
+      // existiert — process.env.APPIMAGE zeigt auf die tatsächliche,
+      // dauerhafte .AppImage-Datei. Beim .deb-Build läuft schon process.execPath
+      // direkt auf dem echten, dauerhaft installierten Programm.
+      const exec = process.env.APPIMAGE || process.execPath
+      const content = `[Desktop Entry]\nType=Application\nName=mosaic\nExec="${exec}"\nIcon=mosaic\nX-GNOME-Autostart-enabled=true\n`
+      fs.writeFileSync(desktopFile, content, 'utf8')
+    } else if (fs.existsSync(desktopFile)) {
+      fs.unlinkSync(desktopFile)
+    }
+  } else {
+    app.setLoginItemSettings({ openAtLogin: enabled })
+  }
+}
+
+// ── IPC-Brücke (s. preload.js) ──────────────────────────────────────────────
+ipcMain.handle('desktop:set-launch-at-login', (_e, enabled) => {
+  try { setLaunchAtLogin(!!enabled) } catch (err) { console.error('[mosaic] setLaunchAtLogin failed:', err) }
+})
+ipcMain.handle('desktop:set-keep-in-background', (_e, enabled) => {
+  keepInBackground = !!enabled
+})
 
 // ── App-Menü ─────────────────────────────────────────────────────────────
 // mosaic hat seine eigene Oberfläche (TopBar, Einstellungen-Panel mit GitHub-
@@ -204,6 +305,7 @@ app.whenReady().then(async () => {
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    else if (mainWindow && !mainWindow.isVisible()) { mainWindow.show(); hideTray() }
   })
 })
 
@@ -212,5 +314,6 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  isQuitting = true
   if (serverProcess) { serverProcess.kill(); serverProcess = null }
 })
