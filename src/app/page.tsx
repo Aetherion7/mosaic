@@ -1454,12 +1454,14 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* ── Papierkorb — schwebender Button unten rechts ── */}
-      {hydrated && trash.length > 0 && (
+      {/* ── Papierkorb — schwebender Button unten rechts. Immer sichtbar,
+          auch leer — Klick öffnet dasselbe Fenster, nur mit dem
+          "Papierkorb ist leer"-Hinweis statt Einträgen. */}
+      {hydrated && (
         <button
           onClick={() => setTrashOpen(true)}
-          title={`${t('Trash')} (${trash.length})`}
-          aria-label={`${t('Trash')} (${trash.length})`}
+          title={trash.length > 0 ? `${t('Trash')} (${trash.length})` : t('Trash')}
+          aria-label={trash.length > 0 ? `${t('Trash')} (${trash.length})` : t('Trash')}
           style={{
             position: 'fixed', bottom: 24, right: 24, zIndex: 1200,
             width: 46, height: 46, borderRadius: '50%',
@@ -1474,14 +1476,16 @@ export default function HomePage() {
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
           </svg>
-          <span style={{
-            position: 'absolute', top: -4, right: -4, minWidth: 17, height: 17,
-            borderRadius: 9, padding: '0 4px', boxSizing: 'border-box',
-            background: 'var(--danger)', color: 'white',
-            fontSize: 9, fontWeight: 700,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            pointerEvents: 'none',
-          }}>{trash.length}</span>
+          {trash.length > 0 && (
+            <span style={{
+              position: 'absolute', top: -4, right: -4, minWidth: 17, height: 17,
+              borderRadius: 9, padding: '0 4px', boxSizing: 'border-box',
+              background: 'var(--danger)', color: 'white',
+              fontSize: 9, fontWeight: 700,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              pointerEvents: 'none',
+            }}>{trash.length}</span>
+          )}
         </button>
       )}
 
