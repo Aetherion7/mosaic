@@ -32,6 +32,7 @@ export default function TopBar() {
   const t              = useT()
 
   const showKbdHints  = useSettings(s => s.showKbdHints)
+  const shortcuts     = useSettings(s => s.keyboardShortcuts)
   const headerStyle   = useSettings(s => s.headerStyle)
   const aiEnabled     = useSettings(s => s.aiEnabled)
   const isIsland      = headerStyle === 'island'
@@ -111,15 +112,21 @@ export default function TopBar() {
         }
         return
       }
-      if (e.key === 'e' || e.key === 'E') toggleMode()
-      if (e.key === 's' || e.key === 'S') setSettingsOpen(o => !o)
-      if ((e.key === 'a' || e.key === 'A') && modeRef.current === 'edit') {
+      // Konfigurierbar unter Einstellungen → Tastenkürzel → Navigation
+      // (settingsStore.keyboardShortcuts) — frisch gelesen statt über einen
+      // Ref, da sich diese Zuordnung nur selten ändert und kein Ref-Aufwand
+      // für etwas nötig ist, das nicht bei jedem Render neu gesetzt wird.
+      const shortcuts = useSettings.getState().keyboardShortcuts
+      const key = e.key.toUpperCase()
+      if (key === shortcuts.toggleMode) toggleMode()
+      if (key === shortcuts.settings) setSettingsOpen(o => !o)
+      if (key === shortcuts.addWidget && modeRef.current === 'edit') {
         e.preventDefault()
         openPanelRef.current(panelRef.current === 'addWidget' ? null : 'addWidget')
       }
-      if (e.key === 't' || e.key === 'T')
+      if (key === shortcuts.theme)
         openPanelRef.current(panelRef.current === 'theme' ? null : 'theme')
-      if ((e.key === 'i' || e.key === 'I') && useSettings.getState().aiEnabled)
+      if (key === shortcuts.ai && useSettings.getState().aiEnabled)
         openPanelRef.current(panelRef.current === 'ai' ? null : 'ai')
     }
     window.addEventListener('keydown', onKey)
@@ -275,10 +282,10 @@ export default function TopBar() {
             display: 'flex', alignItems: 'center',
           }}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <IconCircleBtn accent active={panel === 'addWidget'} onClick={() => openPanel(panel === 'addWidget' ? null : 'addWidget')} title={t("Add widget") + " [A]"} id="add-widget-btn">
+              <IconCircleBtn accent active={panel === 'addWidget'} onClick={() => openPanel(panel === 'addWidget' ? null : 'addWidget')} title={`${t("Add widget")} [${shortcuts.addWidget}]`} id="add-widget-btn">
                 <IconPlus />
               </IconCircleBtn>
-              {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>A</span>}
+              {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>{shortcuts.addWidget}</span>}
             </div>
           </div>
 
@@ -292,14 +299,15 @@ export default function TopBar() {
               onChange={m => useUIStore.getState().setMode(m)}
               slotW={32} slotH={32}
             />
-            {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>E</span>}
+            {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>{shortcuts.toggleMode}</span>}
           </div>
         </div>
       </div>
 
       {/* ── Right: Search + Theme + Export + Settings ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: isMobile ? 4 : 8, ...islandRight }}>
-        {/* Search with ⌘K hint */}
+        {/* Search with ⌘K hint — Ctrl+K ist fest verdrahtet (Browser-/OS-
+            Konvention), anders als die 5 umbelegbaren Shortcuts unten. */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <IconCircleBtn id="tour-search" active={searchOpen} onClick={() => setSearchOpen(o => !o)} title={t("Search") + " [" + t("Ctrl+K") + "]"}>
             <IconSearch />
@@ -308,26 +316,26 @@ export default function TopBar() {
         </div>
 
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <IconCircleBtn id="tour-theme" active={panel === 'theme'} onClick={() => openPanel(panel === 'theme' ? null : 'theme')} title={t("Theme") + " [T]"}>
+          <IconCircleBtn id="tour-theme" active={panel === 'theme'} onClick={() => openPanel(panel === 'theme' ? null : 'theme')} title={`${t("Theme")} [${shortcuts.theme}]`}>
             <IconSun />
           </IconCircleBtn>
-          {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>T</span>}
+          {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>{shortcuts.theme}</span>}
         </div>
 
         {aiEnabled && (
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <IconCircleBtn id="tour-ai" active={panel === 'ai'} onClick={() => openPanel(panel === 'ai' ? null : 'ai')} title={t("AI assistant") + " [I]"}>
+            <IconCircleBtn id="tour-ai" active={panel === 'ai'} onClick={() => openPanel(panel === 'ai' ? null : 'ai')} title={`${t("AI assistant")} [${shortcuts.ai}]`}>
               <IconSparkleTopbar />
             </IconCircleBtn>
-            {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>I</span>}
+            {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>{shortcuts.ai}</span>}
           </div>
         )}
 
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <IconCircleBtn id="tour-settings" active={settingsOpen} onClick={() => setSettingsOpen(o => !o)} title={t("Settings") + " [S]"}>
+          <IconCircleBtn id="tour-settings" active={settingsOpen} onClick={() => setSettingsOpen(o => !o)} title={`${t("Settings")} [${shortcuts.settings}]`}>
             <IconGear />
           </IconCircleBtn>
-          {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>S</span>}
+          {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>{shortcuts.settings}</span>}
         </div>
       </div>
     </header>

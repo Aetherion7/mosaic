@@ -42,8 +42,19 @@ export interface CustomFont {
 
 export type AiProvider = 'anthropic' | 'openai' | 'gemini'
 
+// Die 5 globalen Single-Key-Shortcuts aus TopBar.tsx (Einstellungen →
+// Tastenkürzel → Navigation). Nur diese sind umbelegbar — nicht die
+// Ctrl+Z/Y-Konventionen oder die Widget-internen Tastenkürzel (Tabelle,
+// Drawboard), die feste, allgemein erwartete Interaktionsmuster sind statt
+// einer einzelnen Aktion, die man sinnvoll auf eine andere Taste legen würde.
+export type ShortcutAction = 'toggleMode' | 'addWidget' | 'theme' | 'ai' | 'settings'
+export const DEFAULT_SHORTCUTS: Record<ShortcutAction, string> = {
+  toggleMode: 'E', addWidget: 'A', theme: 'T', ai: 'I', settings: 'S',
+}
+
 export interface AppSettings {
   showKbdHints:           boolean
+  keyboardShortcuts:      Record<ShortcutAction, string>
   animations:             boolean
   headerStyle:            'default' | 'island'
   programFont:            string   // Schrift der gesamten Oberfläche (Startseite, Einstellungen, Boards ohne eigene Board-Schrift)
@@ -90,6 +101,7 @@ export const useSettings = create<SettingsStore>()(
   persist(
     (set) => ({
       showKbdHints:           true,
+      keyboardShortcuts:      DEFAULT_SHORTCUTS,
       animations:             true,
       headerStyle:            'default',
       programFont:            'inter',
