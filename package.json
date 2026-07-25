@@ -88,7 +88,9 @@
     },
     "files": [
       "**/*",
-      "!build${/*}"
+      "!build${/*}",
+      "build/icon.ico",
+      "build/icon.png"
     ],
     "extraResources": [
       {
