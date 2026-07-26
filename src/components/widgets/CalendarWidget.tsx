@@ -2,7 +2,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { ColorSwatch } from '@/components/ui/ColorSwatch'
 import { IconPin, IconEdit, IconX } from '@/components/ui/Icons'
-import { Toggle } from '@/components/ui/settings/shared'
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { useSettings } from '@/store/settingsStore'
@@ -881,6 +880,16 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
               </div>
             </>)}
           </div>
+          {/* Zoom — in der festen Kopfzeile statt über dem scrollenden Raster
+              schwebend: ein kleiner Termin unten rechts im sichtbaren Bereich
+              hatte seine Bearbeiten/Kopier/Löschen-Buttons sonst genau unter
+              den Zoom-Buttons liegen und war so kaum noch anklickbar. */}
+          {(calView === 'week' || calView === 'day') && (
+            <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
+              <button onClick={() => setHourH(h => Math.max(HOUR_H_MIN, h - HOUR_H_STEP))} style={zoomBtnStyle} title={t('Zoom out')}>−</button>
+              <button onClick={() => setHourH(h => Math.min(HOUR_H_MAX, h + HOUR_H_STEP))} style={zoomBtnStyle} title={t('Zoom in')}>+</button>
+            </div>
+          )}
           {/* ICS upload — directly opens file picker */}
           <button
             onClick={() => icsInputRef.current?.click()}
@@ -1295,14 +1304,6 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
         </div>
       </>)}
 
-      {/* Zoom buttons */}
-      {(calView === 'week' || calView === 'day') && (
-        <div style={{ position: 'absolute', bottom: 10, right: 10, display: 'flex', gap: 4, zIndex: 10 }}>
-          <button onClick={() => setHourH(h => Math.max(HOUR_H_MIN, h - HOUR_H_STEP))} style={zoomBtnStyle} title={t('Zoom out')}>−</button>
-          <button onClick={() => setHourH(h => Math.min(HOUR_H_MAX, h + HOUR_H_STEP))} style={zoomBtnStyle} title={t('Zoom in')}>+</button>
-        </div>
-      )}
-
       {/* ── Import-Toast ── */}
       {importToast && (
         <div style={{
@@ -1395,32 +1396,30 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
 
               {/* 3b — Erinnerung */}
               <div style={fieldGroup}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <label style={fieldLabel}>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                    {t('Reminder')}
-                  </label>
-                  <Toggle
-                    value={popupReminderMin !== null}
-                    onChange={v => {
-                      if (v) { setPopupReminderMin(10); requestNotifyPermission() }
-                      else setPopupReminderMin(null)
-                    }}
-                  />
-                </div>
-                {popupReminderMin !== null && (
-                  popup.startTime ? (
-                    <select value={popupReminderMin} onChange={e => setPopupReminderMin(Number(e.target.value))} style={popupInput}>
-                      <option value={0}>{t('At time of event')}</option>
-                      <option value={5}>{t('5 minutes before')}</option>
-                      <option value={10}>{t('10 minutes before')}</option>
-                      <option value={30}>{t('30 minutes before')}</option>
-                      <option value={60}>{t('1 hour before')}</option>
-                      <option value={1440}>{t('1 day before')}</option>
-                    </select>
-                  ) : (
-                    <div style={{ fontSize: 10, color: 'var(--text3)' }}>{t('Add a start time to enable a reminder.')}</div>
-                  )
+                <label style={fieldLabel}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  {t('Reminder')}
+                </label>
+                <select
+                  value={popupReminderMin === null ? '' : popupReminderMin}
+                  disabled={!popup.startTime}
+                  onChange={e => {
+                    if (e.target.value === '') { setPopupReminderMin(null); return }
+                    setPopupReminderMin(Number(e.target.value))
+                    requestNotifyPermission()
+                  }}
+                  style={popupInput}
+                >
+                  <option value="">{t('None')}</option>
+                  <option value={0}>{t('At time of event')}</option>
+                  <option value={5}>{t('5 minutes before')}</option>
+                  <option value={10}>{t('10 minutes before')}</option>
+                  <option value={30}>{t('30 minutes before')}</option>
+                  <option value={60}>{t('1 hour before')}</option>
+                  <option value={1440}>{t('1 day before')}</option>
+                </select>
+                {!popup.startTime && (
+                  <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 4 }}>{t('Add a start time to enable a reminder.')}</div>
                 )}
               </div>
 

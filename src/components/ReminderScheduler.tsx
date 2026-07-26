@@ -59,10 +59,9 @@ export default function ReminderScheduler() {
               if (!occurs) continue
               const trigger = new Date(`${ds}T${ev.timeStart}:00`).getTime() - ev.reminderMinutesBefore * 60_000
               if (trigger > lastTickRef.current && trigger <= now && trigger >= now - STALE_GRACE_MS) {
-                fireNotification(
-                  tRef.current('Upcoming event'),
-                  ev.location ? `${ev.title} · ${ev.location}` : ev.title,
-                )
+                const timeRange = ev.timeEnd ? `${ev.timeStart}–${ev.timeEnd}` : ev.timeStart
+                const body = ev.location ? `${timeRange} · ${ev.title} · ${ev.location}` : `${timeRange} · ${ev.title}`
+                fireNotification(tRef.current('Upcoming event'), body)
               }
             }
           }

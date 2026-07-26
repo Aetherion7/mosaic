@@ -80,7 +80,7 @@ function renderPanel(active: Cat, onClose: () => void, isHome: boolean): React.R
     case 'erscheinungsbild': return <ErscheinungsbildPanel />
     case 'boards':           return <BoardsPanel />
     case 'ki':               return <AiSettingsPanel />
-    case 'tastenkürzel':     return <TastenkürzelPanel />
+    case 'tastenkürzel':     return <TastenkürzelPanel home={isHome} />
     case 'daten':            return <DatenPanel />
     case 'datenschutz':      return <DatenschutzPanel />
     case 'über':             return <ÜberPanel />

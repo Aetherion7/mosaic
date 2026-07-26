@@ -24,6 +24,17 @@ import type { Board, WidgetType } from '@/types'
 // Waehlbare Ordnerfarben (Kachel-Rahmen + Tint der Ordner-Kacheln)
 const FOLDER_COLORS = ['#7c6fe8', '#5b8fff', '#4ecdc4', '#5fd68a', '#f5c04b', '#f58b4b', '#ef5b6e', '#e46bd8', '#8a93a8']
 
+// Gleiches Muster wie TopBar.tsx's kbdBadgeStyle — eigene Konstante hier, da
+// TopBar sie nicht exportiert und die Board-Auswahl ein komplett anderes
+// Shortcut-Set (keyboardShortcutsHome) mit eigenen Badges braucht.
+const kbdBadgeStyle: React.CSSProperties = {
+  position: 'absolute', top: -6, right: -4,
+  fontSize: 8, fontWeight: 700, color: 'var(--text3)',
+  background: 'var(--surface2)', border: '1px solid var(--border)',
+  borderRadius: 4, padding: '1px 3px', pointerEvents: 'none',
+  lineHeight: 1,
+}
+
 // ── Mini-Map: echte Layout-Vorschau eines Boards ──────────────────────────────
 // Hintergrund = echter Board-Hintergrund; Widget-Rechtecke einfarbig
 // in der Akzentfarbe des jeweiligen Board-Themes.
@@ -570,6 +581,8 @@ export default function HomePage() {
   const animations = useSettings(s => s.animations)
   const lastExportAt = useSettings(s => s.lastExportAt)
   const setSetting = useSettings(s => s.setSetting)
+  const showKbdHints = useSettings(s => s.showKbdHints)
+  const homeShortcuts = useSettings(s => s.keyboardShortcutsHome)
 
   const [hydrated, setHydrated] = useState(false)
   useEffect(() => { setHydrated(true) }, [])
@@ -618,6 +631,7 @@ export default function HomePage() {
   const [renamingFolder, setRenamingFolder]   = useState<string | null>(null)
   const [renameFolderValue, setRenameFolderValue] = useState('')
   const inputRef       = useRef<HTMLInputElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const sortRef        = useRef<HTMLDivElement>(null)
   const storageRef     = useRef<HTMLDivElement>(null)
   const boardsListRef  = useRef<HTMLDivElement>(null)
@@ -641,6 +655,27 @@ export default function HomePage() {
     document.addEventListener('mousedown', fn)
     return () => document.removeEventListener('mousedown', fn)
   }, [sortOpen, storageOpen, boardsListOpen, widgetsListOpen, folderMenuFor, creatingFolder])
+
+  // Konfigurierbar unter Einstellungen → Tastenkürzel → Board-Auswahl
+  // (settingsStore.keyboardShortcutsHome) — eigenes Set, unabhängig von den
+  // 5 board-internen Shortcuts (TopBar.tsx), da hier andere Aktionen gelten.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const el = (e.target ?? document.activeElement) as HTMLElement
+      if (
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(el?.tagName) ||
+        el?.isContentEditable
+      ) return
+      const shortcuts = useSettings.getState().keyboardShortcutsHome
+      const key = e.key.toUpperCase()
+      if (key === shortcuts.newBoard)       setCreating(c => !c)
+      else if (key === shortcuts.newFolder) setCreatingFolder(o => !o)
+      else if (key === shortcuts.focusSearch) { e.preventDefault(); searchInputRef.current?.focus() }
+      else if (key === shortcuts.settings)  setSettingsOpen(o => !o)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   // Alle Boards als vollständiges Backup sichern (klickbarer Backup-Chip) —
   // inkl. eigener Themes/Vorlagen/Plugins und eingebetteter Binärdaten
@@ -999,24 +1034,26 @@ export default function HomePage() {
         </div>
         <span style={{ fontSize: 28, fontWeight: 400, color: 'var(--text1)', marginLeft: 10, fontFamily: 'Guavine, sans-serif', lineHeight: 1 }}>mosaic</span>
 
-        <button
-          onClick={() => setSettingsOpen(o => !o)}
-          title={t('Settings')}
-          style={{
-            marginLeft: 'auto',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 34, height: 34, borderRadius: '50%',
-            border: `1px solid ${settingsOpen ? 'var(--accent)' : 'var(--border)'}`,
-            background: settingsOpen ? 'color-mix(in srgb, var(--accent) 12%, var(--surface))' : 'var(--surface)',
-            color: settingsOpen ? 'var(--accent)' : 'var(--text2)',
-            cursor: 'pointer', transition: 'all 0.15s',
-          }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-        </button>
+        <div style={{ marginLeft: 'auto', position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <button
+            onClick={() => setSettingsOpen(o => !o)}
+            title={`${t('Settings')} [${homeShortcuts.settings}]`}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 34, height: 34, borderRadius: '50%',
+              border: `1px solid ${settingsOpen ? 'var(--accent)' : 'var(--border)'}`,
+              background: settingsOpen ? 'color-mix(in srgb, var(--accent) 12%, var(--surface))' : 'var(--surface)',
+              color: settingsOpen ? 'var(--accent)' : 'var(--text2)',
+              cursor: 'pointer', transition: 'all 0.15s',
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
+          {showKbdHints && <span style={kbdBadgeStyle}>{homeShortcuts.settings}</span>}
+        </div>
       </div>
 
       {/* ── Info-Leiste + Vorschau-Modus ── */}
@@ -1148,13 +1185,22 @@ export default function HomePage() {
           }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input
+              ref={searchInputRef}
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder={t('Search boards…')}
               style={{ flex: 1, minWidth: 0, fontSize: 12, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text1)' }}
             />
-            {query && (
+            {query ? (
               <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1 }}>×</button>
+            ) : (
+              showKbdHints && (
+                <span style={{
+                  fontSize: 9, fontWeight: 700, color: 'var(--text3)',
+                  background: 'var(--surface2)', border: '1px solid var(--border)',
+                  borderRadius: 4, padding: '1px 4px', lineHeight: 1, flexShrink: 0,
+                }}>{homeShortcuts.focusSearch}</span>
+              )
             )}
           </div>
           {/* Sortierung: ein Filter-Button mit Dropdown */}
@@ -1223,7 +1269,7 @@ export default function HomePage() {
             <button
               id="tour-add-folder-btn"
               onClick={() => setCreatingFolder(o => !o)}
-              title={t('Add folder')} aria-label={t('Add folder')} aria-haspopup="dialog"
+              title={`${t('Add folder')} [${homeShortcuts.newFolder}]`} aria-label={t('Add folder')} aria-haspopup="dialog"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: 30, height: 30, borderRadius: '50%', cursor: 'pointer', padding: 0,
@@ -1239,6 +1285,7 @@ export default function HomePage() {
                 <line x1="9.5" y1="12.5" x2="14.5" y2="12.5"/>
               </svg>
             </button>
+            {showKbdHints && <span style={kbdBadgeStyle}>{homeShortcuts.newFolder}</span>}
 
             {/* Zentriertes Modal statt kleinem Dropdown am Button */}
             {creatingFolder && (
@@ -1421,8 +1468,9 @@ export default function HomePage() {
                 whileHover={{ y: -4, scale: 1.02 }}
                 transition={{ duration: 0.15 }}
                 onClick={() => setCreating(true)}
+                title={`${t('New board')} [${homeShortcuts.newBoard}]`}
                 style={{
-                  width: '100%', height: 200, borderRadius: 18,
+                  width: '100%', height: 200, borderRadius: 18, position: 'relative',
                   border: '2px dashed rgba(255,255,255,0.12)',
                   background: 'rgba(255,255,255,0.02)',
                   color: 'var(--text3)', fontSize: 14, fontWeight: 600,
@@ -1438,6 +1486,7 @@ export default function HomePage() {
                   e.currentTarget.style.color = 'var(--text3)'
                 }}
               >
+                {showKbdHints && <span style={{ ...kbdBadgeStyle, top: 10, right: 10 }}>{homeShortcuts.newBoard}</span>}
                 <span style={{ fontSize: 28, lineHeight: 1 }}>+</span>
                 <span>{t('New board')}</span>
               </motion.button>
@@ -1801,7 +1850,7 @@ export default function HomePage() {
     {settingsOpen && (
       <SettingsModal
         onClose={() => setSettingsOpen(false)}
-        categories={['general', 'boards', 'daten', 'datenschutz', 'über']}
+        categories={['general', 'boards', 'tastenkürzel', 'daten', 'datenschutz', 'über']}
       />
     )}
     {hydrated && (

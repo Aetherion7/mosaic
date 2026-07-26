@@ -56,6 +56,32 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
           desc={t('Switches every label, button and message in the app')}
           control={<LanguageSelect value={language} onChange={lng => setSetting({ language: lng })} />}
         />
+
+        <SectionTitle>{t('Keyboard shortcut hints')}</SectionTitle>
+        <Row
+          label={t('Keyboard shortcut hints')}
+          desc={t('Shows shortcuts like [N] in the header')}
+          value={showKbdHints}
+          onChange={v => setSetting({ showKbdHints: v })}
+        />
+
+        {isDesktop && (
+          <>
+            <SectionTitle>{t('Desktop')}</SectionTitle>
+            <Row
+              label={t('Launch at login')}
+              desc={t('Automatically start mosaic when you log in to your computer')}
+              value={launchAtLogin}
+              onChange={v => setSetting({ launchAtLogin: v })}
+            />
+            <Row
+              label={t('Keep running in background')}
+              desc={t('Keep mosaic running in the background after closing the window, so reminders can still arrive')}
+              value={keepRunningInBackground}
+              onChange={v => setSetting({ keepRunningInBackground: v })}
+            />
+          </>
+        )}
       </div>
     )
   }

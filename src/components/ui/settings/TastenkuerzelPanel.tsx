@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '@/hooks/useT'
-import { useSettings, DEFAULT_SHORTCUTS, type ShortcutAction } from '@/store/settingsStore'
+import { useSettings, DEFAULT_SHORTCUTS, DEFAULT_HOME_SHORTCUTS, type ShortcutAction, type HomeShortcutAction } from '@/store/settingsStore'
 import { SectionTitle, KbdRow } from './shared'
 
 // Nur die 5 globalen Single-Key-Shortcuts aus TopBar.tsx sind umbelegbar —
@@ -16,7 +16,23 @@ const REBINDABLE: { action: ShortcutAction; label: string }[] = [
   { action: 'settings',   label: 'Open / close settings' },
 ]
 
-export default function TastenkürzelPanel() {
+// Eigenes Set für die Board-Auswahl (page.tsx) — andere Aktionen als auf
+// einem Board, deshalb unabhängig von REBINDABLE oben.
+const REBINDABLE_HOME: { action: HomeShortcutAction; label: string }[] = [
+  { action: 'newBoard',    label: 'Create new board' },
+  { action: 'newFolder',   label: 'Create new folder' },
+  { action: 'focusSearch', label: 'Focus search' },
+  { action: 'settings',    label: 'Open / close settings' },
+]
+
+// `home`: Board-Auswahl (Startseite) bekommt ihr eigenes, kleineres Shortcut-
+// Set (kein Edit/Ansicht-Modus, kein KI-Assistent dort) und keine der board-
+// internen Tastenkürzel-Abschnitte (Tabelle, Drawboard) weiter unten.
+export default function TastenkürzelPanel({ home }: { home?: boolean } = {}) {
+  return home ? <HomeShortcuts /> : <BoardShortcuts />
+}
+
+function BoardShortcuts() {
   const t = useT()
   const shortcuts = useSettings(s => s.keyboardShortcuts)
   const setSetting = useSettings(s => s.setSetting)
@@ -89,9 +105,61 @@ export default function TastenkürzelPanel() {
   )
 }
 
+function HomeShortcuts() {
+  const t = useT()
+  const shortcuts = useSettings(s => s.keyboardShortcutsHome)
+  const setSetting = useSettings(s => s.setSetting)
+  const [recording, setRecording] = useState<HomeShortcutAction | null>(null)
+  const [conflict, setConflict] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!recording) return
+    const recordingAction: HomeShortcutAction = recording
+    function onKey(e: KeyboardEvent) {
+      e.preventDefault()
+      e.stopPropagation()
+      if (e.key === 'Escape') { setRecording(null); setConflict(null); return }
+      if (e.key.length !== 1) return
+      const key = e.key.toUpperCase()
+      const current = useSettings.getState().keyboardShortcutsHome
+      const usedBy = (Object.entries(current) as [HomeShortcutAction, string][])
+        .find(([action, k]) => k === key && action !== recordingAction)
+      if (usedBy) {
+        const label = REBINDABLE_HOME.find(r => r.action === usedBy[0])?.label ?? usedBy[0]
+        setConflict(t('Already used by: {action}').replace('{action}', t(label)))
+        return
+      }
+      setSetting({ keyboardShortcutsHome: { ...current, [recordingAction]: key } })
+      setRecording(null)
+      setConflict(null)
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [recording, setSetting, t])
+
+  return (
+    <div>
+      <SectionTitle>{t('Board selection')}</SectionTitle>
+      {REBINDABLE_HOME.map(({ action, label }) => (
+        <RebindableKbdRow
+          key={action}
+          action={t(label)}
+          keyValue={shortcuts[action]}
+          recording={recording === action}
+          isDefault={shortcuts[action] === DEFAULT_HOME_SHORTCUTS[action]}
+          conflict={recording === action ? conflict : null}
+          onStartRecording={() => { setRecording(action); setConflict(null) }}
+          onReset={() => setSetting({ keyboardShortcutsHome: { ...shortcuts, [action]: DEFAULT_HOME_SHORTCUTS[action] } })}
+        />
+      ))}
+      <KbdRow keys={['Esc']} action={t('Close panel / selection')} />
+    </div>
+  )
+}
+
 // Wie KbdRow, aber die Taste ist ein Button: Klick startet die Aufnahme, der
 // nächste Tastendruck (außer Escape) wird das neue Binding. Konflikte mit
-// einer anderen der 5 Aktionen werden abgelehnt statt stillschweigend
+// einer anderen Aktion desselben Sets werden abgelehnt statt stillschweigend
 // getauscht — weniger überraschend, wenn zwei Aktionen dieselbe Taste wollen.
 function RebindableKbdRow({ action, keyValue, recording, isDefault, conflict, onStartRecording, onReset }: {
   action: string

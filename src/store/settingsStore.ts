@@ -52,9 +52,18 @@ export const DEFAULT_SHORTCUTS: Record<ShortcutAction, string> = {
   toggleMode: 'E', addWidget: 'A', theme: 'T', ai: 'I', settings: 'S',
 }
 
+// Eigenes, unabhängiges Set für die Board-Auswahl (Startseite, page.tsx) —
+// andere Aktionen als auf einem Board (kein Edit/Ansicht-Modus, kein KI-
+// Assistent dort), deshalb ein eigener ShortcutAction-Typ statt Wiederverwendung.
+export type HomeShortcutAction = 'newBoard' | 'newFolder' | 'focusSearch' | 'settings'
+export const DEFAULT_HOME_SHORTCUTS: Record<HomeShortcutAction, string> = {
+  newBoard: 'N', newFolder: 'F', focusSearch: '/', settings: 'S',
+}
+
 export interface AppSettings {
   showKbdHints:           boolean
   keyboardShortcuts:      Record<ShortcutAction, string>
+  keyboardShortcutsHome:  Record<HomeShortcutAction, string>
   animations:             boolean
   headerStyle:            'default' | 'island'
   programFont:            string   // Schrift der gesamten Oberfläche (Startseite, Einstellungen, Boards ohne eigene Board-Schrift)
@@ -106,6 +115,7 @@ export const useSettings = create<SettingsStore>()(
     (set) => ({
       showKbdHints:           true,
       keyboardShortcuts:      DEFAULT_SHORTCUTS,
+      keyboardShortcutsHome:  DEFAULT_HOME_SHORTCUTS,
       animations:             true,
       headerStyle:            'default',
       programFont:            'inter',
