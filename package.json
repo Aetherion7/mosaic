@@ -1,6 +1,6 @@
 {
   "name": "mosaic",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "A local-first, widget-based personal dashboard — boards full of tasks, notes, calendars, trackers and more, running entirely in your browser or as a desktop app. No account, no server, your data never leaves your device (except the optional BYOK AI assistant).",
   "author": {
     "name": "Aetherion7"
