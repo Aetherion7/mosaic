@@ -40,7 +40,9 @@ export interface CustomFont {
   blobRef: string
 }
 
-export type AiProvider = 'anthropic' | 'openai' | 'gemini'
+// '' = noch nicht gewählt — zeigt in den Einstellungen ein leeres
+// "Choose…"-Auswahlfeld statt eines vorbelegten Anbieters.
+export type AiProvider = 'anthropic' | 'openai' | 'gemini' | ''
 
 // Die 5 globalen Single-Key-Shortcuts aus TopBar.tsx (Einstellungen →
 // Tastenkürzel → Navigation). Nur diese sind umbelegbar — nicht die
@@ -139,7 +141,7 @@ export const useSettings = create<SettingsStore>()(
       keepRunningInBackground: false,
       hasSeenStartupPrompt:    false,
       aiEnabled:              true,
-      aiProvider:             'anthropic',
+      aiProvider:             '',
       aiApiKey:               '',
       aiModel:                '',
       aiBaseUrl:              '',

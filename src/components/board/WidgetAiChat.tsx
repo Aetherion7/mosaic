@@ -122,7 +122,7 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
             </span>
           )
           if (item.kind === 'error') {
-            const [first, ...rest] = (item.text === 'NO_KEY' ? t('No API key configured.') : item.text).split('\n')
+            const [first, ...rest] = (item.text === 'NO_KEY' ? t('No API key configured.') : item.text === 'NO_PROVIDER' ? t('No provider selected.') : item.text).split('\n')
             return (
               <div key={item.id} style={{ fontSize: 11, color: '#e53e3e', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.25)', borderRadius: 10, padding: '7px 10px', lineHeight: 1.5, wordBreak: 'break-word' }}>
                 {first}

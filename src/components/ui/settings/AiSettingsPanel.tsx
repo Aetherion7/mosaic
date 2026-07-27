@@ -6,8 +6,12 @@ import { useT } from '@/hooks/useT'
 import { IconSparkle } from '@/components/ui/aiShared'
 import { SectionTitle, SettingItem, Row } from './shared'
 
+// Nie '' — das ist nur der "noch nicht gewählt"-Zustand von AiProvider, kein
+// echter Anbieter, der hier auftauchen dürfte.
+type RealAiProvider = Exclude<AiProvider, ''>
+
 // desc ist der englische Quelltext (Default-Sprache) — an Verwendungsstellen mit t() übersetzt
-const PROVIDERS: { id: AiProvider; label: string; desc: string; keyHint: string }[] = [
+const PROVIDERS: { id: RealAiProvider; label: string; desc: string; keyHint: string }[] = [
   { id: 'anthropic', label: 'Anthropic',         desc: 'Claude models',                 keyHint: 'sk-ant-…' },
   { id: 'gemini',    label: 'Google Gemini',     desc: 'Gemini models',                 keyHint: 'AIza…' },
   { id: 'openai',    label: 'OpenAI-compatible', desc: 'OpenAI, Groq, Mistral, Ollama …', keyHint: 'sk-…' },
@@ -28,7 +32,7 @@ export default function AiSettingsPanel() {
     border: '1px solid var(--border)', background: 'var(--surface2)',
     color: 'var(--text1)', outline: 'none',
   }
-  const provider = PROVIDERS.find(p => p.id === aiProvider) ?? PROVIDERS[0]
+  const provider = PROVIDERS.find(p => p.id === aiProvider)
 
   return (
     <div>
@@ -61,60 +65,64 @@ export default function AiSettingsPanel() {
         <SectionTitle>{t('Connection')}</SectionTitle>
         <SettingItem
           label={t('Provider')}
-          desc={t(provider.desc)}
+          desc={provider ? t(provider.desc) : t('Choose which AI provider to use')}
           control={<ProviderSelect value={aiProvider} onChange={p => setSetting({ aiProvider: p })} />}
         />
-        <SettingItem
-          label={t('API key')}
-          desc={aiProvider === 'openai'
-            ? `${t('Stored only on this device. Sent exclusively to the provider above.')} ${t('Local endpoints without authentication can leave this empty.')}`
-            : t('Stored only on this device. Sent exclusively to the provider above.')}
-          control={
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <input
-                type={showKey ? 'text' : 'password'}
-                value={aiApiKey}
-                onChange={e => setSetting({ aiApiKey: e.target.value })}
-                placeholder={provider.keyHint}
-                autoComplete="off"
-                style={inputStyle}
-              />
-              <button onClick={() => setShowKey(v => !v)} title={showKey ? t('Hide') : t('Show')}
-                style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {showKey
-                  ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                  : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
-              </button>
-            </div>
-          }
-        />
-        <SettingItem
-          label={t('Model')}
-          desc={`${t('Empty = default:')} ${DEFAULT_MODELS[aiProvider]}`}
-          control={
-            <input
-              type="text"
-              value={aiModel}
-              onChange={e => setSetting({ aiModel: e.target.value })}
-              placeholder={DEFAULT_MODELS[aiProvider]}
-              style={inputStyle}
+        {provider && (
+          <>
+            <SettingItem
+              label={t('API key')}
+              desc={aiProvider === 'openai'
+                ? `${t('Stored only on this device. Sent exclusively to the provider above.')} ${t('Local endpoints without authentication can leave this empty.')}`
+                : t('Stored only on this device. Sent exclusively to the provider above.')}
+              control={
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input
+                    type={showKey ? 'text' : 'password'}
+                    value={aiApiKey}
+                    onChange={e => setSetting({ aiApiKey: e.target.value })}
+                    placeholder={provider.keyHint}
+                    autoComplete="off"
+                    style={inputStyle}
+                  />
+                  <button onClick={() => setShowKey(v => !v)} title={showKey ? t('Hide') : t('Show')}
+                    style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {showKey
+                      ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+                  </button>
+                </div>
+              }
             />
-          }
-        />
-        {aiProvider === 'openai' && (
-          <SettingItem
-            label={t('Base URL')}
-            desc={t('For alternative endpoints (Groq, Mistral, Ollama …). Empty = api.openai.com')}
-            control={
-              <input
-                type="text"
-                value={aiBaseUrl}
-                onChange={e => setSetting({ aiBaseUrl: e.target.value })}
-                placeholder="https://api.openai.com/v1"
-                style={inputStyle}
+            <SettingItem
+              label={t('Model')}
+              desc={`${t('Empty = default:')} ${DEFAULT_MODELS[provider.id]}`}
+              control={
+                <input
+                  type="text"
+                  value={aiModel}
+                  onChange={e => setSetting({ aiModel: e.target.value })}
+                  placeholder={DEFAULT_MODELS[provider.id]}
+                  style={inputStyle}
+                />
+              }
+            />
+            {aiProvider === 'openai' && (
+              <SettingItem
+                label={t('Base URL')}
+                desc={t('For alternative endpoints (Groq, Mistral, Ollama …). Empty = api.openai.com')}
+                control={
+                  <input
+                    type="text"
+                    value={aiBaseUrl}
+                    onChange={e => setSetting({ aiBaseUrl: e.target.value })}
+                    placeholder="https://api.openai.com/v1"
+                    style={inputStyle}
+                  />
+                }
               />
-            }
-          />
+            )}
+          </>
         )}
 
         <SectionTitle>{t('Privacy')}</SectionTitle>
@@ -142,7 +150,7 @@ function ProviderSelect({ value, onChange }: { value: AiProvider; onChange: (p: 
     return () => document.removeEventListener('mousedown', onDown)
   }, [open])
 
-  const current = PROVIDERS.find(p => p.id === value) ?? PROVIDERS[0]
+  const current = PROVIDERS.find(p => p.id === value)
 
   return (
     <div ref={rootRef} style={{ position: 'relative' }}>
@@ -155,11 +163,12 @@ function ProviderSelect({ value, onChange }: { value: AiProvider; onChange: (p: 
           padding: '6px 10px', borderRadius: 8,
           border: `1.5px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
           background: 'var(--surface2)', cursor: 'pointer',
-          fontSize: 12.5, fontWeight: 600, color: 'var(--text1)', whiteSpace: 'nowrap',
+          fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap',
+          color: current ? 'var(--text1)' : 'var(--text3)',
           transition: 'border-color 0.12s',
         }}
       >
-        {current.label}
+        {current ? current.label : t('Choose…')}
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
           style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
           <polyline points="6 9 12 15 18 9"/>

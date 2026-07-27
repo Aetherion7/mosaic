@@ -239,6 +239,7 @@ export async function runAgent(
   scope?: AgentScope,
 ): Promise<string> {
   const s = useSettings.getState()
+  if (!s.aiProvider) throw new Error('NO_PROVIDER')
   const model = s.aiModel.trim() || DEFAULT_MODELS[s.aiProvider]
   // Lokale OpenAI-kompatible Endpunkte (Ollama, LM Studio) brauchen keinen
   // Schlüssel — mit eigener Base-URL ist ein leerer Key deshalb erlaubt
