@@ -138,6 +138,9 @@
       "hardenedRuntime": true,
       "gatekeeperAssess": false
     },
+    "dmg": {
+      "icon": "electron/build/installer-icon.icns"
+    },
     "win": {
       "target": [
         "nsis"
@@ -146,7 +149,8 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "electron/build/installer-icon.ico"
     },
     "linux": {
       "target": [

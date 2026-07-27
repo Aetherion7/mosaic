@@ -45,12 +45,26 @@ export interface TaskData {
 
 export interface NoteData { title: string; content: string }
 
+// Hochgeladene Alarmtöne — nur die idb-blob://-Referenz wird gespeichert
+// (s. lib/blobStore.ts), nicht die Audiodaten selbst; collectBlobRefs()/
+// pruneBlobs() finden `ref` automatisch, weil es rekursiv das ganze
+// Board-JSON nach idb-blob://-Strings durchsucht.
+export interface TimerCustomSound {
+  id:   string
+  name: string
+  ref:  string
+}
+
 export interface TimerData {
   name:        string
   durationMin: number
   startedAt:   number | null
   running:     boolean
   elapsed:     number
+  // Ausgewählter Ton: eine der SOUND_PRESETS-IDs oder die id eines Eintrags
+  // aus customSounds; fehlt = erster Preset ("chime").
+  soundId?:      string
+  customSounds?: TimerCustomSound[]
 }
 
 export interface WaterData { goalMl: number; loggedMl: number; mlPerSection: number; lastDate?: string; dailyLog?: Record<string, number>; statsOpen?: boolean }

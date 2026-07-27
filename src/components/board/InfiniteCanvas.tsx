@@ -1,13 +1,27 @@
 'use client'
-import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react'
+import { useRef, useState, useMemo, useCallback, useEffect, useLayoutEffect, forwardRef, useImperativeHandle } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useUIStore } from '@/store/uiStore'
-import { useBoardStore } from '@/store/boardStore'
+import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { INFINITE_COL_W, INFINITE_GRID_COLS, INFINITE_GRID_ROWS, GRID_GAP, GRID_ROW_H } from '@/lib/constants'
 import { useT } from '@/hooks/useT'
 
+// Live-Minimap unten links: feste Panelgröße, nicht per ResizeObserver
+// gemessen (anders als die statische Board-Vorschau auf der Startseite) —
+// hier reicht das, weil die Größe fix im Layout steht statt von einem
+// beliebigen Eltern-Container abzuhängen.
+const MM_W   = 170
+const MM_H   = 118
+
 const MIN_ZOOM    = 0.1
 const MAX_ZOOM    = 3
-const ZOOM_SPEED  = 0.0015
+// War 0.0015 mit einem zusätzlichen ×6 in handleWheel (effektiv 0.009) — ein
+// einzelnes Mausrad-Delta von ~100 ergab damit ~90% Zoom-Änderung PRO
+// Wheel-Event: ein Klick am Rad sprang das Board fast auf den Anschlag.
+// Trackpad-Pinch-Gesten feuern viele Events mit kleinem Delta, ein
+// physisches Mausrad wenige mit großem — dieser Wert ist für beide spürbar
+// sanfter, ohne bei Trackpads träge zu wirken.
+const ZOOM_SPEED  = 0.0005
 
 const INFINITE_ROWS   = INFINITE_GRID_ROWS
 const GRID_PADDING    = GRID_GAP   // must match paddingTop in BoardGrid infinite mode
@@ -83,6 +97,87 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
     getOffset: () => offsetRef.current,
   }))
 
+  // ── Live-Minimap (unten links) ──────────────────────────────────────────
+  // Bewusst NICHT "Bounding-Box aller Widgets ins Panel einpassen" — das
+  // würde sich beim Zoomen des Boards überhaupt nicht ändern. Stattdessen
+  // ist der Maßstab direkt an den Board-Zoom gekoppelt (mal einer festen
+  // Verkleinerungs-Konstante): zoomt man das Board raus, werden auch die
+  // Vorschau-Kacheln kleiner — wie ein Radar, nicht wie eine Übersichts-
+  // Miniatur. Zentriert wird auf die aktuelle Ausschnitt-MITTE, nicht auf
+  // die Widgets — die Minimap schwenkt also mit, während man das Board
+  // verschiebt. Tile-Positionen laufen (wie der Haupt-Transform) rein
+  // imperativ über Refs, kein setState pro Wheel-/Pointer-Event.
+  const MINIATURIZE = 0.075
+
+  const widgets    = useBoardStore(useShallow(s => selectBoard(s)?.widgets ?? {}))
+  const widgetList = useMemo(() => Object.values(widgets), [widgets])
+
+  const mmViewportRef = useRef<HTMLDivElement>(null)
+  const mmTileRefs    = useRef(new Map<string, HTMLDivElement>())
+  // Für den Klick-Handler — Stand vom letzten updateMinimap()-Aufruf, ohne
+  // dafür einen React-Re-render zu brauchen (s. Kommentar oben).
+  const mmStateRef = useRef({ scale: 1, colCenter: CENTER_COL, rowCenter: CENTER_ROW })
+
+  const updateMinimap = useCallback(() => {
+    const container = containerRef.current
+    if (!container) return
+    const z = zoomRef.current
+    const { x, y } = offsetRef.current
+    const colStep = INFINITE_COL_W + GRID_GAP
+    const rowStep = GRID_ROW_H + GRID_GAP
+    // Bildschirmmitte zurück in Grid-Koordinaten — exakt umgekehrt zu
+    // getInitialOffset()'s col/row → px-Umrechnung.
+    const centerContentX = (container.clientWidth  / 2 - x) / z
+    const centerContentY = (container.clientHeight / 2 - y) / z
+    const colCenter = (centerContentX - GRID_PADDING) / colStep + 1
+    const rowCenter = (centerContentY - GRID_PADDING) / rowStep + 1
+    const scale = colStep * z * MINIATURIZE
+    mmStateRef.current = { scale, colCenter, rowCenter }
+
+    const vp = mmViewportRef.current
+    if (vp) {
+      const vpW = Math.max(4, container.clientWidth  * MINIATURIZE)
+      const vpH = Math.max(4, container.clientHeight * MINIATURIZE)
+      vp.style.width  = `${vpW}px`
+      vp.style.height = `${vpH}px`
+      vp.style.left   = `${MM_W / 2 - vpW / 2}px`
+      vp.style.top    = `${MM_H / 2 - vpH / 2}px`
+    }
+
+    for (const w of widgetList) {
+      const el = mmTileRefs.current.get(w.id)
+      if (!el) continue
+      el.style.left   = `${MM_W / 2 + (w.pos.col - colCenter) * scale}px`
+      el.style.top    = `${MM_H / 2 + (w.pos.row - rowCenter) * scale}px`
+      el.style.width  = `${Math.max(1, w.pos.colSpan * scale - 1)}px`
+      el.style.height = `${Math.max(1, w.pos.rowSpan * scale - 1)}px`
+    }
+  }, [widgetList])
+
+  // useLayoutEffect statt useEffect: läuft synchron nach dem Commit der neuen
+  // Tile-<div>s (bei Widget-Änderungen), aber vor dem nächsten Browser-Paint
+  // — verhindert einen sichtbaren Frame mit unpositionierten (0,0)-Kacheln.
+  useLayoutEffect(() => {
+    updateMinimap()
+  }, [updateMinimap])
+
+  // Fenstergröße ändert Sichtbereich-Größe und Bildschirmmitte, ohne dass
+  // applyView dabei aufgerufen wird.
+  useEffect(() => {
+    window.addEventListener('resize', updateMinimap)
+    return () => window.removeEventListener('resize', updateMinimap)
+  }, [updateMinimap])
+
+  // Klick auf die Minimap: sanft zur angeklickten Stelle schwenken (gleicher
+  // Mechanismus wie ein Sprung aus der Suche — Zoomstufe bleibt unverändert).
+  const onMinimapClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const { scale, colCenter, rowCenter } = mmStateRef.current
+    const rect = e.currentTarget.getBoundingClientRect()
+    const col = colCenter + (e.clientX - rect.left - MM_W / 2) / scale
+    const row = rowCenter + (e.clientY - rect.top  - MM_H / 2) / scale
+    setCanvasFocus({ col, row, colSpan: 1, rowSpan: 1 })
+  }, [setCanvasFocus])
+
   // Smooth-pan to a pending focus position set from the search modal
   useEffect(() => {
     if (!pendingFocus) return
@@ -137,7 +232,8 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
     setCanvasView(newOffset.x, newOffset.y, newZoom)
     // Ausschnitt fürs aktuelle Board merken (Wiederherstellung beim Wechsel)
     savedViews.set(useBoardStore.getState().currentBoardId, { x: newOffset.x, y: newOffset.y, zoom: newZoom })
-  }, [setCanvasView])
+    updateMinimap()
+  }, [setCanvasView, updateMinimap])
 
   const applyZoom = useCallback((nextZoom: number, cx: number, cy: number) => {
     const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, nextZoom))
@@ -165,7 +261,7 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
     const cx = e.clientX - (rect?.left ?? 0)
     const cy = e.clientY - (rect?.top  ?? 0)
     if (e.ctrlKey || e.metaKey) {
-      applyZoom(zoomRef.current * (1 - e.deltaY * ZOOM_SPEED * 6), cx, cy)
+      applyZoom(zoomRef.current * (1 - e.deltaY * ZOOM_SPEED), cx, cy)
     } else {
       applyView({ x: offsetRef.current.x - e.deltaX, y: offsetRef.current.y - e.deltaY }, zoomRef.current)
     }
@@ -194,7 +290,8 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
     }
     setZoom(init.zoom)
     useUIStore.getState().setCanvasView(init.x, init.y, init.zoom)
-  }, [boardId])
+    updateMinimap()
+  }, [boardId, updateMinimap])
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button === 1 || spaceDown.current) {
@@ -277,9 +374,9 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
         onPointerDown={e => e.stopPropagation()}
       >
         {[
-          { label: '−', title: t('Zoom out'),  action: () => zoomCenter(1 / 1.25) },
+          { label: '−', title: t('Zoom out'),  action: () => zoomCenter(1 / 1.15) },
           { label: null,                          action: null },
-          { label: '+', title: t('Zoom in'),  action: () => zoomCenter(1.25) },
+          { label: '+', title: t('Zoom in'),  action: () => zoomCenter(1.15) },
         ].map((btn, i) =>
           btn.label ? (
             <button
@@ -317,6 +414,46 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
           )
         )}
       </div>
+
+      {/* Live-Minimap */}
+      {widgetList.length > 0 && (
+        <div
+          onPointerDown={e => e.stopPropagation()}
+          onClick={onMinimapClick}
+          title={t('Click to jump to that area')}
+          style={{
+            position: 'absolute', bottom: 16, left: 16, zIndex: 50,
+            width: MM_W, height: MM_H,
+            background: 'color-mix(in srgb, var(--surface) 88%, transparent)',
+            backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+            border: '1px solid var(--border)', borderRadius: 10,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+            overflow: 'hidden', cursor: 'pointer',
+          }}
+        >
+          {/* Position/Größe jeder Kachel wird per Ref direkt aus updateMinimap()
+              gesetzt (zoom-abhängig), nicht über React-Props — s. Kommentar oben */}
+          {widgetList.map(w => (
+            <div
+              key={w.id}
+              ref={el => { if (el) mmTileRefs.current.set(w.id, el); else mmTileRefs.current.delete(w.id) }}
+              style={{
+                position: 'absolute',
+                borderRadius: 2,
+                background: 'color-mix(in srgb, var(--accent) 45%, var(--surface3))',
+                border: '1px solid color-mix(in srgb, var(--accent) 55%, transparent)',
+              }}
+            />
+          ))}
+          {/* Sichtbereichs-Rahmen — Position/Größe ebenfalls per Ref gesetzt */}
+          <div ref={mmViewportRef} style={{
+            position: 'absolute',
+            border: '1.5px solid var(--accent)', borderRadius: 2,
+            background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+            pointerEvents: 'none',
+          }} />
+        </div>
+      )}
 
     </div>
   )

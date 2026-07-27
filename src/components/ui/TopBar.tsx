@@ -272,7 +272,8 @@ export default function TopBar() {
             opacity: mode === 'edit' ? 1 : 0,
             overflow: 'hidden',
             paddingTop: 8, marginTop: -8,
-            transition: 'max-width 0.3s ease, opacity 0.2s ease',
+            marginRight: mode === 'edit' ? 6 : 0,
+            transition: 'max-width 0.3s ease, opacity 0.2s ease, margin-right 0.3s ease',
             flexShrink: 0,
             display: 'flex', alignItems: 'center',
           }}>

@@ -593,6 +593,14 @@ export const de: Record<string, string> = {
   'Start': 'Start',
   'Duration': 'Dauer',
   'min': 'min',
+  'Alarm sound': 'Alarmton',
+  'Chime': 'Glockenspiel',
+  'Bell': 'Glocke',
+  'Alarm': 'Alarm',
+  'Upload sound…': 'Ton hochladen…',
+  'Remove sound': 'Ton entfernen',
+  'Custom sounds can be at most 8 seconds long.': 'Eigene Töne dürfen höchstens 8 Sekunden lang sein.',
+  'This file could not be used as an alarm sound.': 'Diese Datei konnte nicht als Alarmton verwendet werden.',
 
   // ── WaterWidget ──
   'Goal': 'Ziel',

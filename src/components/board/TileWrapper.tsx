@@ -470,7 +470,10 @@ function TileWrapperInner({ widget, gridRef }: Props) {
     spreadsheet: { colSpan: 4, rowSpan: 2 },
     drawboard:   { colSpan: 3, rowSpan: 2 },
     map:         { colSpan: 3, rowSpan: 2 },
-    weather:     { colSpan: 3, rowSpan: 1 },
+    // rowSpan war 1 — bei nur 112px Höhe wurde entweder die Stats-Zeile
+    // (gefühlt/Feuchtigkeit/Wind) oder die Hero-Temperatur abgeschnitten,
+    // weil beide plus die Stadt-Zeile nicht in eine Grid-Reihe passen.
+    weather:     { colSpan: 3, rowSpan: 2 },
     clock:       { colSpan: 2, rowSpan: 1 },
     note:        { colSpan: 2, rowSpan: 1 },
     water:       { colSpan: 2, rowSpan: 1 },
@@ -479,6 +482,12 @@ function TileWrapperInner({ widget, gridRef }: Props) {
     agenda:      { colSpan: 2, rowSpan: 2 },
     quicklinks:  { colSpan: 2, rowSpan: 1 },
     text:        { colSpan: 2, rowSpan: 1 },
+    // Fehlte komplett — ließ sich auf 1×1 schrumpfen und quetschte den fixen
+    // 160px-Ring samt Start/Pause/Reset-Buttons unbenutzbar zusammen.
+    timer:       { colSpan: 2, rowSpan: 2 },
+    // Toolbar + Seiten-/Highlight-Sidebar brauchen spürbar mehr Platz als
+    // andere Widgets, um nicht komplett unbedienbar zu werden.
+    reader:      { colSpan: 4, rowSpan: 3 },
   }
 
   function onResizePointerMove(e: React.PointerEvent) {
