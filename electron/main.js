@@ -37,6 +37,11 @@ let isQuitting = false
 // Einstellungswert) — der Hauptprozess hat selbst keinen Zugriff auf den
 // zustand-Store, der im Renderer-localStorage liegt.
 let keepInBackground = false
+// Verhindert doppelte autoUpdater-Listener, wenn checkForUpdates() mehrfach
+// aufgerufen wird (einmal beim Start, danach jederzeit über "Check for
+// Updates…" im Mac-Menü) — die Listener selbst sollen nur einmal angehängt
+// werden, unabhängig davon, wie oft geprüft wird.
+let updateListenersAttached = false
 
 // Ohne diese Sperre würde ein Doppelklick auf das App-Icon, während bereits
 // eine Instanz im Hintergrund läuft (s. Hintergrundbetrieb unten), eine
@@ -321,6 +326,13 @@ ipcMain.handle('desktop:set-launch-at-login', (_e, enabled) => {
 ipcMain.handle('desktop:set-keep-in-background', (_e, enabled) => {
   keepInBackground = !!enabled
 })
+ipcMain.handle('update:install', () => {
+  // isQuitting muss hier NICHT gesetzt werden — quitAndInstall() beendet die
+  // App direkt selbst und startet die neue Version, umgeht also ohnehin den
+  // normalen close-Handler (Hintergrundbetrieb).
+  const { autoUpdater } = require('electron-updater')
+  autoUpdater.quitAndInstall()
+})
 
 // ── App-Menü ─────────────────────────────────────────────────────────────
 // mosaic hat seine eigene Oberfläche (TopBar, Einstellungen-Panel mit GitHub-
@@ -357,6 +369,22 @@ function buildMenu() {
 // (aus der "publish"-Konfig in package.json) und vergleicht gegen die neueste
 // GitHub-Release. Läuft nur in gepackten Builds — im Dev-Modus gibt es weder
 // die App-Update-Metadaten noch eine sinnvolle Update-Quelle.
+//
+// Statt der eingebauten OS-Benachrichtigung (checkForUpdatesAndNotify) zeigt
+// mosaic ein eigenes In-App-Popup mit Änderungen + Update-Button (s.
+// UpdateAvailablePopup.tsx) — das erfordert, erst NACH dem vollständigen
+// Download zu benachrichtigen (nicht schon bei "verfügbar"), damit ein Klick
+// auf "Update" sofort per quitAndInstall() greift, ohne erst noch warten zu
+// müssen.
+function notifyRendererOfUpdate(info) {
+  if (!mainWindow) return
+  mainWindow.webContents.send('update:downloaded', {
+    version: info.version,
+    releaseNotes: typeof info.releaseNotes === 'string' ? info.releaseNotes : '',
+    releaseUrl: `https://github.com/Aetherion7/mosaic/releases/tag/v${info.version}`,
+  })
+}
+
 function checkForUpdates(manual = false) {
   if (isDev) {
     if (manual) console.log('[mosaic] Auto-update is disabled in development.')
@@ -364,7 +392,12 @@ function checkForUpdates(manual = false) {
   }
   const { autoUpdater } = require('electron-updater')
   autoUpdater.autoDownload = true
-  autoUpdater.checkForUpdatesAndNotify().catch(err => {
+  if (!updateListenersAttached) {
+    updateListenersAttached = true
+    autoUpdater.on('update-downloaded', notifyRendererOfUpdate)
+    autoUpdater.on('error', err => console.error('[mosaic] Update error:', err))
+  }
+  autoUpdater.checkForUpdates().catch(err => {
     console.error('[mosaic] Update check failed:', err)
   })
 }

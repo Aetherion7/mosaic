@@ -119,4 +119,9 @@ jobs:
         with:
           draft: false
           fail_on_unmatched_files: true
+          # Auto-generated "What's Changed" body — electron-updater reads this
+          # release's notes and the in-app update popup (electron/main.js,
+          # UpdateAvailablePopup.tsx) shows them as a bullet list, so every
+          # release needs a body without anyone writing one by hand.
+          generate_release_notes: true
           files: dist/*

@@ -9,6 +9,9 @@ declare global {
     mosaicDesktop?: {
       setLaunchAtLogin:    (enabled: boolean) => Promise<void>
       setKeepInBackground: (enabled: boolean) => Promise<void>
+      // s. UpdateAvailablePopup.tsx
+      onUpdateAvailable: (callback: (info: { version: string; releaseNotes: string; releaseUrl: string }) => void) => () => void
+      installUpdate: () => Promise<void>
     }
   }
 }
