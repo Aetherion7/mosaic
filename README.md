@@ -60,10 +60,26 @@ out of your own data.
 
 Each link opens the release page; download the asset for your platform from the list of files
 attached to it. The desktop app checks for updates automatically and installs them in the
-background — you'll always be on the latest version. Builds aren't code-signed yet (that costs
-money — see [GITHUB_SETUP.md](GITHUB_SETUP.md)), so Windows SmartScreen and macOS Gatekeeper will
-warn about an "unknown publisher" on first launch. That's expected for an unsigned build, not a
-sign anything is wrong.
+background — you'll always be on the latest version.
+
+> [!WARNING]
+> **Windows and macOS will warn about an "unknown publisher" on first launch.** The builds
+> aren't code-signed — a Windows certificate costs $70–400/year and a macOS one requires a paid
+> Apple Developer account, both from a registered business/identity (see
+> [GITHUB_SETUP.md](GITHUB_SETUP.md#code-signing-optional-costs-money) for exactly what that
+> involves) — so this isn't something a single-developer project can just turn off. The warning
+> means "this publisher isn't verified," not "this file is malware." Nothing in mosaic phones
+> home or reads files outside your own boards (see [Privacy & data](#privacy--data)); the source
+> is fully in this repo and the build pipeline is the public [`release.yml`](.github/workflows/release.yml)
+> workflow, so the `.exe`/`.dmg` you download is exactly what that workflow produced from this
+> code, nothing more. To proceed anyway:
+> - **Windows**: click "More info", then "Run anyway" in the SmartScreen dialog.
+> - **macOS**: right-click (or Ctrl-click) the app → "Open" → confirm "Open" in the dialog —
+>   double-clicking normally will just refuse to launch it.
+>
+> If you'd rather not click through a warning at all, the [Linux install](#linux-install) below
+> and [running from source](#getting-started) don't trigger this, since neither goes through
+> Gatekeeper/SmartScreen.
 
 ### Linux install
 
@@ -101,6 +117,12 @@ based systems don't need this at all since they use the `.deb` package, not the 
 
 Any other distro (openSUSE, NixOS, ...) — same idea: install a `fuse2`/`libfuse2` compat package
 if it's missing, then run the same `.AppImage` command as above.
+
+The commands above run the AppImage directly from your Downloads folder — that first run is also
+all it takes to install it properly: mosaic adds itself to your applications menu with a proper
+icon (writes a `.desktop` entry + icon under `~/.local/share`, picked up automatically by GNOME,
+KDE, XFCE, ...), so after that you can launch it like any other installed app instead of digging
+the file back out of a terminal every time. The `.deb` install gets this the normal way, via `apt`.
 
 ## Features
 

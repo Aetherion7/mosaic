@@ -233,6 +233,34 @@ function setLaunchAtLogin(enabled) {
   }
 }
 
+// ── Linux: AppImage in den Anwendungsstarter einbinden ──────────────────────
+// .deb-Installationen bekommen einen Menüeintrag + Icon automatisch von dpkg
+// (das Paket bringt sein eigenes .desktop-File mit) — die portable AppImage
+// dagegen ist nur eine einzelne Datei ohne jede Desktop-Integration: ohne
+// dies bliebe mosaic dort für immer "eine Datei, die man im Terminal
+// startet" statt einer im Anwendungsmenü auffindbaren, normal anklickbaren
+// App. Schreibt beim ersten Start einmalig ein .desktop-File + Icon-Kopie
+// nach ~/.local/share — von GNOME/KDE/XFCE/... automatisch erkannt, kein
+// zusätzliches Werkzeug (z. B. AppImageLauncher) nötig.
+function ensureLinuxDesktopIntegration() {
+  if (process.platform !== 'linux' || !process.env.APPIMAGE) return
+  try {
+    const appsDir  = path.join(os.homedir(), '.local', 'share', 'applications')
+    const iconsDir = path.join(os.homedir(), '.local', 'share', 'icons')
+    fs.mkdirSync(appsDir, { recursive: true })
+    fs.mkdirSync(iconsDir, { recursive: true })
+
+    const iconDest = path.join(iconsDir, 'mosaic.png')
+    fs.copyFileSync(path.join(__dirname, 'build', 'icon.png'), iconDest)
+
+    const desktopFile = path.join(appsDir, 'mosaic.desktop')
+    const content = `[Desktop Entry]\nType=Application\nName=mosaic\nComment=A local-first, widget-based personal dashboard\nExec="${process.env.APPIMAGE}"\nIcon=${iconDest}\nCategories=Office;\nTerminal=false\n`
+    fs.writeFileSync(desktopFile, content, 'utf8')
+  } catch (err) {
+    console.error('[mosaic] Linux desktop integration failed:', err)
+  }
+}
+
 // ── IPC-Brücke (s. preload.js) ──────────────────────────────────────────────
 ipcMain.handle('desktop:set-launch-at-login', (_e, enabled) => {
   try { setLaunchAtLogin(!!enabled) } catch (err) { console.error('[mosaic] setLaunchAtLogin failed:', err) }
@@ -290,6 +318,7 @@ function checkForUpdates(manual = false) {
 
 app.whenReady().then(async () => {
   buildMenu()
+  ensureLinuxDesktopIntegration()
   try {
     await createWindow()
   } catch (err) {
