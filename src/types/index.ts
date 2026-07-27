@@ -6,14 +6,6 @@ export interface TilePos {
   rowSpan: number   // 1+
 }
 
-// ─── Mobile 2-column grid position ───────────────────────────────────────────
-export interface MobilePos {
-  col:    1 | 2   // which column (ignored when span=2)
-  span:   1 | 2   // 1=half-width, 2=full-width
-  order:  number  // sort order
-  height?: number // custom height override (px)
-}
-
 // ─── Widget style ─────────────────────────────────────────────────────────────
 export type GradientDir = 'to-r' | 'to-br' | 'to-b' | 'to-bl' | 'to-l' | 'to-tl' | 'to-t' | 'to-tr'
 
@@ -267,7 +259,6 @@ export interface Widget {
   type:      WidgetType
   data:      WidgetData
   pos:       TilePos
-  mobilePos: MobilePos
   zIndex:    number
   style:     WidgetStyle
   locked?:   boolean

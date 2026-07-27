@@ -2,7 +2,6 @@
 import { use, useEffect, useLayoutEffect, useState } from 'react'
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
-import { useIsMobile } from '@/hooks/useIsMobile'
 import { useSettings } from '@/store/settingsStore'
 import { getTheme } from '@/lib/themes'
 import { getFontStack } from '@/lib/fonts'
@@ -21,7 +20,6 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const t = useT()
   const openPanel = useUIStore(s => s.openPanel)
   const panel = useUIStore(s => s.panel)
-  const isMobile = useIsMobile()
 
   // Track async IndexedDB rehydration so we don't judge/switch on the pre-hydration state
   const [hydrated, setHydrated] = useState(() => useBoardStore.persist.hasHydrated())
@@ -96,7 +94,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       // eigene Wahl erbt es die globale --font-app.
       fontFamily: board.fontFamily ? getFontStack(board.fontFamily, customFonts) : 'var(--font-app)',
     }}>
-      <div style={{ position: 'absolute', inset: 0, paddingTop: isIsland ? 0 : (isMobile ? 48 : 52) }}>
+      <div style={{ position: 'absolute', inset: 0, paddingTop: isIsland ? 0 : 52 }}>
         <BoardGrid />
       </div>
 

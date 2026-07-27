@@ -42,27 +42,6 @@ import { useWidgetAiStore } from '@/store/aiStore'
 export { GRID_GAP, GRID_ROW_H, GRID_COLS, INFINITE_COL_W, INFINITE_GRID_COLS } from '@/lib/constants'
 import { GRID_GAP, GRID_ROW_H, GRID_COLS, INFINITE_COL_W, INFINITE_GRID_COLS } from '@/lib/constants'
 
-const MOBILE_ROW_H = 160
-
-const MOBILE_MIN_H: Partial<Record<string, number>> = {
-  calendar:    340,
-  chart:       300,
-  spreadsheet: 300,
-  map:         300,
-  drawboard:   320,
-  note:        260,
-  weather:     240,
-  clock:       220,
-  task:        220,
-  timer:       200,
-  water:       200,
-  image:       260,
-  text:        220,
-  sleep:       260,
-  agenda:      260,
-  quicklinks:  200,
-}
-
 export const TYPE_ICONS: Record<string, React.ReactNode> = {
   task:        <IconTask size={13} />,
   note:        <IconNote size={13} />,
@@ -194,9 +173,6 @@ export function TileContent({ widget }: { widget: Widget }) {
 interface Props {
   widget:             Widget
   gridRef:            React.RefObject<HTMLDivElement | null>
-  isMobile?:          boolean
-  mobileSpan?:        1 | 2
-  onDragHandleDown?:  (widgetId: string, e: React.PointerEvent, widgetEl: HTMLElement) => void
 }
 
 interface HeaderAction {
@@ -209,7 +185,7 @@ interface HeaderAction {
   icon: React.ReactNode
 }
 
-function TileWrapperInner({ widget, gridRef, isMobile, mobileSpan = 1, onDragHandleDown }: Props) {
+function TileWrapperInner({ widget, gridRef }: Props) {
   const deleteWidget    = useBoardStore(s => s.deleteWidget)
   const duplicateWidget = useBoardStore(s => s.duplicateWidget)
   const setWidgetLocked = useBoardStore(s => s.setWidgetLocked)
@@ -467,7 +443,7 @@ function TileWrapperInner({ widget, gridRef, isMobile, mobileSpan = 1, onDragHan
 
   const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
     id:       widget.id,
-    disabled: mode !== 'edit' || !!isMobile || isLocked,
+    disabled: mode !== 'edit' || isLocked,
     data:     { widgetType: widget.type },
   })
 
@@ -565,75 +541,9 @@ function TileWrapperInner({ widget, gridRef, isMobile, mobileSpan = 1, onDragHan
     border: '2px solid var(--bg)', borderRadius: 4, touchAction: 'none',
   }
 
-  // ── Mobile heights ────────────────────────────────────────────────────────────
-  const MOBILE_MIN_H_HALF: Partial<Record<string, number>> = {
-    note: 180, weather: 170, clock: 160, task: 170,
-    timer: 155, water: 155, image: 190, text: 165, map: 240,
-    sleep: 220, agenda: 220, quicklinks: 160,
-  }
-  const mobileHeightDefault = mobileSpan === 1
-    ? (MOBILE_MIN_H_HALF[widget.type] ?? 170)
-    : Math.max(MOBILE_MIN_H[widget.type] ?? 200, widget.pos.rowSpan * MOBILE_ROW_H)
-  const mobileHeight = widget.mobilePos?.height ?? mobileHeightDefault
-
   const isTransparent = (widget.type === 'text' && !!widget.data?.noBg) ||
     (widget.type === 'image' && !!widget.data?.noBar) ||
     (widget.type === 'clock' && !!widget.data?.noBg)
-
-  // ── Mobile resize refs ─────────────────────────────────────────────────────
-  const mobileResizeRef = useRef<{
-    type: 's' | 'e' | 'w' | 'se'
-    startX: number; startY: number
-    startH: number; startSpan: 1|2; startCol: 1|2
-  } | null>(null)
-
-  const updateMobilePos = useBoardStore.getState().updateMobilePos
-
-  function onMobileResizeDown(e: React.PointerEvent, type: 's'|'e'|'w'|'se') {
-    e.stopPropagation(); e.preventDefault()
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-    mobileResizeRef.current = {
-      type, startX: e.clientX, startY: e.clientY,
-      startH: mobileHeight,
-      startSpan: mobileSpan,
-      startCol: (widget.mobilePos?.col ?? 1) as 1|2,
-    }
-  }
-
-  function onMobileResizeMove(e: React.PointerEvent) {
-    const r = mobileResizeRef.current
-    if (!r) return
-    const dy = e.clientY - r.startY
-    const dx = e.clientX - r.startX
-
-    if (r.type === 's' || r.type === 'se') {
-      const newH = Math.max(120, r.startH + dy)
-      updateMobilePos(widget.id, { height: newH })
-    }
-    if ((r.type === 'e' || r.type === 'se') && r.startSpan === 1 && dx > 60) {
-      updateMobilePos(widget.id, { span: 2, height: mobileHeight })
-      mobileResizeRef.current = { ...r, startSpan: 2, startX: e.clientX }
-    }
-    if ((r.type === 'e' || r.type === 'se') && r.startSpan === 2 && dx < -60) {
-      updateMobilePos(widget.id, { span: 1, height: mobileHeight })
-      mobileResizeRef.current = { ...r, startSpan: 1, startX: e.clientX }
-    }
-    if (r.type === 'w' && r.startCol === 2 && dx < -60) {
-      updateMobilePos(widget.id, { col: 1 })
-      mobileResizeRef.current = { ...r, startCol: 1, startX: e.clientX }
-    }
-    if (r.type === 'w' && r.startCol === 1 && dx > 60) {
-      updateMobilePos(widget.id, { col: 2 })
-      mobileResizeRef.current = { ...r, startCol: 2, startX: e.clientX }
-    }
-  }
-
-  function onMobileResizeUp() { mobileResizeRef.current = null }
-
-  const mobileHandleBase: React.CSSProperties = {
-    position: 'absolute', zIndex: 30, background: 'var(--accent)',
-    border: '2px solid var(--bg)', borderRadius: 4, touchAction: 'none',
-  }
 
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation()
@@ -649,118 +559,6 @@ function TileWrapperInner({ widget, gridRef, isMobile, mobileSpan = 1, onDragHan
     }
     useUIStore.getState().clearMultiSelect()
     selectWidget(widget.id)
-  }
-
-  // ── Mobile card ───────────────────────────────────────────────────────────────
-  if (isMobile) {
-    return (
-      <div style={{ width: '100%', height: mobileHeight, position: 'relative' }}>
-        <div
-          onClick={handleClick}
-          onDoubleClick={handleFocusDblClick}
-          style={{
-            ...(isTransparent
-              ? {
-                  background: 'transparent',
-                  border: isSelected ? '1px dashed var(--accent)' : '1px dashed transparent',
-                  borderRadius: radiusCSS(widget.style),
-                  boxShadow: 'none',
-                }
-              : cachedStyle
-            ),
-            width: '100%', height: '100%',
-            display: 'flex', flexDirection: 'column',
-            overflow: 'hidden',
-            transition: 'box-shadow 0.15s',
-          }}
-        >
-          {/* Mobile header */}
-          {(!isTransparent || mode === 'edit') && (
-          <div ref={headerRef} style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: mobileSpan === 1 ? '5px 6px 4px' : '6px 10px 4px',
-            borderBottom: isTransparent ? 'none' : '1px solid var(--border)',
-            flexShrink: 0, userSelect: 'none',
-          }}>
-            {/* Drag handle — only in edit mode and not locked */}
-            {mode === 'edit' && onDragHandleDown && !isLocked && (
-              <div
-                onPointerDown={e => {
-                  e.stopPropagation()
-                  const cell = e.currentTarget.closest('[data-widget-cell]') as HTMLElement | null
-                  if (cell) onDragHandleDown(widget.id, e, cell)
-                }}
-                style={{
-                  cursor: 'grab', touchAction: 'none', flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 18, color: 'var(--text3)', opacity: 0.6, fontSize: 12,
-                  letterSpacing: 1,
-                }}
-                title={t('Move')}
-              >
-                ⠿
-              </div>
-            )}
-            {mode === 'edit' && isLocked && (
-              <span style={{ opacity: 0.5, color: 'var(--accent)', display:'flex', flexShrink: 0 }}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-              </span>
-            )}
-            <span style={{ opacity: 0.55, color: 'var(--text2)', display: 'flex', flexShrink: 0 }}>{widgetTypeIcon(widget)}</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {t(TYPE_LABELS[widget.type])}
-            </span>
-            {/* Selected-only actions */}
-            {mode === 'edit' && isSelected && (
-              <WidgetHeaderActions mobile actions={headerActions} headerRef={headerRef} canvasZoom={canvasZoom} />
-            )}
-          </div>
-          )}
-
-          {/* Widget content */}
-          <div ref={contentRefCallback} style={{ flex: 1, padding: widget.type === 'image' || widget.type === 'spreadsheet' || widget.type === 'map' ? 0 : (mobileSpan === 1 ? '6px 8px' : '10px 12px'), overflow: 'hidden', minHeight: 0 }}>
-            <WidgetErrorBoundary><TileContent widget={widget} /></WidgetErrorBoundary>
-          </div>
-        </div>
-
-        {transferMenu}
-        {aiChatOpen && <WidgetAiChat widget={widget} label={t(TYPE_LABELS[widget.type] ?? widget.type)} side={aiChatSide} top={aiChatTop} onClose={() => setAiChatOpen(false)} />}
-
-        {/* Mobile resize handles — shown when selected + edit mode + not locked */}
-        {mode === 'edit' && isSelected && !isLocked && (
-          <>
-            {/* Bottom */}
-            <div style={{ ...mobileHandleBase, bottom: -5, left: 'calc(50% - 18px)', width: 36, height: 10, cursor: 's-resize', borderRadius: 5 }}
-              onPointerDown={e => onMobileResizeDown(e, 's')}
-              onPointerMove={onMobileResizeMove}
-              onPointerUp={onMobileResizeUp}
-            />
-            {/* Right — changes span */}
-            <div style={{ ...mobileHandleBase, right: -5, top: 'calc(50% - 18px)', width: 10, height: 36, cursor: 'e-resize', borderRadius: 5 }}
-              onPointerDown={e => onMobileResizeDown(e, 'e')}
-              onPointerMove={onMobileResizeMove}
-              onPointerUp={onMobileResizeUp}
-            />
-            {/* Left — changes column */}
-            {mobileSpan === 1 && (
-              <div style={{ ...mobileHandleBase, left: -5, top: 'calc(50% - 18px)', width: 10, height: 36, cursor: 'w-resize', borderRadius: 5 }}
-                onPointerDown={e => onMobileResizeDown(e, 'w')}
-                onPointerMove={onMobileResizeMove}
-                onPointerUp={onMobileResizeUp}
-              />
-            )}
-            {/* Bottom-right corner */}
-            <div style={{ ...mobileHandleBase, bottom: -5, right: -5, width: 14, height: 14, cursor: 'se-resize', borderRadius: 3 }}
-              onPointerDown={e => onMobileResizeDown(e, 'se')}
-              onPointerMove={onMobileResizeMove}
-              onPointerUp={onMobileResizeUp}
-            />
-          </>
-        )}
-      </div>
-    )
   }
 
   // ── Desktop card ──────────────────────────────────────────────────────────────
@@ -897,11 +695,7 @@ function TileWrapperInner({ widget, gridRef, isMobile, mobileSpan = 1, onDragHan
   )
 }
 
-const TileWrapper = memo(TileWrapperInner, (prev, next) =>
-  prev.widget === next.widget &&
-  prev.isMobile === next.isMobile &&
-  prev.mobileSpan === next.mobileSpan
-)
+const TileWrapper = memo(TileWrapperInner, (prev, next) => prev.widget === next.widget)
 export default TileWrapper
 
 // Responsive Header-Aktionen: normale Button-Reihe, solange genug Platz ist —
@@ -914,9 +708,8 @@ export default TileWrapper
 // Button, damit sie automatisch mit der jeweils sichtbaren Aktionsmenge
 // (isLocked/hasOtherBoards/aiEnabled…) mitgeht.
 function WidgetHeaderActions({
-  mobile, actions, headerRef, canvasZoom,
+  actions, headerRef, canvasZoom,
 }: {
-  mobile?: boolean
   actions: HeaderAction[]
   headerRef: React.RefObject<HTMLDivElement | null>
   canvasZoom: number
@@ -925,10 +718,10 @@ function WidgetHeaderActions({
   const measureRef = useRef<HTMLDivElement>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const gap = mobile ? 3 : 2
+  const gap = 2
   // Platz, der dem Icon + einem minimal lesbaren Titel-Rest links im Header
   // vorbehalten bleibt, bevor die Aktionen kollabieren dürfen.
-  const minLeftReserve = mobile ? 90 : 70
+  const minLeftReserve = 70
 
   useLayoutEffect(() => {
     const header = headerRef.current
@@ -969,7 +762,7 @@ function WidgetHeaderActions({
       {/* Unsichtbarer Mess-Klon — nie sichtbar, nimmt keinen Platz im Layout ein */}
       <div ref={measureRef} style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none', top: 0, left: 0, display: 'flex', gap, whiteSpace: 'nowrap' }} aria-hidden>
         {actions.map(a => (
-          <IconBtn key={a.key} title={a.title} onClick={() => {}} danger={a.danger} active={a.active} mobile={mobile}>{a.icon}</IconBtn>
+          <IconBtn key={a.key} title={a.title} onClick={() => {}} danger={a.danger} active={a.active}>{a.icon}</IconBtn>
         ))}
       </div>
 
@@ -980,8 +773,8 @@ function WidgetHeaderActions({
             transition={{ duration: 0.12 }}
             style={{ position: 'relative' }}
           >
-            <IconBtn title={t('More actions')} onClick={() => setMenuOpen(o => !o)} mobile={mobile} active={menuOpen}>
-              <svg width={mobile ? 13 : 11} height={mobile ? 13 : 11} viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <IconBtn title={t('More actions')} onClick={() => setMenuOpen(o => !o)} active={menuOpen}>
+              <svg width={11} height={11} viewBox="0 0 24 24" fill="currentColor" stroke="none">
                 <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
               </svg>
             </IconBtn>
@@ -1028,7 +821,7 @@ function WidgetHeaderActions({
             style={{ display: 'flex', gap }}
           >
             {actions.map(a => (
-              <IconBtn key={a.key} id={a.id} title={a.title} onClick={a.onClick} danger={a.danger} active={a.active} mobile={mobile}>{a.icon}</IconBtn>
+              <IconBtn key={a.key} id={a.id} title={a.title} onClick={a.onClick} danger={a.danger} active={a.active}>{a.icon}</IconBtn>
             ))}
           </motion.div>
         )}
@@ -1037,8 +830,8 @@ function WidgetHeaderActions({
   )
 }
 
-function IconBtn({ children, onClick, title, danger, mobile, active, id }: {
-  children: React.ReactNode; onClick: (e: React.MouseEvent) => void; title?: string; danger?: boolean; mobile?: boolean; active?: boolean; id?: string
+function IconBtn({ children, onClick, title, danger, active, id }: {
+  children: React.ReactNode; onClick: (e: React.MouseEvent) => void; title?: string; danger?: boolean; active?: boolean; id?: string
 }) {
   return (
     <button
@@ -1047,7 +840,7 @@ function IconBtn({ children, onClick, title, danger, mobile, active, id }: {
       aria-label={title}
       onClick={e => { e.stopPropagation(); onClick(e) }}
       style={{
-        width: mobile ? 32 : 24, height: mobile ? 32 : 24, borderRadius: 8, border: 'none', fontSize: mobile ? 14 : 12,
+        width: 24, height: 24, borderRadius: 8, border: 'none', fontSize: 12,
         background: active ? 'var(--accent)' : 'var(--surface2)',
         color: danger ? 'var(--danger)' : active ? 'white' : 'var(--text2)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',

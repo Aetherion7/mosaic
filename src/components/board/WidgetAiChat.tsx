@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useWidgetAiStore } from '@/store/aiStore'
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
-import { useIsMobile } from '@/hooks/useIsMobile'
 import { IconSparkle, renderInlineMd } from '@/components/ui/aiShared'
 import { useT } from '@/hooks/useT'
 import type { Widget } from '@/types'
@@ -41,7 +40,6 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
     el.style.height = 'auto'
     el.style.height = Math.min(el.scrollHeight, 96) + 'px'
   }, [input])
-  const isMobile  = useIsMobile()
 
   // Das Chat-Fenster ist UI, kein Board-Inhalt: Auf der unendlichen Leinwand
   // skaliert es sonst mit dem Zoom mit — beim Rauszoomen wird der 2px-Ring zu
@@ -63,26 +61,16 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
     send(widget.id, text)
   }
 
-  // Mobile: seitliches Andocken passt auf kein Telefon — dort als Bottom-Sheet
-  // über die volle Breite (Muster ThemePanel mobile), ohne Gegenskalierung.
-  const frameStyle: React.CSSProperties = isMobile
-    ? {
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 900,
-        height: '70vh',
-        display: 'flex',
-        borderRadius: '16px 16px 0 0', padding: '3px 3px 0',
-        boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
-      }
-    : {
-        position: 'absolute', top, zIndex: 60,
-        ...(side === 'right' ? { left: 'calc(100% + 10px)' } : { right: 'calc(100% + 10px)' }),
-        width: 560, height: 440,
-        transform: counterScale !== 1 ? `scale(${counterScale})` : undefined,
-        transformOrigin: side === 'right' ? 'top left' : 'top right',
-        display: 'flex',
-        borderRadius: 16, padding: 3,
-        boxShadow: '0 16px 56px rgba(0,0,0,0.45)',
-      }
+  const frameStyle: React.CSSProperties = {
+    position: 'absolute', top, zIndex: 60,
+    ...(side === 'right' ? { left: 'calc(100% + 10px)' } : { right: 'calc(100% + 10px)' }),
+    width: 560, height: 440,
+    transform: counterScale !== 1 ? `scale(${counterScale})` : undefined,
+    transformOrigin: side === 'right' ? 'top left' : 'top right',
+    display: 'flex',
+    borderRadius: 16, padding: 3,
+    boxShadow: '0 16px 56px rgba(0,0,0,0.45)',
+  }
 
   return (
     // Gleicher animierter Verlaufs-Rahmen wie das große KI-Panel: äußere
@@ -99,7 +87,7 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
       display: 'flex', flexDirection: 'column',
       background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
       backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-      borderRadius: isMobile ? '13px 13px 0 0' : 13,
+      borderRadius: 13,
       padding: 14,
     }}>
       {/* Kopfzeile */}

@@ -6,7 +6,7 @@
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { useSettings } from '@/store/settingsStore'
-import { defaultWidget, findNextPos, findPosNear, findNextMobileOrder } from '@/lib/defaults'
+import { defaultWidget, findNextPos, findPosNear } from '@/lib/defaults'
 import { getReader } from '@/lib/ai/readerRegistry'
 import { THEMES } from '@/lib/themes'
 import { GRID_COLS, GRID_GAP, INFINITE_COL_W, INFINITE_GRID_COLS } from '@/lib/constants'
@@ -246,7 +246,7 @@ export async function executeAiTool(
         colSpan: typeof input.colSpan === 'number' ? Math.max(1, input.colSpan) : base.colSpan,
         rowSpan: typeof input.rowSpan === 'number' ? Math.max(1, input.rowSpan) : base.rowSpan,
       }
-      const w = defaultWidget(type, pos, {}, findNextMobileOrder(board.widgets))
+      const w = defaultWidget(type, pos)
       if (input.data && typeof input.data === 'object') {
         w.data = { ...w.data, ...normalizeWidgetData(type, input.data as Record<string, unknown>) }
       }

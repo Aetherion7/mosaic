@@ -4,7 +4,6 @@ import { ColorSwatch } from '@/components/ui/ColorSwatch'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
-import { useIsMobile } from '@/hooks/useIsMobile'
 import { DEFAULT_BG } from '@/lib/defaults'
 import { THEMES, LIGHT_THEME_IDS, resolveCustomTheme } from '@/lib/themes'
 import { useSettings } from '@/store/settingsStore'
@@ -16,12 +15,6 @@ const desktopMotion = {
   animate:    { opacity: 1, y: 0,   scale: 1    },
   exit:       { opacity: 0, y: -10, scale: 0.97 },
   transition: { type: 'spring' as const, stiffness: 380, damping: 32 },
-}
-const mobileMotion = {
-  initial:    { opacity: 0, y: '100%' },
-  animate:    { opacity: 1, y: 0 },
-  exit:       { opacity: 0, y: '100%' },
-  transition: { type: 'spring' as const, stiffness: 380, damping: 40 },
 }
 
 const DIR_OPTIONS: { value: GradientDir; label: string }[] = [
@@ -44,7 +37,6 @@ export default function ThemePanel() {
   const bg         = useBoardStore(s => selectBoard(s)?.bg ?? DEFAULT_BG)
   const themeId    = useBoardStore(s => selectBoard(s)?.themeId ?? 'dark')
   const fileRef   = useRef<HTMLInputElement>(null)
-  const isMobile  = useIsMobile()
   const customThemes = useSettings(s => s.customThemes)
   const [hoveredTheme, setHoveredTheme] = useState<string | null>(null)
 
@@ -57,40 +49,25 @@ export default function ThemePanel() {
   }
 
   const panelBg = 'color-mix(in srgb, var(--surface) 75%, var(--bg))'
-  const panelStyle: React.CSSProperties = isMobile
-    ? {
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 900,
-        background: panelBg,
-        backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
-        border: '1px solid var(--border)',
-        borderRadius: '20px 20px 0 0', padding: '8px 16px 32px',
-        boxShadow: '0 -8px 40px rgba(0,0,0,.5)',
-        maxHeight: '80vh', overflowY: 'auto',
-      }
-    : {
-        position: 'fixed', top: 60, right: 16, zIndex: 900,
-        width: 320,
-        background: panelBg,
-        backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
-        border: '1px solid var(--border)',
-        borderRadius: 20, padding: 16,
-        boxShadow: '0 24px 64px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,0.04)',
-        maxHeight: 'calc(100vh - 80px)', overflowY: 'auto',
-      }
+  const panelStyle: React.CSSProperties = {
+    position: 'fixed', top: 60, right: 16, zIndex: 900,
+    width: 320,
+    background: panelBg,
+    backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
+    border: '1px solid var(--border)',
+    borderRadius: 20, padding: 16,
+    boxShadow: '0 24px 64px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,0.04)',
+    maxHeight: 'calc(100vh - 80px)', overflowY: 'auto',
+  }
 
   return (
     <AnimatePresence>
       {panel === 'theme' && (
         <motion.div
-          {...(isMobile ? mobileMotion : desktopMotion)}
+          {...desktopMotion}
           onClick={e => e.stopPropagation()}
           style={panelStyle}
         >
-          {isMobile && (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 8px' }}>
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)' }} />
-            </div>
-          )}
           <PanelHeader title={t('Theme & background')} onClose={() => openPanel(null)} />
 
           {/* ── Theme grid ── */}

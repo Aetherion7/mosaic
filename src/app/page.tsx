@@ -757,8 +757,8 @@ export default function HomePage() {
     const name = newName.trim() || t('New board')
     const id   = createBoard(name)
     const tpl  = allTemplates.find(t => t.id === selectedTpl)
-    tpl?.widgets.forEach((w, i) => {
-      addWidget(defaultWidget(w.type, { col: w.col, row: w.row, colSpan: w.colSpan, rowSpan: w.rowSpan }, {}, i * 10))
+    tpl?.widgets.forEach(w => {
+      addWidget(defaultWidget(w.type, { col: w.col, row: w.row, colSpan: w.colSpan, rowSpan: w.rowSpan }))
     })
     setCreating(false)
     setNewName('')

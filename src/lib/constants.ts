@@ -1,8 +1,3 @@
-// Widget types that are always full-width (span=2) on mobile
-export const MOBILE_FORCE_FULL = new Set([
-  'calendar', 'chart', 'spreadsheet', 'drawboard', 'map', 'reader',
-])
-
 // Single source of truth for grid geometry — do not redefine elsewhere
 // Zelle + Gap ergeben zusammen den Raster-Pitch von 124 px. Der Gap ist bewusst
 // deutlich sichtbar (12 px), damit benachbarte Widgets oben/unten und

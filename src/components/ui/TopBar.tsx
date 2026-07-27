@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
-import { useIsMobile } from '@/hooks/useIsMobile'
 import { useSettings } from '@/store/settingsStore'
 import SettingsModal from '@/components/ui/SettingsModal'
 import SlidingTabs from '@/components/ui/SlidingTabs'
@@ -28,7 +27,6 @@ export default function TopBar() {
   const toggleMode     = useUIStore(s => s.toggleMode)
   const openPanel      = useUIStore(s => s.openPanel)
   const panel          = useUIStore(s => s.panel)
-  const isMobile       = useIsMobile()
   const t              = useT()
 
   const showKbdHints  = useSettings(s => s.showKbdHints)
@@ -139,7 +137,7 @@ export default function TopBar() {
     else setNameVal(board?.name ?? '')
   }
 
-  const headerHeight = isMobile ? 48 : 52
+  const headerHeight = 52
 
   const islandPill: React.CSSProperties = isIsland ? {
     // Mit --bg gemischt statt transparent: bleibt auch über weißem Inhalt
@@ -161,12 +159,9 @@ export default function TopBar() {
     <header style={{
       position: 'fixed', top: 0, left: 0, right: 0,
       height: headerHeight, zIndex: 1000,
-      // Mobil: Mitte + rechte Buttons behalten ihre natürliche Breite, nur der
-      // Namensbereich links schrumpft (Ellipsis) — sonst wird das Zahnrad
-      // im Edit-Modus rechts aus dem Viewport gedrängt
-      display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr) auto auto' : '1fr auto 1fr', alignItems: 'center',
-      columnGap: isMobile ? 6 : 0,
-      padding: isIsland ? (isMobile ? '6px 12px' : '6px 16px') : (isMobile ? '0 12px' : '0 16px'),
+      display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center',
+      columnGap: 0,
+      padding: isIsland ? '6px 16px' : '0 16px',
       background: isIsland ? 'transparent' : 'color-mix(in srgb, var(--surface) 60%, var(--bg))',
       backdropFilter: isIsland ? 'none' : 'blur(16px)',
       borderBottom: isIsland ? 'none' : '1px solid var(--border)',
@@ -181,7 +176,7 @@ export default function TopBar() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/mosaiclogo.png" alt="mosaic" width={34} height={34} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
             </div>
-            {!isMobile && <span style={{ fontSize: 28, fontWeight: 400, color: 'var(--text1)', fontFamily: 'Guavine, sans-serif', lineHeight: 1 }}>mosaic</span>}
+            <span style={{ fontSize: 28, fontWeight: 400, color: 'var(--text1)', fontFamily: 'Guavine, sans-serif', lineHeight: 1 }}>mosaic</span>
           </Link>
           <div style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
           {(
@@ -191,11 +186,11 @@ export default function TopBar() {
                   onChange={e => setNameVal(e.target.value)}
                   onBlur={commitName}
                   onKeyDown={e => { if (e.key === 'Enter') commitName(); if (e.key === 'Escape') { setEditingName(false); setNameVal(board?.name ?? '') } }}
-                  style={{ fontSize: 14, fontWeight: 600, color: 'var(--text1)', background: 'transparent', border: 'none', outline: 'none', borderRadius: 6, padding: '2px 4px', width: `${Math.max(nameVal.length, 2) + 1}ch`, maxWidth: isMobile ? 110 : 220 }}
+                  style={{ fontSize: 14, fontWeight: 600, color: 'var(--text1)', background: 'transparent', border: 'none', outline: 'none', borderRadius: 6, padding: '2px 4px', width: `${Math.max(nameVal.length, 2) + 1}ch`, maxWidth: 220 }}
                 />
               ) : (
                 <span onDoubleClick={() => setEditingName(true)} title={t("Double-click to edit")}
-                  style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'text', userSelect: 'none', maxWidth: isMobile ? 110 : 220, overflow: 'hidden' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'text', userSelect: 'none', maxWidth: 220, overflow: 'hidden' }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {board?.name ?? t('Board')}
                   </span>
@@ -205,7 +200,7 @@ export default function TopBar() {
                 </span>
               )
             ) : (
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text1)', userSelect: 'none', maxWidth: isMobile ? 110 : 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text1)', userSelect: 'none', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {board?.name ?? t('Board')}
               </span>
             )
@@ -219,7 +214,7 @@ export default function TopBar() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/mosaiclogo.png" alt="mosaic" width={30} height={30} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
             </div>
-            {!isMobile && <span style={{ fontSize: 24, fontWeight: 400, color: 'var(--text1)', fontFamily: 'Guavine, sans-serif', lineHeight: 1 }}>mosaic</span>}
+            <span style={{ fontSize: 24, fontWeight: 400, color: 'var(--text1)', fontFamily: 'Guavine, sans-serif', lineHeight: 1 }}>mosaic</span>
           </Link>
           <div style={{ width: 1, height: 16, background: 'var(--border)', flexShrink: 0 }} />
           {(
@@ -229,11 +224,11 @@ export default function TopBar() {
                   onChange={e => setNameVal(e.target.value)}
                   onBlur={commitName}
                   onKeyDown={e => { if (e.key === 'Enter') commitName(); if (e.key === 'Escape') { setEditingName(false); setNameVal(board?.name ?? '') } }}
-                  style={{ fontSize: 14, fontWeight: 600, color: 'var(--text1)', background: 'transparent', border: 'none', outline: 'none', padding: '2px 0', width: `${Math.max(nameVal.length, 2) + 1}ch`, maxWidth: isMobile ? 110 : 220 }}
+                  style={{ fontSize: 14, fontWeight: 600, color: 'var(--text1)', background: 'transparent', border: 'none', outline: 'none', padding: '2px 0', width: `${Math.max(nameVal.length, 2) + 1}ch`, maxWidth: 220 }}
                 />
               ) : (
                 <span onDoubleClick={() => setEditingName(true)} title={t("Double-click to edit")}
-                  style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'text', userSelect: 'none', maxWidth: isMobile ? 110 : 220, overflow: 'hidden' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'text', userSelect: 'none', maxWidth: 220, overflow: 'hidden' }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {board?.name ?? t('Board')}
                   </span>
@@ -243,7 +238,7 @@ export default function TopBar() {
                 </span>
               )
             ) : (
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text1)', userSelect: 'none', maxWidth: isMobile ? 110 : 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text1)', userSelect: 'none', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {board?.name ?? t('Board')}
               </span>
             )
@@ -285,7 +280,7 @@ export default function TopBar() {
               <IconCircleBtn accent active={panel === 'addWidget'} onClick={() => openPanel(panel === 'addWidget' ? null : 'addWidget')} title={`${t("Add widget")} [${shortcuts.addWidget}]`} id="add-widget-btn">
                 <IconPlus />
               </IconCircleBtn>
-              {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>{shortcuts.addWidget}</span>}
+              {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.addWidget}</span>}
             </div>
           </div>
 
@@ -299,27 +294,27 @@ export default function TopBar() {
               onChange={m => useUIStore.getState().setMode(m)}
               slotW={32} slotH={32}
             />
-            {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>{shortcuts.toggleMode}</span>}
+            {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.toggleMode}</span>}
           </div>
         </div>
       </div>
 
       {/* ── Right: Search + Theme + Export + Settings ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: isMobile ? 4 : 8, ...islandRight }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, ...islandRight }}>
         {/* Search with ⌘K hint — Ctrl+K ist fest verdrahtet (Browser-/OS-
             Konvention), anders als die 5 umbelegbaren Shortcuts unten. */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <IconCircleBtn id="tour-search" active={searchOpen} onClick={() => setSearchOpen(o => !o)} title={t("Search") + " [" + t("Ctrl+K") + "]"}>
             <IconSearch />
           </IconCircleBtn>
-          {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>⌘K</span>}
+          {showKbdHints && <span style={kbdBadgeStyle}>⌘K</span>}
         </div>
 
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <IconCircleBtn id="tour-theme" active={panel === 'theme'} onClick={() => openPanel(panel === 'theme' ? null : 'theme')} title={`${t("Theme")} [${shortcuts.theme}]`}>
             <IconSun />
           </IconCircleBtn>
-          {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>{shortcuts.theme}</span>}
+          {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.theme}</span>}
         </div>
 
         {aiEnabled && (
@@ -327,7 +322,7 @@ export default function TopBar() {
             <IconCircleBtn id="tour-ai" active={panel === 'ai'} onClick={() => openPanel(panel === 'ai' ? null : 'ai')} title={`${t("AI assistant")} [${shortcuts.ai}]`}>
               <IconSparkleTopbar />
             </IconCircleBtn>
-            {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>{shortcuts.ai}</span>}
+            {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.ai}</span>}
           </div>
         )}
 
@@ -335,7 +330,7 @@ export default function TopBar() {
           <IconCircleBtn id="tour-settings" active={settingsOpen} onClick={() => setSettingsOpen(o => !o)} title={`${t("Settings")} [${shortcuts.settings}]`}>
             <IconGear />
           </IconCircleBtn>
-          {showKbdHints && !isMobile && <span style={kbdBadgeStyle}>{shortcuts.settings}</span>}
+          {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.settings}</span>}
         </div>
       </div>
     </header>

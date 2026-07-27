@@ -8,14 +8,13 @@ import {
 import { useShallow } from 'zustand/react/shallow'
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 
-import { MOBILE_FORCE_FULL, INFINITE_GRID_ROWS } from '@/lib/constants'
+import { INFINITE_GRID_ROWS } from '@/lib/constants'
 import { useUIStore } from '@/store/uiStore'
 import { useSettings } from '@/store/settingsStore'
 import { DEFAULT_BG } from '@/lib/defaults'
-import { useIsMobile } from '@/hooks/useIsMobile'
 import { useT } from '@/hooks/useT'
 import CanvasBackground from '@/components/canvas/CanvasBackground'
-import TileWrapper, { GRID_COLS, GRID_GAP, GRID_ROW_H, INFINITE_COL_W, INFINITE_GRID_COLS, TYPE_LABELS } from './TileWrapper'
+import TileWrapper, { GRID_COLS, GRID_GAP, GRID_ROW_H, INFINITE_COL_W, INFINITE_GRID_COLS } from './TileWrapper'
 import TilePicker from './TilePicker'
 import InfiniteCanvas, { type InfiniteCanvasHandle } from './InfiniteCanvas'
 import type { Widget } from '@/types'
@@ -36,10 +35,9 @@ export default function BoardGrid() {
   const getWIRRef      = useRef<((x1: number, y1: number, x2: number, y2: number) => string[]) | null>(null)
   const cleanupRubber  = useRef<(() => void) | null>(null)
   const spaceHeld      = useRef(false)
-  const isMobile    = useIsMobile()
   const headerStyle = useSettings(s => s.headerStyle)
   const isIsland    = headerStyle === 'island'
-  const topPad      = isIsland ? (isMobile ? 56 : 64) : 24
+  const topPad      = isIsland ? 64 : 24
 
   const layoutMode    = useBoardStore(s => selectBoard(s)?.layoutMode ?? 'infinite')
   const isInfinite    = layoutMode === 'infinite'
@@ -55,7 +53,6 @@ export default function BoardGrid() {
   const mode                = useUIStore(s => s.mode)
   const openPanel           = useUIStore(s => s.openPanel)
   const selectWidget        = useUIStore(s => s.selectWidget)
-  const clearMultiSelect    = useUIStore(s => s.clearMultiSelect)
   const lastAddedWidgetId   = useUIStore(s => s.lastAddedWidgetId)
 
   // Auto-scroll to newly added widget (grid mode only; infinite mode places widget at viewport center)
@@ -274,229 +271,6 @@ export default function BoardGrid() {
     }
   }
 
-  // ── Mobile drag state ─────────────────────────────────────────────────────────
-  const [mobileDrag, setMobileDrag] = useState<{
-    widgetId: string
-    ghostX: number; ghostY: number
-    offsetX: number; offsetY: number
-    ghostW: number; ghostH: number
-  } | null>(null)
-  const mobileScrollRef = useRef<HTMLDivElement>(null)
-
-  // One-time migration: distribute legacy all-col1 half-widgets evenly across both columns
-  useEffect(() => {
-    if (!isMobile) return
-    const state = useBoardStore.getState()
-    const board = selectBoard(state)
-    if (!board) return
-    const halfWidgets = Object.values(board.widgets)
-      .filter(w => !MOBILE_FORCE_FULL.has(w.type) && (w.mobilePos?.span ?? 1) === 1)
-      .sort((a, b) => (a.mobilePos?.order ?? 0) - (b.mobilePos?.order ?? 0))
-    if (halfWidgets.length > 1 && halfWidgets.every(w => (w.mobilePos?.col ?? 1) === 1)) {
-      halfWidgets.forEach((w, i) => {
-        state.updateMobilePos(w.id, { col: i % 2 === 0 ? 1 : 2 })
-      })
-    }
-  }, [isMobile]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Mobile layout ─────────────────────────────────────────────────────────────
-  if (isMobile) {
-    // Sort by mobile order
-    const mobileSorted = [...widgets].sort((a, b) => {
-      const oa = a.mobilePos?.order ?? (a.pos.row * 100 + a.pos.col)
-      const ob = b.mobilePos?.order ?? (b.pos.row * 100 + b.pos.col)
-      return oa - ob
-    })
-
-    // Init mobilePos for legacy widgets without it
-    mobileSorted.forEach((w, i) => {
-      if (!w.mobilePos) {
-        useBoardStore.getState().updateMobilePos(w.id, { order: i * 10, col: 1, span: MOBILE_FORCE_FULL.has(w.type) ? 2 : 1 })
-      }
-    })
-
-    // ── Drag handlers ──────────────────────────────────────────────────────────
-    function onDragHandleDown(widgetId: string, e: React.PointerEvent, widgetEl: HTMLElement) {
-      if (mode !== 'edit') return
-      e.preventDefault()
-      const rect = widgetEl.getBoundingClientRect()
-      setMobileDrag({
-        widgetId,
-        ghostX: e.clientX, ghostY: e.clientY,
-        offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
-        ghostW: rect.width, ghostH: rect.height,
-      })
-    }
-
-    function onDragPointerMove(e: React.PointerEvent) {
-      if (!mobileDrag) return
-      e.preventDefault()
-      setMobileDrag(s => s ? { ...s, ghostX: e.clientX, ghostY: e.clientY } : null)
-    }
-
-    function onDragPointerUp(e: React.PointerEvent) {
-      if (!mobileDrag) return
-      const scroll = mobileScrollRef.current
-      if (scroll) {
-        const containerRect = scroll.getBoundingClientRect()
-        const relX = e.clientX - containerRect.left
-        const newCol: 1|2 = relX < containerRect.width / 2 ? 1 : 2
-
-        // Find nearest widget center by Y for order insertion
-        const scrollTop = scroll.scrollTop
-        const dropY = e.clientY - containerRect.top + scrollTop
-        const others = mobileSorted
-          .filter(w => w.id !== mobileDrag.widgetId)
-          .map(w => {
-            const el = scroll.querySelector(`[data-widget-cell="${w.id}"]`) as HTMLElement | null
-            if (!el) return null
-            const r = el.getBoundingClientRect()
-            return { id: w.id, order: w.mobilePos?.order ?? 0, centerY: r.top + r.height / 2 - containerRect.top + scrollTop }
-          })
-          .filter(Boolean) as { id: string; order: number; centerY: number }[]
-        others.sort((a, b) => a.centerY - b.centerY)
-
-        let newOrder: number
-        if (others.length === 0) {
-          newOrder = 0
-        } else if (dropY <= others[0].centerY) {
-          newOrder = others[0].order - 10
-        } else if (dropY >= others[others.length - 1].centerY) {
-          newOrder = others[others.length - 1].order + 10
-        } else {
-          const idx = others.findIndex((o, i) => i < others.length - 1 && dropY > o.centerY && dropY <= others[i + 1].centerY)
-          newOrder = idx >= 0 ? (others[idx].order + others[idx + 1].order) / 2 : others[0].order
-        }
-
-        useBoardStore.getState().updateMobilePos(mobileDrag.widgetId, { col: newCol, order: newOrder })
-      }
-      setMobileDrag(null)
-    }
-
-    const draggingWidget = mobileDrag ? widgets.find(w => w.id === mobileDrag.widgetId) : null
-
-    return (
-      <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
-        <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
-          <CanvasBackground />
-        </div>
-
-        <div
-          ref={mobileScrollRef}
-          style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', overflowY: mobileDrag ? 'hidden' : 'auto', overflowX: 'hidden', touchAction: mobileDrag ? 'none' : 'auto' }}
-          onClick={() => { selectWidget(null); clearMultiSelect() }}
-          onPointerMove={mobileDrag ? onDragPointerMove : undefined}
-          onPointerUp={mobileDrag ? onDragPointerUp : undefined}
-          onPointerCancel={() => setMobileDrag(null)}
-        >
-          {/* Independent-column layout: each column is a separate vertical stack, linked only at full-width (span=2) boundaries */}
-          {(() => {
-            type MobileBlock =
-              | { type: 'full'; w: Widget }
-              | { type: 'columns'; col1: Widget[]; col2: Widget[] }
-            const blocks: MobileBlock[] = []
-            let pendingCol1: Widget[] = []
-            let pendingCol2: Widget[] = []
-            for (const w of mobileSorted) {
-              const span: 1|2 = MOBILE_FORCE_FULL.has(w.type) ? 2 : ((w.mobilePos?.span ?? 1) as 1|2)
-              if (span === 2) {
-                if (pendingCol1.length > 0 || pendingCol2.length > 0) {
-                  blocks.push({ type: 'columns', col1: pendingCol1, col2: pendingCol2 })
-                  pendingCol1 = []; pendingCol2 = []
-                }
-                blocks.push({ type: 'full', w })
-              } else {
-                if ((w.mobilePos?.col ?? 1) === 1) pendingCol1.push(w)
-                else pendingCol2.push(w)
-              }
-            }
-            if (pendingCol1.length > 0 || pendingCol2.length > 0) {
-              blocks.push({ type: 'columns', col1: pendingCol1, col2: pendingCol2 })
-            }
-
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: `${topPad}px 8px 120px`, width: '100%', boxSizing: 'border-box' }}>
-                {blocks.map((block, bi) => {
-                  if (block.type === 'full') {
-                    return (
-                      <div key={block.w.id} data-widget-cell={block.w.id}
-                        style={{ opacity: mobileDrag?.widgetId === block.w.id ? 0.25 : 1, transition: 'opacity 0.15s', minWidth: 0 }}>
-                        <TileWrapper widget={block.w} gridRef={gridRef} isMobile mobileSpan={2} onDragHandleDown={onDragHandleDown} />
-                      </div>
-                    )
-                  } else {
-                    return (
-                      <div key={`cols-${bi}-${block.col1[0]?.id ?? 'e'}-${block.col2[0]?.id ?? 'e'}`}
-                        style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {block.col1.map(w => (
-                            <div key={w.id} data-widget-cell={w.id}
-                              style={{ opacity: mobileDrag?.widgetId === w.id ? 0.25 : 1, transition: 'opacity 0.15s' }}>
-                              <TileWrapper widget={w} gridRef={gridRef} isMobile mobileSpan={1} onDragHandleDown={onDragHandleDown} />
-                            </div>
-                          ))}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {block.col2.map(w => (
-                            <div key={w.id} data-widget-cell={w.id}
-                              style={{ opacity: mobileDrag?.widgetId === w.id ? 0.25 : 1, transition: 'opacity 0.15s' }}>
-                              <TileWrapper widget={w} gridRef={gridRef} isMobile mobileSpan={1} onDragHandleDown={onDragHandleDown} />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  }
-                })}
-
-                {mobileSorted.length === 0 && mode !== 'edit' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '60px 24px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 13, color: 'var(--text3)' }}>{t('No widgets yet')}</div>
-                    <button
-                      onClick={e => { e.stopPropagation(); useUIStore.getState().setMode('edit') }}
-                      style={{ padding: '10px 22px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
-                    >
-                      {t('Switch to edit mode')}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )
-          })()}
-        </div>
-
-        {/* Drag ghost */}
-        {mobileDrag && draggingWidget && (
-          <div
-            style={{
-              position: 'fixed',
-              left: mobileDrag.ghostX - mobileDrag.offsetX,
-              top: mobileDrag.ghostY - mobileDrag.offsetY,
-              width: mobileDrag.ghostW,
-              height: mobileDrag.ghostH,
-              pointerEvents: 'none',
-              zIndex: 500,
-              borderRadius: draggingWidget.style.borderRadius,
-              background: draggingWidget.style.bgColor,
-              border: `2px solid var(--accent)`,
-              opacity: 0.85,
-              boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              overflow: 'hidden',
-            }}
-          >
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              {t(TYPE_LABELS[draggingWidget.type] ?? draggingWidget.type)}
-            </span>
-          </div>
-        )}
-
-        <TilePicker />
-      </div>
-    )
-  }
-
-  // ── Desktop layout ────────────────────────────────────────────────────────────
   const infiniteRows = INFINITE_GRID_ROWS
 
   const dndGrid = (

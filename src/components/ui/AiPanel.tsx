@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useUIStore } from '@/store/uiStore'
 import { useAiStore, type AiChatItem } from '@/store/aiStore'
 import { useSettings } from '@/store/settingsStore'
-import { useIsMobile } from '@/hooks/useIsMobile'
 import { useT } from '@/hooks/useT'
 import SettingsModal from '@/components/ui/SettingsModal'
 import { IconSparkle, renderInlineMd } from '@/components/ui/aiShared'
@@ -32,18 +31,10 @@ const desktopMotion = {
   exit:       { opacity: 0, y: -10, scale: 0.97 },
   transition: { type: 'spring' as const, stiffness: 380, damping: 32 },
 }
-const mobileMotion = {
-  initial:    { opacity: 0, y: '100%' },
-  animate:    { opacity: 1, y: 0 },
-  exit:       { opacity: 0, y: '100%' },
-  transition: { type: 'spring' as const, stiffness: 380, damping: 40 },
-}
-
 export default function AiPanel() {
   const t = useT()
   const panel = useUIStore(s => s.panel)
   const openPanel = useUIStore(s => s.openPanel)
-  const isMobile  = useIsMobile()
   const items     = useAiStore(s => s.items)
   const running   = useAiStore(s => s.running)
   const send      = useAiStore(s => s.send)
@@ -102,26 +93,19 @@ export default function AiPanel() {
   // den 2px-Padding-Ring — nicht die ganze Fläche, sonst schiene er bei
   // transparentem Panel (Crystal Glass) komplett durch. Ganzzahlige Stärke:
   // bei 1.5px rundete der Browser je nach Kantenlage auf 1px oder 2px.
-  const frameStyle: React.CSSProperties = isMobile
-    ? {
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 900,
-        borderRadius: '20px 20px 0 0', padding: '3px 3px 0',
-        boxShadow: '0 -8px 40px rgba(0,0,0,.5)',
-        height: '78vh', display: 'flex',
-      }
-    : {
-        position: 'fixed', top: 60, right: 16, zIndex: 900,
-        width: 360,
-        borderRadius: 20, padding: 3,
-        boxShadow: '0 24px 64px rgba(0,0,0,.55)',
-        height: 'min(740px, calc(100vh - 80px))', display: 'flex',
-      }
+  const frameStyle: React.CSSProperties = {
+    position: 'fixed', top: 60, right: 16, zIndex: 900,
+    width: 360,
+    borderRadius: 20, padding: 3,
+    boxShadow: '0 24px 64px rgba(0,0,0,.55)',
+    height: 'min(740px, calc(100vh - 80px))', display: 'flex',
+  }
   const surfaceStyle: React.CSSProperties = {
     flex: 1, minWidth: 0, minHeight: 0,
     background: panelBg,
     backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
-    borderRadius: isMobile ? '17px 17px 0 0' : 17,
-    padding: isMobile ? '8px 16px 16px' : 16,
+    borderRadius: 17,
+    padding: 16,
     display: 'flex', flexDirection: 'column',
   }
 
@@ -130,18 +114,12 @@ export default function AiPanel() {
     <AnimatePresence>
       {panel === 'ai' && aiEnabled && (
         <motion.div
-          {...(isMobile ? mobileMotion : desktopMotion)}
+          {...desktopMotion}
           onClick={e => e.stopPropagation()}
           className="ai-border-frame"
           style={frameStyle}
         >
           <div style={surfaceStyle}>
-          {isMobile && (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 8px', flexShrink: 0 }}>
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)' }} />
-            </div>
-          )}
-
           {/* Kopfzeile — gleiches Muster wie ThemePanel/WidgetStylePanel */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 14, flexShrink: 0 }}>
             <span style={{ color: 'var(--accent)', display: 'flex' }}><IconSparkle size={13} /></span>

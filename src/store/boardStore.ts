@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { idbStorage } from '@/lib/idbStorage'
 import type {
-  Board, Widget, BoardBg, WidgetStyle, TilePos, MobilePos, CalendarEvent,
+  Board, Widget, BoardBg, WidgetStyle, TilePos, CalendarEvent,
 } from '@/types'
 import { DEFAULT_STYLE, makeBoard, uid } from '@/lib/defaults'
 import { GRID_COLS } from '@/lib/constants'
@@ -71,7 +71,6 @@ interface BoardActions {
   // Widget auf ein anderes Board verschieben (copy=false) oder kopieren (copy=true)
   transferWidget:        (id: string, targetBoardId: string, copy: boolean) => void
   updateStyle:           (id: string, patch: Partial<WidgetStyle>) => void
-  updateMobilePos:       (id: string, patch: Partial<MobilePos>) => void
   setWidgetLocked:       (id: string, locked: boolean) => void
   undo: () => void
   redo: () => void
@@ -392,12 +391,10 @@ export const useBoardStore = create<S>()(
           if (!others.some(o => _overlaps(candidate, o.pos))) break
           row++
         }
-        const maxOrder = others.reduce((m, o) => Math.max(m, o.mobilePos?.order ?? 0), 0)
         const nw: Widget = {
           ...w,
           id: uid(),
           pos: { ...w.pos, row },
-          mobilePos: { ...w.mobilePos, order: maxOrder + 10 },
         }
         return { ...snap(s), ...patchWidgets(s, ws => ({ ...ws, [nw.id]: nw })) }
       }),
@@ -410,8 +407,7 @@ export const useBoardStore = create<S>()(
         if (!w) return {}
         const maxCols  = (target.layoutMode ?? 'infinite') === 'grid' ? GRID_COLS : 200
         const pos      = _findFreePos(target.widgets, w.pos, maxCols)
-        const maxOrder = Object.values(target.widgets).reduce((m, o) => Math.max(m, o.mobilePos?.order ?? 0), 0)
-        const nw: Widget = { ...w, id: uid(), pos, mobilePos: { ...w.mobilePos, order: maxOrder + 10 } }
+        const nw: Widget = { ...w, id: uid(), pos }
         const boards = {
           ...s.boards,
           [targetBoardId]: { ...target, widgets: { ...target.widgets, [nw.id]: nw }, lastEdited: Date.now() },
@@ -426,10 +422,6 @@ export const useBoardStore = create<S>()(
       updateStyle: (id, patch) => set(s => ({ ...snap(s), ...patchWidget(s, id, w => ({
         ...w, style: { ...w.style, ...patch },
       })) })),
-
-      updateMobilePos: (id, patch) => set(s => patchWidget(s, id, w => ({
-        ...w, mobilePos: { ...w.mobilePos, ...patch },
-      }))),
 
       setWidgetLocked: (id, locked) => set(s => ({ ...snap(s), ...patchWidget(s, id, w => ({ ...w, locked })) })),
 

@@ -154,10 +154,3 @@ input[type=number] { -moz-appearance: textfield; }
   text-decoration: none; transition: top 0.1s;
 }
 .skip-link:focus { top: 0; }
-
-/* Mobile improvements */
-@media (max-width: 767px) {
-  html, body { overscroll-behavior: none; }
-  * { -webkit-tap-highlight-color: transparent; }
-  ::-webkit-scrollbar { display: none; }
-}

@@ -1,5 +1,5 @@
 import type { Widget, WidgetStyle, WidgetType, TilePos, Board, BoardBg } from '@/types'
-import { MOBILE_FORCE_FULL, GRID_COLS } from '@/lib/constants'
+import { GRID_COLS } from '@/lib/constants'
 import { todayStr } from '@/lib/dates'
 import { translate } from '@/lib/i18n'
 import { useSettings } from '@/store/settingsStore'
@@ -132,26 +132,17 @@ export function findNextPos(widgets: Record<string, Widget>, type: WidgetType): 
   return { col: 1, row: maxRow + 1, colSpan, rowSpan }
 }
 
-export function findNextMobileOrder(widgets: Record<string, Widget>): number {
-  const orders = Object.values(widgets).map(w => w.mobilePos?.order ?? 0)
-  return orders.length > 0 ? Math.max(...orders) + 10 : 0
-}
-
 export function defaultWidget(
   type: WidgetType,
   pos?: TilePos,
   styleOverride: Partial<WidgetStyle> = {},
-  mobileOrder = 0,
-  mobileCol: 1|2 = 1
 ): Widget {
   const finalPos = pos ?? { col: 1, row: 1, ...DEFAULT_SPANS[type] }
-  const span = (MOBILE_FORCE_FULL.has(type) ? 2 : 1) as 1|2
   const lang = useSettings.getState().language
   const tr = (s: string) => translate(lang, s)
   const base = {
     id:        uid(),
     pos:       finalPos,
-    mobilePos: { col: span === 2 ? (1 as const) : mobileCol, span, order: mobileOrder },
     zIndex:    1,
     style:     { ...DEFAULT_STYLE, ...styleOverride },
   }

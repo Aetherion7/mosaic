@@ -4,12 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion' // AnimatePresence kept 
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { useSettings } from '@/store/settingsStore'
-import { useIsMobile } from '@/hooks/useIsMobile'
 import { useFocusTrap } from '@/hooks/useFocusTrap'
 import { useT } from '@/hooks/useT'
-import { defaultWidget, findNextPos, findPosNear, findNextMobileOrder } from '@/lib/defaults'
+import { defaultWidget, findNextPos, findPosNear } from '@/lib/defaults'
 import { INFINITE_COL_W, INFINITE_GRID_COLS, GRID_GAP, GRID_ROW_H } from './TileWrapper'
-import { MOBILE_FORCE_FULL } from '@/lib/constants'
 import { getTheme } from '@/lib/themes'
 import type { WidgetType } from '@/types'
 import {
@@ -43,19 +41,6 @@ export const TILES: { type: WidgetType; icon: React.ReactNode; label: string; de
   { type: 'agenda',      icon: <IconAgenda />,     label: 'Agenda',     desc: 'Upcoming events at a glance' },
   { type: 'quicklinks',  icon: <IconLinks />,      label: 'Quicklinks', desc: 'Quick access to websites' },
 ]
-
-const desktopMotion = {
-  initial:    { opacity: 0, scale: 0.96 },
-  animate:    { opacity: 1, scale: 1    },
-  exit:       { opacity: 0, scale: 0.96 },
-  transition: { type: 'spring' as const, stiffness: 380, damping: 32 },
-}
-const mobileMotion = {
-  initial:    { opacity: 0, y: '100%' },
-  animate:    { opacity: 1, y: 0 },
-  exit:       { opacity: 0, y: '100%' },
-  transition: { type: 'spring' as const, stiffness: 380, damping: 40 },
-}
 
 function TileCard({
   icon, label, desc, hovered, onHover, onLeave, onClick, compact, id,
@@ -139,7 +124,6 @@ export default function TilePicker() {
   const board            = useBoardStore(selectBoard)
   const panel            = useUIStore(s => s.panel)
   const openPanel        = useUIStore(s => s.openPanel)
-  const isMobile         = useIsMobile()
   const disabledTypes    = useSettings(s => s.disabledWidgetTypes)
   const installedPlugins = useSettings(s => s.installedPlugins)
 
@@ -151,13 +135,12 @@ export default function TilePicker() {
   // Effekt unten hält die Liste bei jedem weiteren Öffnen aktuell.
   const [recentTypes, setRecentTypes] = useState<string[]>(() => getRecentTypes())
   const desktopRef = useRef<HTMLDivElement>(null)
-  const mobileRef  = useRef<HTMLDivElement>(null)
   const isOpen = panel === 'addWidget'
 
   useEffect(() => { if (isOpen) setRecentTypes(getRecentTypes()) }, [isOpen])
 
   useEffect(() => { if (!isOpen) setSearch('') }, [isOpen])
-  useFocusTrap(isMobile ? mobileRef : desktopRef, isOpen)
+  useFocusTrap(desktopRef, isOpen)
 
   const pluginTiles = installedPlugins.map(p => ({
     type: 'plugin' as WidgetType,
@@ -200,13 +183,7 @@ export default function TilePicker() {
     } else {
       pos = findNextPos(b.widgets, type)
     }
-    const mobileOrder = findNextMobileOrder(b.widgets)
-    const isForceFullType = MOBILE_FORCE_FULL.has(type)
-    const halfCount   = isForceFullType ? 0 : Object.values(b.widgets).filter(w =>
-      !MOBILE_FORCE_FULL.has(w.type) && (w.mobilePos?.span ?? 1) === 1
-    ).length
-    const mobileCol: 1|2 = isForceFullType ? 1 : (halfCount % 2 === 0 ? 1 : 2)
-    const w = defaultWidget(type, pos, theme.widgetStyle, mobileOrder, mobileCol)
+    const w = defaultWidget(type, pos, theme.widgetStyle)
     if (pluginId) {
       const plugin = useSettings.getState().installedPlugins.find(p => p.id === pluginId)
       if (plugin) w.data = { pluginId: plugin.id, pluginName: plugin.name, pluginIcon: plugin.icon, pluginDesc: plugin.desc, embedUrl: plugin.embedUrl }
@@ -230,15 +207,14 @@ export default function TilePicker() {
             onClick={() => openPanel(null)}
             style={{
               position: 'fixed', inset: 0, zIndex: 900,
-              background: isMobile ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.22)',
-              backdropFilter: isMobile ? undefined : 'blur(4px)',
-              WebkitBackdropFilter: isMobile ? undefined : 'blur(4px)',
+              background: 'rgba(0,0,0,0.22)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
             }}
           />
 
-          {/* Desktop — fade-only overlay, inner div centered via flex (no transform conflict) */}
-          {!isMobile && (
-            <motion.div
+          {/* Fade-only overlay, inner div centered via flex (no transform conflict) */}
+          <motion.div
               key="panel-desktop"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
@@ -324,89 +300,6 @@ export default function TilePicker() {
                 </div>
               </div>
             </motion.div>
-          )}
-
-          {/* Mobile — bottom sheet */}
-          {isMobile && (
-            <motion.div
-              ref={mobileRef}
-              key="panel-mobile"
-              role="dialog"
-              aria-modal="true"
-              aria-label={t('Add widget')}
-              {...mobileMotion}
-              onClick={e => e.stopPropagation()}
-              style={{
-                position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 901,
-                background: 'color-mix(in srgb, var(--surface) 75%, var(--bg))',
-                backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
-                border: '1px solid var(--border)',
-                borderRadius: '20px 20px 0 0', padding: '8px 14px 40px',
-                boxShadow: '0 -8px 40px rgba(0,0,0,.5)',
-                maxHeight: '85vh', overflowY: 'scroll',
-                WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
-                overscrollBehavior: 'contain', touchAction: 'pan-y',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 8px' }}>
-                <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)' }} />
-              </div>
-              <PanelHeader title={t('Add widget')} onClose={() => openPanel(null)} />
-              <SearchBar search={search} setSearch={setSearch} autoFocus={false} />
-
-              {/* Zuletzt benutzt (Mobile) */}
-              {!search && recentTypes.length > 0 && (() => {
-                const recentTiles = recentTypes
-                  .map(key => allTiles.find(t => (key.startsWith('plugin-') ? `plugin-${'pluginId' in t ? (t as {pluginId:string}).pluginId : ''}` : t.type) === key))
-                  .filter(Boolean) as typeof allTiles
-                if (!recentTiles.length) return null
-                return (
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{t('Recently used')}</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, overflow: 'hidden' }}>
-                      <AnimatePresence>
-                        {recentTiles.map((t, i) => {
-                          const pid = 'pluginId' in t ? (t as {pluginId:string}).pluginId : undefined
-                          const key = pid ? `plugin-${pid}` : t.type
-                          const hvr = `recent-m-${key}`
-                          return (
-                            <motion.div
-                              key={`recent-m-${key}`}
-                              initial={{ x: -24, opacity: 0 }}
-                              animate={{ x: 0, opacity: 1 }}
-                              exit={{ x: 24, opacity: 0 }}
-                              transition={{ type: 'spring', stiffness: 380, damping: 32, delay: i * 0.05 }}
-                              style={{ minWidth: 0, height: '100%' }}
-                            >
-                              <TileCard icon={t.icon} label={t.label} desc={t.desc}
-                                hovered={hovered === hvr} onHover={() => setHovered(hvr)} onLeave={() => setHovered(null)}
-                                onClick={() => add(t.type, pid)} compact />
-                            </motion.div>
-                          )
-                        })}
-                      </AnimatePresence>
-                    </div>
-                    <div style={{ height: 1, background: 'var(--border)', margin: '12px 0 8px' }} />
-                  </div>
-                )
-              })()}
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-                {filteredTiles.map(t => {
-                  const pid = 'pluginId' in t ? (t as { pluginId: string }).pluginId : undefined
-                  const key = pid ? `plugin-${pid}` : t.type
-                  const hvr = pid ? `plugin-${pid}` : t.type
-                  return (
-                    <TileCard key={key} icon={t.icon} label={t.label} desc={t.desc}
-                      id={!pid && t.type === 'task' ? 'tour-tile-task' : undefined}
-                      hovered={hovered === hvr} onHover={() => setHovered(hvr)} onLeave={() => setHovered(null)}
-                      onClick={() => add(t.type, pid)} compact />
-                  )
-                })}
-              </div>
-              {filteredTiles.length === 0 && <EmptySearch query={search} />}
-            </motion.div>
-          )}
         </>
       )}
     </AnimatePresence>

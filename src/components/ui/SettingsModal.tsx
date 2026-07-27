@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useIsMobile } from '@/hooks/useIsMobile'
 import { useFocusTrap } from '@/hooks/useFocusTrap'
 import { useT } from '@/hooks/useT'
 import { TYPE_ICONS, TYPE_LABELS } from '@/components/board/TileWrapper'
@@ -97,7 +96,6 @@ export default function SettingsModal({ onClose, categories, initialCat }: { onC
   const visibleCats = visibleSidebar.filter((e): e is Extract<SidebarEntry, { kind: 'cat' }> => e.kind === 'cat')
   const [active, setActive] = useState<Cat>(initialCat ?? visibleCats[0]?.id ?? 'erscheinungsbild')
   const modalRef = useRef<HTMLDivElement>(null)
-  const isMobile = useIsMobile()
   const t = useT()
 
   useFocusTrap(modalRef, true)
@@ -128,8 +126,8 @@ export default function SettingsModal({ onClose, categories, initialCat }: { onC
         style={{
           position: 'fixed', inset: 0, zIndex: 2000,
           background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-          display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center',
-          padding: isMobile ? 0 : 24,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 24,
         }}
       >
         <motion.div
@@ -138,20 +136,12 @@ export default function SettingsModal({ onClose, categories, initialCat }: { onC
           role="dialog"
           aria-modal="true"
           aria-label={t('Settings')}
-          initial={isMobile ? { opacity: 0, y: 40 } : { opacity: 0, scale: 0.96, y: 12 }}
-          animate={isMobile ? { opacity: 1, y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-          exit={isMobile ? { opacity: 0, y: 40 } : { opacity: 0, scale: 0.96, y: 12 }}
+          initial={{ opacity: 0, scale: 0.96, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 12 }}
           transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
           onClick={e => e.stopPropagation()}
-          style={isMobile ? {
-            width: '100%', height: '92vh',
-            background: 'color-mix(in srgb, var(--surface) 75%, var(--bg))',
-            backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
-            border: '1px solid var(--border)',
-            borderRadius: '20px 20px 0 0', overflow: 'hidden',
-            display: 'flex', flexDirection: 'column',
-            boxShadow: '0 -8px 40px rgba(0,0,0,0.6)',
-          } : {
+          style={{
             width: 'min(960px, 92vw)', height: 'min(680px, 88vh)',
             background: 'color-mix(in srgb, var(--surface) 75%, var(--bg))',
             backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
@@ -160,90 +150,50 @@ export default function SettingsModal({ onClose, categories, initialCat }: { onC
             boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
           }}
         >
-          {isMobile ? (
-            <>
-              <div style={{ flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 4px' }}>
-                  <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)' }} />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 16px 8px' }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text1)' }}>
-                    {t(activeLabel || 'Settings')}
+          {/* Left sidebar */}
+          <div style={{ width: 200, flexShrink: 0, borderRight: '1px solid var(--border)', padding: '20px 8px 16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, background: 'color-mix(in srgb, var(--surface2) 60%, var(--surface))' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.09em', padding: '0 10px 12px' }}>{t('Settings')}</div>
+            {visibleSidebar.map((entry, i) =>
+              entry.kind === 'divider' ? (
+                <div key={`divider-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '14px 10px 6px' }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.09em', flexShrink: 0 }}>
+                    {t(entry.label)}
                   </span>
-                  <button onClick={onClose} title={t('Close')} style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>×</button>
+                  <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
                 </div>
-                <div style={{ display: 'flex', gap: 4, overflowX: 'auto', padding: '0 12px 10px', scrollbarWidth: 'none' }}>
-                  {visibleCats.map(cat => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setActive(cat.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
-                        padding: '6px 12px', borderRadius: 20, border: 'none',
-                        background: active === cat.id ? 'var(--accent)' : 'var(--surface2)',
-                        color: active === cat.id ? 'white' : 'var(--text2)',
-                        fontSize: 12, fontWeight: active === cat.id ? 600 : 400,
-                        cursor: 'pointer', transition: 'all 0.12s',
-                      }}
-                    >
-                      {cat.icon}
-                      {t(cat.label)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ flex: 1, overflowY: 'scroll', padding: '8px 16px 40px', WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'] }}>
-                {renderPanel(active, onClose, !!categories)}
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Left sidebar */}
-              <div style={{ width: 200, flexShrink: 0, borderRight: '1px solid var(--border)', padding: '20px 8px 16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, background: 'color-mix(in srgb, var(--surface2) 60%, var(--surface))' }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.09em', padding: '0 10px 12px' }}>{t('Settings')}</div>
-                {visibleSidebar.map((entry, i) =>
-                  entry.kind === 'divider' ? (
-                    <div key={`divider-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '14px 10px 6px' }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.09em', flexShrink: 0 }}>
-                        {t(entry.label)}
-                      </span>
-                      <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                    </div>
-                  ) : (
-                    <button
-                      key={entry.id}
-                      onClick={() => setActive(entry.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '9px 10px', borderRadius: 8, border: 'none', width: '100%',
-                        background: active === entry.id ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'none',
-                        color: active === entry.id ? 'var(--accent)' : 'var(--text2)',
-                        fontWeight: active === entry.id ? 600 : 400,
-                        fontSize: 13, cursor: 'pointer', textAlign: 'left',
-                        transition: 'all 0.12s',
-                      }}
-                    >
-                      {entry.icon}
-                      {t(entry.label)}
-                    </button>
-                  )
-                )}
-              </div>
+              ) : (
+                <button
+                  key={entry.id}
+                  onClick={() => setActive(entry.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '9px 10px', borderRadius: 8, border: 'none', width: '100%',
+                    background: active === entry.id ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'none',
+                    color: active === entry.id ? 'var(--accent)' : 'var(--text2)',
+                    fontWeight: active === entry.id ? 600 : 400,
+                    fontSize: 13, cursor: 'pointer', textAlign: 'left',
+                    transition: 'all 0.12s',
+                  }}
+                >
+                  {entry.icon}
+                  {t(entry.label)}
+                </button>
+              )
+            )}
+          </div>
 
-              {/* Right content */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)' }}>
-                    {t(activeLabel)}
-                  </span>
-                  <button onClick={onClose} title={t('Close')} style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>×</button>
-                </div>
-                <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 24px' }}>
-                  {renderPanel(active, onClose, !!categories)}
-                </div>
-              </div>
-            </>
-          )}
+          {/* Right content */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)' }}>
+                {t(activeLabel)}
+              </span>
+              <button onClick={onClose} title={t('Close')} style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>×</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 24px' }}>
+              {renderPanel(active, onClose, !!categories)}
+            </div>
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>
