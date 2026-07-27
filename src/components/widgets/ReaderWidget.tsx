@@ -163,7 +163,15 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
   // zusätzlich der aktuelle Board-Zoom eingerechnet, damit die PDF-Seite auch
   // bei reingezoomtem Board in voller Auflösung gerendert wird.
   const boardZoom    = useUIStore(s => s.canvasView.zoom)
-  const pdfDpr       = (typeof window !== 'undefined' ? window.devicePixelRatio : 1) * Math.max(1, boardZoom)
+  // Ein Floor von 2x, unabhängig vom tatsächlichen devicePixelRatio: auf einem
+  // ganz normalen 1x-Monitor sah die Seite mit pdfDpr=1 (native, unskalierte
+  // Canvas-Auflösung) spürbar weicher aus als ein echter PDF-Reader — PDF.js'
+  // Canvas-Rendering (Kantenglättung von Vektor-Text) braucht zum "scharf"
+  // wirken Supersampling, reines 1:1-Rastern reicht nicht, selbst wenn es
+  // technisch korrekt der Bildschirmauflösung entspricht. Nach oben gedeckelt,
+  // damit ein bereits hochauflösendes Display (3x) kombiniert mit starkem
+  // Board-Zoom keine unnötig riesige Canvas-Fläche erzeugt.
+  const pdfDpr       = Math.min(4, Math.max(2, (typeof window !== 'undefined' ? window.devicePixelRatio : 1) * Math.max(1, boardZoom)))
   // Manche EPUBs setzen selbst keinen Hintergrund (transparent) — bei dunklem
   // Board-Theme würde dann der (meist dunkle) Standardtext auf der dunklen
   // Widget-Fläche unlesbar. Bei dunklen Themes erzwingen wir deshalb einen
