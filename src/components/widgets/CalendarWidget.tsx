@@ -52,8 +52,13 @@ function parseHHMM(s: string) {
   return (h || 0) * 60 + (m || 0)
 }
 
-function isMultiDay(ev: CalendarEvent): boolean {
-  return !!ev.dateEnd && ev.dateEnd > ev.date
+// Nur ab 3 Tagen lohnt sich die angepinnte Leiste — bei genau 2 Tagen passt
+// der Termin noch gut als verbreiterte Kachel direkt im Stundenraster (dort
+// bleibt Ziehen/Verlängern in beide Nachbarspalten ohnehin schon möglich).
+function isBarWorthy(ev: CalendarEvent): boolean {
+  if (!ev.dateEnd || ev.dateEnd <= ev.date) return false
+  const days = Math.round((new Date(ev.dateEnd + 'T00:00:00').getTime() - new Date(ev.date + 'T00:00:00').getTime()) / 86400000) + 1
+  return days >= 3
 }
 
 // UTC ("Z"-Suffix) oder ein TZID-Parameter bedeuten, dass die Ziffern NICHT
@@ -244,9 +249,10 @@ function downloadIcsFile(filename: string, content: string) {
 interface DragState { startColIdx: number; endColIdx: number; startHour: number; endHour: number }
 interface PopupState { date: string; endDate: string; startTime: string; endTime: string }
 
-interface DragMoveState         { evId: string; clickOffsetMin: number; clickColOffset?: number; origDaySpan?: number }
+interface DragMoveState         { evId: string; clickOffsetMin: number; clickColOffset?: number; origDaySpan?: number; fromBar?: boolean }
 interface DragResizeState       { evId: string; origStartMin: number; origEndMin: number; mouseY0: number; scrollTop0: number }
 interface DragCornerResizeState { evId: string; origStartMin: number; origEndMin: number; origDateEnd: string; mouseY0: number; scrollTop0: number; mouseX0: number }
+interface DragBarResizeState    { evId: string; origDate: string; origDaySpan: number; mouseX0: number }
 interface DragOverride          { evId: string; date: string; dateEnd?: string; startMin: number; endMin: number }
 
 export default function CalendarWidget({ widget }: { widget: Widget }) {
@@ -322,6 +328,12 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
   const dragMoveRef         = useRef<DragMoveState         | null>(null)
   const dragResizeRef       = useRef<DragResizeState       | null>(null)
   const dragCornerResizeRef = useRef<DragCornerResizeState | null>(null)
+  const dragBarResizeRef    = useRef<DragBarResizeState    | null>(null)
+  // Unterscheidet echtes Ziehen von einem reinen Klick auf die Leiste: erst
+  // wenn sich die Maus während eines fromBar-Drags tatsächlich bewegt, wird
+  // dies true — der Klick-Handler der Leiste öffnet das Bearbeiten-Popup nur,
+  // wenn hier noch false steht, sonst poppt es direkt nach jedem Ziehen ungewollt auf.
+  const barDraggedRef       = useRef(false)
   const [dragOverride, setDragOverride] = useState<DragOverride | null>(null)
   const dragOverrideRef  = useRef(dragOverride)
   // Keep refs in sync on every render (stable references, no extra effects needed)
@@ -378,12 +390,33 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
   useEffect(() => {
     function onMouseMove(e: MouseEvent) {
       if (dragMoveRef.current) {
-        const { evId, clickOffsetMin, clickColOffset, origDaySpan } = dragMoveRef.current
+        const { evId, clickOffsetMin, clickColOffset, origDaySpan, fromBar } = dragMoveRef.current
         const ev       = eventsRef.current.find(ev => ev.id === evId)
         if (!ev) return
-        const scrollTop = gridScrollRef.current?.scrollTop ?? 0
         const bodyRect  = gridBodyRef.current?.getBoundingClientRect()
         if (!bodyRect) return
+        const numVC         = viewDaysRef.current.length
+        const colAreaLeft   = bodyRect.left + 34
+        const colW          = (bodyRect.width - 34) / numVC
+        const colIdx        = Math.max(0, Math.min(numVC - 1, Math.floor((e.clientX - colAreaLeft) / colW)))
+
+        // Bar-Drag (mehrtägiger Termin, horizontal aus der angepinnten Leiste
+        // gezogen): nur das Datum verschiebt sich, nie die Uhrzeit — anders
+        // als beim normalen Raster-Drag unten hat eine vertikale Mausbewegung
+        // hier keine Bedeutung (die Leiste hat keine eigene Y-Achse).
+        if (fromBar) {
+          barDraggedRef.current = true
+          const origStart = parseHHMM(ev.timeStart!)
+          const origEnd   = ev.timeEnd ? parseHHMM(ev.timeEnd) : origStart + 60
+          const startColIdx = Math.max(0, Math.min(numVC - (origDaySpan ?? 0) - 1, colIdx - (clickColOffset ?? 0)))
+          const newDate     = toDateStr(viewDaysRef.current[startColIdx])
+          const endD        = new Date(newDate + 'T00:00:00')
+          endD.setDate(endD.getDate() + (origDaySpan ?? 0))
+          setDragOverride({ evId, date: newDate, dateEnd: toDateStr(endD), startMin: origStart, endMin: origEnd })
+          return
+        }
+
+        const scrollTop = gridScrollRef.current?.scrollTop ?? 0
         const mouseYFromTop = e.clientY - bodyRect.top + scrollTop
         const rawStart      = (mouseYFromTop / hourHRef.current) * 60 - clickOffsetMin
         const snapped       = Math.round(rawStart / 15) * 15
@@ -396,10 +429,6 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
         const maxStart      = Math.max(0, 1440 - duration)
         const newStart      = Math.max(0, Math.min(maxStart, snapped))
         const newEnd        = newStart + duration
-        const numVC         = viewDaysRef.current.length
-        const colAreaLeft   = bodyRect.left + 34
-        const colW          = (bodyRect.width - 34) / numVC
-        const colIdx        = Math.max(0, Math.min(numVC - 1, Math.floor((e.clientX - colAreaLeft) / colW)))
 
         if (clickColOffset !== undefined && origDaySpan !== undefined) {
           // Multi-day: shift start col by click offset, keep day span
@@ -412,6 +441,25 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
           const newDate = toDateStr(viewDaysRef.current[colIdx])
           setDragOverride({ evId, date: newDate, startMin: newStart, endMin: newEnd })
         }
+      } else if (dragBarResizeRef.current) {
+        // Bar-Resize: rechte Kante ziehen verlängert/verkürzt den Tagesumfang,
+        // Uhrzeit bleibt unverändert. Unter 3 Tage darf es rutschen — sinkt
+        // der Termin dabei auf ≤2 Tage, übernimmt beim Loslassen einfach die
+        // normale Raster-Darstellung (s. isBarWorthy), kein Sonderfall nötig.
+        const { evId, origDate, origDaySpan, mouseX0 } = dragBarResizeRef.current
+        const ev = eventsRef.current.find(ev => ev.id === evId)
+        if (!ev) return
+        const bodyRect = gridBodyRef.current?.getBoundingClientRect()
+        if (!bodyRect) return
+        const numVC    = viewDaysRef.current.length
+        const colW     = (bodyRect.width - 34) / numVC
+        const deltaCol = Math.round((e.clientX - mouseX0) / colW)
+        const newDaySpan = Math.max(1, origDaySpan + deltaCol)
+        const endD = new Date(origDate + 'T00:00:00')
+        endD.setDate(endD.getDate() + newDaySpan)
+        const origStart = parseHHMM(ev.timeStart!)
+        const origEnd   = ev.timeEnd ? parseHHMM(ev.timeEnd) : origStart + 60
+        setDragOverride({ evId, date: origDate, dateEnd: toDateStr(endD), startMin: origStart, endMin: origEnd })
       } else if (dragResizeRef.current) {
         const { evId, origStartMin, origEndMin, mouseY0, scrollTop0 } = dragResizeRef.current
         const ev        = eventsRef.current.find(ev => ev.id === evId)
@@ -453,7 +501,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
 
     function onMouseUp() {
       const override = dragOverrideRef.current
-      if ((dragMoveRef.current || dragResizeRef.current || dragCornerResizeRef.current) && override) {
+      if ((dragMoveRef.current || dragResizeRef.current || dragCornerResizeRef.current || dragBarResizeRef.current) && override) {
         const ev = eventsRef.current.find(ev => ev.id === override.evId)
         if (ev) {
           updateCalendarEvent(widget.id, {
@@ -469,6 +517,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
       dragMoveRef.current         = null
       dragResizeRef.current       = null
       dragCornerResizeRef.current = null
+      dragBarResizeRef.current    = null
       setDragOverride(null)
     }
 
@@ -687,14 +736,15 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
   const overlayLayout = useMemo(() => {
     const weekDateStrs = viewDays.map(toDateStr)
     const lastDs       = weekDateStrs[weekDateStrs.length - 1]
-    // Multi-day events (non-recurring) now live exclusively in the pinned
-    // multiDayBarLayout strip below instead of the hourly grid — see there.
-    // Recurring events are left alone even if they happen to carry a
-    // dateEnd: multi-day span math isn't modeled for recurring occurrences
-    // anywhere else in this file either (the recurrence branch below always
-    // treats each occurrence as a single day), so excluding them here would
-    // just silently drop them from both places.
-    const timedEvs = events.filter(ev => !!ev.timeStart && !(isMultiDay(ev) && !ev.recurrence))
+    // Only events spanning 3+ days live in the pinned multiDayBarLayout strip
+    // (see there) — a 2-day event stays right here as a widened tile spanning
+    // both day columns (colStart/numCols below), same as before there was a
+    // separate bar at all. Recurring events are left alone even if they
+    // happen to carry a dateEnd: multi-day span math isn't modeled for
+    // recurring occurrences anywhere else in this file either (the
+    // recurrence branch below always treats each occurrence as a single
+    // day), so excluding them here would just silently drop them from both places.
+    const timedEvs = events.filter(ev => !!ev.timeStart && !(isBarWorthy(ev) && !ev.recurrence))
     if (!timedEvs.length) return { entries: [], overlapMap: new Map<string, { slot: number; totalSlots: number }>() }
 
     const entries: Array<{ ev: CalendarEvent; colStart: number; numCols: number; effStart: string; effEnd: string }> = []
@@ -772,7 +822,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
   const multiDayBarLayout = useMemo(() => {
     const weekDateStrs = viewDays.map(toDateStr)
     const lastDs = weekDateStrs[weekDateStrs.length - 1]
-    const multiDayEvs = events.filter(ev => isMultiDay(ev) && !ev.recurrence)
+    const multiDayEvs = events.filter(ev => isBarWorthy(ev) && !ev.recurrence)
     if (!multiDayEvs.length) return { entries: [], rowCount: 0 }
 
     const raw: Array<{ ev: CalendarEvent; colStart: number; numCols: number }> = []
@@ -1047,7 +1097,13 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
               darunter, also entsprechen X% hier immer derselben Spalte dort. */}
           {multiDayBarLayout.entries.length > 0 && (
             <div style={{
-              position: 'sticky', top: 0, zIndex: 15,
+              // top: hourH statt 0 — die Leiste soll nicht direkt an die
+              // Tages-Kopfzeile (außerhalb von gridScrollRef) angrenzen,
+              // sondern eine Zeile tiefer, sichtbar über dem Raster liegend
+              // (die 00:00-Linie bleibt darüber sichtbar). Bleibt beim
+              // Scrollen trotzdem an dieser Position hängen, genau wie top:0
+              // vorher — sticky pinnt relativ zum eigenen Offset, nicht nur ab 0.
+              position: 'sticky', top: hourH, zIndex: 15,
               display: 'flex', background: 'var(--surface)', paddingBottom: 3,
             }}>
               <div style={{ width: 34, flexShrink: 0 }} />
@@ -1058,10 +1114,27 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
                   const widthPct  = (numCols / numVC) * 100
                   const dateEnd   = ev.dateEnd ?? ev.date
                   const isPast    = fadePastEvents && dateEnd < todayStr
+                  const isActive  = dragOverride?.evId === ev.id
+                  const origDaySpan = Math.round((new Date(dateEnd + 'T00:00:00').getTime() - new Date(ev.date + 'T00:00:00').getTime()) / 86400000)
                   return (
                     <div
                       key={ev.id}
-                      onClick={() => { if (mode === 'edit') openEditPopup(ev) }}
+                      onClick={e => {
+                        if ((e.target as HTMLElement).closest('[data-nomove]')) return
+                        if (mode === 'edit' && !barDraggedRef.current) openEditPopup(ev)
+                      }}
+                      onMouseDown={e => {
+                        if ((e.target as HTMLElement).closest('[data-nomove]')) return
+                        if (mode !== 'edit') return
+                        e.preventDefault(); e.stopPropagation()
+                        barDraggedRef.current = false
+                        const bodyRect = gridBodyRef.current?.getBoundingClientRect()
+                        if (!bodyRect) return
+                        const colW = (bodyRect.width - 34) / numVC
+                        const relX = e.clientX - bodyRect.left - 34
+                        const clickColIdx = Math.max(0, Math.min(numVC - 1, Math.floor(relX / colW)))
+                        dragMoveRef.current = { evId: ev.id, clickOffsetMin: 0, clickColOffset: clickColIdx - colStart, origDaySpan, fromBar: true }
+                      }}
                       title={ev.title}
                       style={{
                         position: 'absolute',
@@ -1071,18 +1144,36 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
                         padding: '0 3px 0 6px', borderRadius: 5,
                         background: ev.color, color: 'white',
                         fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap',
-                        cursor: mode === 'edit' ? 'pointer' : 'default',
+                        cursor: mode === 'edit' ? (isActive ? 'grabbing' : 'grab') : 'default',
                         opacity: isPast ? 0.4 : 1,
+                        boxShadow: isActive ? '0 4px 14px rgba(0,0,0,0.4)' : 'none',
+                        zIndex: isActive ? 2 : 1,
                       }}
                     >
                       <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {ev.timeStart ? `${ev.timeStart} · ` : ''}{ev.title}
+                        {ev.timeStart ? `${ev.timeStart}${ev.timeEnd ? '–' + ev.timeEnd : ''} · ` : ''}{ev.title}
                       </span>
                       {mode === 'edit' && (
-                        <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                        <div data-nomove="true" style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
                           <button onClick={e => { e.stopPropagation(); openEditPopup(ev) }} style={barEvBtn} title={t('Edit')}><IconEdit size={8} /></button>
                           <button onClick={e => { e.stopPropagation(); deleteCalendarEvent(widget.id, ev.id) }} style={barEvBtn} title={t('Delete')}><IconX size={8} /></button>
                         </div>
+                      )}
+                      {/* Rechte Kante ziehen verlängert/verkürzt den Tagesumfang —
+                          gleiche Idee wie das Eck-Resize im Stundenraster, nur
+                          horizontal statt vertikal, da die Leiste keine eigene Zeitachse hat. */}
+                      {mode === 'edit' && (
+                        <div
+                          data-nomove="true"
+                          onMouseDown={e => {
+                            e.preventDefault(); e.stopPropagation()
+                            dragBarResizeRef.current = { evId: ev.id, origDate: ev.date, origDaySpan, mouseX0: e.clientX }
+                          }}
+                          style={{
+                            position: 'absolute', top: 0, bottom: 0, right: -3, width: 7,
+                            cursor: 'ew-resize',
+                          }}
+                        />
                       )}
                     </div>
                   )
