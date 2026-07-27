@@ -388,8 +388,14 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
         const rawStart      = (mouseYFromTop / hourHRef.current) * 60 - clickOffsetMin
         const snapped       = Math.round(rawStart / 15) * 15
         const duration      = ev.timeEnd ? parseHHMM(ev.timeEnd) - parseHHMM(ev.timeStart!) : 60
-        const newStart      = Math.max(0, Math.min(1425, snapped))
-        const newEnd        = Math.min(1440, newStart + duration)
+        // Clamp against the event's own duration, not a fixed 23:45 — otherwise
+        // dragging a multi-hour event near the bottom of the day let its end
+        // clamp to midnight while the start clamped separately, silently
+        // truncating a 2-hour event down to a tiny sliver at the very bottom
+        // of the grid instead of just moving it.
+        const maxStart      = Math.max(0, 1440 - duration)
+        const newStart      = Math.max(0, Math.min(maxStart, snapped))
+        const newEnd        = newStart + duration
         const numVC         = viewDaysRef.current.length
         const colAreaLeft   = bodyRect.left + 34
         const colW          = (bodyRect.width - 34) / numVC
