@@ -23,6 +23,10 @@ const http = require('http')
 
 const isDev = !app.isPackaged
 const DEV_URL = process.env.MOSAIC_DEV_URL || 'http://localhost:3001'
+// Überlebt den Prozess selbst (anders als die Modul-Variablen unten) — nötig,
+// um einen Waisenprozess aus einer FRÜHEREN, abgestürzten/gekillten Sitzung
+// überhaupt wiederzufinden. s. reapStaleServerProcess().
+const SERVER_PID_FILE = path.join(app.getPath('userData'), 'server.pid')
 
 let mainWindow = null
 let serverProcess = null
@@ -66,7 +70,36 @@ function waitForServer(url, timeoutMs = 20000) {
   })
 }
 
+// fork() erzeugt einen komplett eigenständigen OS-Prozess — stirbt der
+// Hauptprozess unerwartet (Absturz, vom Fenstermanager/Nutzer erzwungenes
+// Beenden, `kill -9`, abgebrochene Desktop-Sitzung), stirbt der geforkte
+// Standalone-Server NICHT automatisch mit, sondern wird zur Waise (unter
+// Linux von systemd/init reparented) und läuft unsichtbar weiter — und
+// belegt dabei dauerhaft den festen Port 47893. Der nächste Start findet
+// den Port dann besetzt, weicht auf einen zufälligen Port aus, und genau
+// der schon einmal gefixte Datenverlust-Bug (anderer Origin bei jedem
+// Start) ist über diesen neuen Weg zurück. Live auf dieser Maschine
+// nachgewiesen: fünf genau solche Waisen hatten sich aus früheren
+// Testläufen angesammelt, eine davon seit über zwei Tagen unbemerkt aktiv.
+//
+// Die PID-Datei überlebt den Prozess selbst und macht diese Waise beim
+// nächsten Start wiederauffindbar. requestSingleInstanceLock() hat zu
+// diesem Zeitpunkt bereits bestätigt, dass keine echte zweite mosaic-
+// Instanz läuft — jede hier noch lebend vorgefundene PID ist also
+// zwangsläufig so eine Leiche und kann gefahrlos beendet werden.
+function reapStaleServerProcess() {
+  try {
+    const pid = parseInt(fs.readFileSync(SERVER_PID_FILE, 'utf8'), 10)
+    if (!pid) return
+    process.kill(pid, 0) // wirft ESRCH, wenn der Prozess nicht (mehr) existiert
+    console.log(`[mosaic] Killing orphaned standalone server from a previous session (pid ${pid})`)
+    process.kill(pid, 'SIGTERM')
+  } catch { /* keine Datei, ungültiger Inhalt, oder Prozess bereits tot — nichts zu tun */ }
+}
+
 async function startStandaloneServer() {
+  reapStaleServerProcess()
+
   // IndexedDB/localStorage are scoped per full origin — scheme + host +
   // PORT included. Picking a fresh random port on every launch (the old
   // behavior here) therefore put every single restart on a brand-new
@@ -79,9 +112,30 @@ async function startStandaloneServer() {
   // case something else on the machine is already bound to it.
   const net = require('net')
   const PREFERRED_PORT = 47893
-  serverPort = await new Promise((resolve, reject) => {
-    const preferred = net.createServer()
-    preferred.once('error', () => {
+
+  function tryPreferredPort() {
+    return new Promise((resolve, reject) => {
+      const preferred = net.createServer()
+      preferred.once('error', reject)
+      preferred.listen(PREFERRED_PORT, '127.0.0.1', () => {
+        preferred.close(() => resolve(PREFERRED_PORT))
+      })
+    })
+  }
+
+  serverPort = await (async () => {
+    // Ein gerade per SIGTERM beendeter Waisenprozess braucht einen kurzen
+    // Moment, um den Port tatsächlich freizugeben — ein paar Versuche mit
+    // kurzer Pause dazwischen, bevor endgültig auf einen zufälligen Port
+    // ausgewichen wird.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await tryPreferredPort()
+      } catch {
+        await new Promise(r => setTimeout(r, 200))
+      }
+    }
+    return new Promise((resolve, reject) => {
       const fallback = net.createServer()
       fallback.once('error', reject)
       fallback.listen(0, '127.0.0.1', () => {
@@ -89,10 +143,7 @@ async function startStandaloneServer() {
         fallback.close(() => resolve(port))
       })
     })
-    preferred.listen(PREFERRED_PORT, '127.0.0.1', () => {
-      preferred.close(() => resolve(PREFERRED_PORT))
-    })
-  })
+  })()
 
   const serverEntry = path.join(process.resourcesPath, 'standalone', 'server.js')
   // stdout/stderr werden mitgeschnitten (statt 'ignore'): stürzt server.js
@@ -115,6 +166,8 @@ async function startStandaloneServer() {
     },
     stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
   })
+  // Für reapStaleServerProcess() beim nächsten Start — s. Kommentar dort.
+  try { fs.writeFileSync(SERVER_PID_FILE, String(serverProcess.pid), 'utf8') } catch { /* nicht kritisch */ }
   serverProcess.stdout.on('data', d => { serverOutput += d.toString() })
   serverProcess.stderr.on('data', d => { serverOutput += d.toString() })
   serverProcess.on('exit', code => {
@@ -345,4 +398,8 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   isQuitting = true
   if (serverProcess) { serverProcess.kill(); serverProcess = null }
+  // Sauberer Exit — kein Waisenprozess zu reapen, also die PID-Datei mit
+  // aufräumen, damit sie beim nächsten Start nicht auf einen längst toten
+  // (und ggf. von einem völlig anderen Prozess neu vergebenen) PID zeigt.
+  try { fs.unlinkSync(SERVER_PID_FILE) } catch { /* Datei existiert nicht — ok */ }
 })
