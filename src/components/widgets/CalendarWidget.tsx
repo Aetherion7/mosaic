@@ -1097,14 +1097,15 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
               darunter, also entsprechen X% hier immer derselben Spalte dort. */}
           {multiDayBarLayout.entries.length > 0 && (
             <div style={{
-              // top: hourH statt 0 — die Leiste soll nicht direkt an die
-              // Tages-Kopfzeile (außerhalb von gridScrollRef) angrenzen,
-              // sondern eine Zeile tiefer, sichtbar über dem Raster liegend
-              // (die 00:00-Linie bleibt darüber sichtbar). Bleibt beim
-              // Scrollen trotzdem an dieser Position hängen, genau wie top:0
-              // vorher — sticky pinnt relativ zum eigenen Offset, nicht nur ab 0.
-              position: 'sticky', top: hourH, zIndex: 15,
-              display: 'flex', background: 'var(--surface)', paddingBottom: 3,
+              // Kleiner Top-Versatz statt 0 oder einer ganzen Zeile: die
+              // Leiste soll sichtbar im Raster selbst schweben (die Linie der
+              // jeweils obersten sichtbaren Stunde bleibt ein Stück darüber
+              // sichtbar), aber nicht eine ganze Zeile tiefer stehen. Kein
+              // eigener Hintergrund mehr — der erzeugte sonst einen sichtbar
+              // andersfarbigen Streifen über die volle Breite, auch dort, wo
+              // gar kein Termin liegt.
+              position: 'sticky', top: 8, zIndex: 15,
+              display: 'flex', paddingBottom: 3,
             }}>
               <div style={{ width: 34, flexShrink: 0 }} />
               <div style={{ flex: 1, position: 'relative', height: multiDayBarLayout.rowCount * 20 }}>

@@ -17,7 +17,7 @@ export function requestNotifyPermission() {
 export function fireNotification(title: string, body: string): Notification | null {
   try {
     if ('Notification' in window && Notification.permission === 'granted') {
-      const n = new Notification(title, { body, icon: '/mosaiclogo.png' })
+      const n = new Notification(title, { body })
       n.onclick = () => { window.focus(); n.close() }
       return n
     }
