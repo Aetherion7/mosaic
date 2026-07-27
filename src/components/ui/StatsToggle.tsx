@@ -1,14 +1,16 @@
 'use client'
+import { useT } from '@/hooks/useT'
 
 // Ein-/Ausklapp-Leiste für die Wochenstatistik der Tracking-Widgets
 // (Wasser, Schlaf, Aufgaben) — sitzt am unteren Widget-Rand.
 export default function StatsToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const t = useT()
   return (
     <button
       data-stats-toggle=""
       onPointerDown={e => e.stopPropagation()}
       onClick={onToggle}
-      title={open ? 'Statistik einklappen' : 'Statistik anzeigen'}
+      title={open ? t('Hide statistics') : t('Show statistics')}
       style={{
         width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
         padding: '5px 6px', background: 'none', border: 'none', cursor: 'pointer',
@@ -23,7 +25,7 @@ export default function StatsToggle({ open, onToggle }: { open: boolean; onToggl
         style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
         <polyline points="6,9 12,15 18,9"/>
       </svg>
-      Statistik
+      {t('Stats')}
     </button>
   )
 }

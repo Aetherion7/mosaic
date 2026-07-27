@@ -30,7 +30,8 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
   if (home) {
     return (
       <div>
-        <SectionTitle>{t('Theme')}</SectionTitle>
+        {/* Einzeloptionen ohne eigene Überkategorie — Kategorie-Titel lohnen
+            sich erst ab 2+ zusammengehörigen Optionen (s. "Desktop" unten). */}
         <SettingItem
           label={t('Theme')}
           desc={t('Light or dark look for the board overview page — independent of each board\'s own theme.')}
@@ -50,20 +51,22 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
           }
         />
 
-        <SectionTitle>{t('Language')}</SectionTitle>
-        <SettingItem
-          label={t('Language')}
-          desc={t('Switches every label, button and message in the app')}
-          control={<LanguageSelect value={language} onChange={lng => setSetting({ language: lng })} />}
-        />
+        <div style={{ marginTop: 20 }}>
+          <SettingItem
+            label={t('Language')}
+            desc={t('Switches every label, button and message in the app')}
+            control={<LanguageSelect value={language} onChange={lng => setSetting({ language: lng })} />}
+          />
+        </div>
 
-        <SectionTitle>{t('Keyboard shortcut hints')}</SectionTitle>
-        <Row
-          label={t('Keyboard shortcut hints')}
-          desc={t('Shows shortcuts like [N] in the header')}
-          value={showKbdHints}
-          onChange={v => setSetting({ showKbdHints: v })}
-        />
+        <div style={{ marginTop: 20 }}>
+          <Row
+            label={t('Keyboard shortcut hints')}
+            desc={t('Shows shortcuts like [N] in the header')}
+            value={showKbdHints}
+            onChange={v => setSetting({ showKbdHints: v })}
+          />
+        </div>
 
         {isDesktop && (
           <>
@@ -88,26 +91,31 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
 
   return (
     <div>
-      <SectionTitle>{t('Language')}</SectionTitle>
+      {/* Einzeloptionen ohne eigene Überkategorie — Kategorie-Titel lohnen sich
+          erst ab 2+ zusammengehörigen Optionen (s. "Desktop" unten). Trotzdem
+          sichtbar per marginTop voneinander getrennt statt kommentarlos
+          aneinandergereiht. */}
       <SettingItem
         label={t('Language')}
         desc={t('Switches every label, button and message in the app')}
         control={<LanguageSelect value={language} onChange={lng => setSetting({ language: lng })} />}
       />
-
-      <SectionTitle>{t('Animations')}</SectionTitle>
-      <Row
-        label={t('Animations')}
-        desc={t('Turns decorative transitions and effects on or off across the entire app')}
-        value={animations}
-        onChange={v => setSetting({ animations: v })}
-      />
-      <Row
-        label={t('Keyboard shortcut hints')}
-        desc={t('Shows shortcuts like [E] in the header')}
-        value={showKbdHints}
-        onChange={v => setSetting({ showKbdHints: v })}
-      />
+      <div style={{ marginTop: 20 }}>
+        <Row
+          label={t('Animations')}
+          desc={t('Turns decorative transitions and effects on or off across the entire app')}
+          value={animations}
+          onChange={v => setSetting({ animations: v })}
+        />
+      </div>
+      <div style={{ marginTop: 20 }}>
+        <Row
+          label={t('Keyboard shortcut hints')}
+          desc={t('Shows shortcuts like [E] in the header')}
+          value={showKbdHints}
+          onChange={v => setSetting({ showKbdHints: v })}
+        />
+      </div>
 
       {isDesktop && (
         <>
