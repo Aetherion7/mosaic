@@ -292,16 +292,25 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
     return () => clearInterval(id)
   }, [])
 
-  // Month state
-  const [viewYear,     setViewYear]     = useState(today.getFullYear())
-  const [viewMonth,    setViewMonth]    = useState(today.getMonth())
+  // Ausschnitt (welcher Monat/Woche/Tag) — persistiert in widget.data, damit
+  // der Fokus-Modus (ein zweites, gleichzeitiges Mounting desselben Widgets,
+  // s. FocusOverlay.tsx) exakt denselben Ausschnitt zeigt statt bei "heute"
+  // neu zu starten, sobald man in eine andere Woche/Monat/Tag navigiert hat.
+  const [viewYear,     setViewYear]     = useState(() => (widget.data.viewYear as number | undefined) ?? today.getFullYear())
+  const [viewMonth,    setViewMonth]    = useState(() => (widget.data.viewMonth as number | undefined) ?? today.getMonth())
   const [selectedDate, setSelectedDate] = useState<string|null>(null)
 
   // Week state
-  const [weekStart, setWeekStart] = useState(() => getMonday(today))
+  const [weekStart, setWeekStart] = useState(() => {
+    const s = widget.data.weekStart as string | undefined
+    return s ? getMonday(new Date(s + 'T00:00:00')) : getMonday(today)
+  })
 
   // Day state
-  const [dayDate, setDayDate] = useState(() => new Date(today))
+  const [dayDate, setDayDate] = useState(() => {
+    const s = widget.data.dayDate as string | undefined
+    return s ? new Date(s + 'T00:00:00') : new Date(today)
+  })
 
   // Drag (week view — create new event by dragging empty cells)
   const draggingRef    = useRef(false)
@@ -554,18 +563,35 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
     return map
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, viewYear, viewMonth, daysInMo, startOff])
+  // updateWidgetQuiet (nicht updateWidget): reines Blättern erzeugt weder
+  // einen Undo-Schritt noch markiert es das Board als bearbeitet — gleiche
+  // Kategorie wie die aktuelle Seite im ReaderWidget.
   function prevMonth() {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y-1) } else setViewMonth(m => m-1)
+    const newMonth = viewMonth === 0 ? 11 : viewMonth - 1
+    const newYear  = viewMonth === 0 ? viewYear - 1 : viewYear
+    setViewMonth(newMonth); setViewYear(newYear)
     setSelectedDate(null)
+    updateWidgetQuiet(widget.id, { data: { ...widget.data, viewYear: newYear, viewMonth: newMonth } })
   }
   function nextMonth() {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y+1) } else setViewMonth(m => m+1)
+    const newMonth = viewMonth === 11 ? 0 : viewMonth + 1
+    const newYear  = viewMonth === 11 ? viewYear + 1 : viewYear
+    setViewMonth(newMonth); setViewYear(newYear)
     setSelectedDate(null)
+    updateWidgetQuiet(widget.id, { data: { ...widget.data, viewYear: newYear, viewMonth: newMonth } })
   }
 
   // ─── Week helpers ─────────────────────────────────────────────────────────
-  function prevWeek() { setWeekStart(ws => { const d = new Date(ws); d.setDate(d.getDate()-7); return d }) }
-  function nextWeek() { setWeekStart(ws => { const d = new Date(ws); d.setDate(d.getDate()+7); return d }) }
+  function prevWeek() {
+    const d = new Date(weekStart); d.setDate(d.getDate()-7)
+    setWeekStart(d)
+    updateWidgetQuiet(widget.id, { data: { ...widget.data, weekStart: toDateStr(d) } })
+  }
+  function nextWeek() {
+    const d = new Date(weekStart); d.setDate(d.getDate()+7)
+    setWeekStart(d)
+    updateWidgetQuiet(widget.id, { data: { ...widget.data, weekStart: toDateStr(d) } })
+  }
   const weekLabel = (() => {
     const end = new Date(weekStart); end.setDate(end.getDate()+6)
     const sm = weekStart.getMonth(), em = end.getMonth()
@@ -574,8 +600,16 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
   })()
 
   // ─── Day helpers ──────────────────────────────────────────────────────────
-  function prevDay() { setDayDate(d => { const n = new Date(d); n.setDate(n.getDate()-1); return n }) }
-  function nextDay() { setDayDate(d => { const n = new Date(d); n.setDate(n.getDate()+1); return n }) }
+  function prevDay() {
+    const n = new Date(dayDate); n.setDate(n.getDate()-1)
+    setDayDate(n)
+    updateWidgetQuiet(widget.id, { data: { ...widget.data, dayDate: toDateStr(n) } })
+  }
+  function nextDay() {
+    const n = new Date(dayDate); n.setDate(n.getDate()+1)
+    setDayDate(n)
+    updateWidgetQuiet(widget.id, { data: { ...widget.data, dayDate: toDateStr(n) } })
+  }
   const dayLabel = `${t(DAY_NAMES[(dayDate.getDay()+6)%7])}, ${dayDate.getDate()}. ${t(MONTH_NAMES[dayDate.getMonth()])} ${dayDate.getFullYear()}`
   const dayIsToday = toDateStr(dayDate) === toDateStr(today)
 
@@ -1563,10 +1597,10 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
 
             {/* Footer */}
             <div style={{ display: 'flex', gap: 8, padding: '10px 14px', borderTop: '1px solid var(--border)', justifyContent: 'flex-end', flexShrink: 0 }}>
-              <button onClick={closePopup} style={{ fontSize: 11, padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
+              <button onClick={closePopup} style={{ fontSize: 11, padding: '6px 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
                 {t('Cancel')}
               </button>
-              <button onClick={submitPopupEvent} style={{ fontSize: 11, padding: '6px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer', fontWeight: 700, opacity: popupTitle.trim() ? 1 : 0.45 }}>
+              <button onClick={submitPopupEvent} style={{ fontSize: 11, padding: '6px 16px', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer', fontWeight: 700, opacity: popupTitle.trim() ? 1 : 0.45 }}>
                 {t('Save')}
               </button>
             </div>

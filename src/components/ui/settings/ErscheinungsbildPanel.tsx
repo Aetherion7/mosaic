@@ -75,7 +75,7 @@ export default function ErscheinungsbildPanel() {
         }}
         style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          padding: '9px 14px', borderRadius: 9, border: '1px solid var(--border)',
+          padding: '9px 14px', borderRadius: 999, border: '1px solid var(--border)',
           background: 'var(--surface2)', color: 'var(--text2)',
           cursor: 'pointer', fontSize: 12, fontWeight: 500,
         }}
@@ -215,11 +215,11 @@ function CustomThemesSection() {
           )}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button onClick={() => { setShowForm(false); setJsonInput(''); setError(null); setPreview(null) }}
-              style={{ fontSize: 11, padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
+              style={{ fontSize: 11, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
               {t('Cancel')}
             </button>
             <button onClick={install} disabled={!preview}
-              style={{ fontSize: 11, fontWeight: 700, padding: '6px 14px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'white', cursor: preview ? 'pointer' : 'default', opacity: preview ? 1 : 0.4 }}>
+              style={{ fontSize: 11, fontWeight: 700, padding: '6px 14px', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'white', cursor: preview ? 'pointer' : 'default', opacity: preview ? 1 : 0.4 }}>
               {t('Add theme')}
             </button>
           </div>

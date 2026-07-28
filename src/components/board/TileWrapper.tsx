@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/Icons'
 import WidgetErrorBoundary from './WidgetErrorBoundary'
 import { getTheme } from '@/lib/themes'
+import { extractNoteTitle } from '@/lib/noteTitle'
 import SlidingTabs from '@/components/ui/SlidingTabs'
 import WidgetAiChat from './WidgetAiChat'
 import { useWidgetAiStore } from '@/store/aiStore'
@@ -481,7 +482,9 @@ function TileWrapperInner({ widget, gridRef }: Props) {
     sleep:       { colSpan: 3, rowSpan: 2 },
     agenda:      { colSpan: 2, rowSpan: 2 },
     quicklinks:  { colSpan: 2, rowSpan: 1 },
-    text:        { colSpan: 2, rowSpan: 1 },
+    // War 2×1 — zu flach, um Toolbar + Text ohne Überlappung/Quetschen zu
+    // zeigen. Passt jetzt zur Beispielgröße aus dem Nutzer-Feedback.
+    text:        { colSpan: 4, rowSpan: 2 },
     // Fehlte komplett — ließ sich auf 1×1 schrumpfen und quetschte den fixen
     // 160px-Ring samt Start/Pause/Reset-Buttons unbenutzbar zusammen.
     timer:       { colSpan: 2, rowSpan: 2 },
@@ -684,8 +687,20 @@ function TileWrapperInner({ widget, gridRef }: Props) {
               </span>
             )}
             <span style={{ opacity: 0.55, color: 'var(--text2)', display:'flex' }}>{widgetTypeIcon(widget)}</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em', flex: 1 }}>
+            <span style={{
+              fontSize: 10, fontWeight: 700, color: 'var(--text3)',
+              textTransform: 'uppercase', letterSpacing: '0.05em',
+              flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
               {t(TYPE_LABELS[widget.type])}
+              {/* Notiz-Name = erste Markdown-Überschrift im Inhalt (s. lib/noteTitle.ts) —
+                  steht neben dem Typ, ersetzt ihn nicht */}
+              {widget.type === 'note' && (() => {
+                const title = extractNoteTitle(widget.data.content as string | undefined)
+                return title && (
+                  <span style={{ textTransform: 'none', fontWeight: 600, color: 'var(--text2)' }}> · {title}</span>
+                )
+              })()}
             </span>
             {mode === 'edit' && isSelected && (
               <WidgetHeaderActions actions={headerActions} headerRef={headerRef} canvasZoom={canvasZoom} />

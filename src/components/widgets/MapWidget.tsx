@@ -731,10 +731,10 @@ export default function MapWidget({ widget }: { widget: Widget }) {
             }}
           />
           <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-            <button onClick={saveMarkerLabel} style={{ flex: 1, fontSize: 11, fontWeight: 700, padding: '5px 0', borderRadius: 7, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer' }}>
+            <button onClick={saveMarkerLabel} style={{ flex: 1, fontSize: 11, fontWeight: 700, padding: '5px 0', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer' }}>
               {t('Save')}
             </button>
-            <button onClick={() => deleteMarker(markerPanel.id)} style={{ fontSize: 11, padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.1)', color: '#ef4444', cursor: 'pointer' }}>
+            <button onClick={() => deleteMarker(markerPanel.id)} style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, border: '1px solid rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.1)', color: '#ef4444', cursor: 'pointer' }}>
               {t('Delete')}
             </button>
           </div>
@@ -761,17 +761,17 @@ export default function MapWidget({ widget }: { widget: Widget }) {
             </span>
           )}
           {routePts.length > 0 && (
-            <button onClick={() => setRoutePts(prev => prev.slice(0, -1))} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer' }}>
+            <button onClick={() => setRoutePts(prev => prev.slice(0, -1))} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer' }}>
               ← {t('Back')}
             </button>
           )}
           {routePts.length >= 2 && (
-            <button onClick={commitRoute} style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer' }}>
+            <button onClick={commitRoute} style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer' }}>
               {t('Save')}
             </button>
           )}
           {routePts.length > 0 && (
-            <button onClick={() => setRoutePts([])} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer' }}>
+            <button onClick={() => setRoutePts([])} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer' }}>
               {t('Cancel')}
             </button>
           )}

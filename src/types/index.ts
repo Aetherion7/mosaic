@@ -74,7 +74,11 @@ export interface SleepEntry { bed: string; wake: string }   // HH:MM
 export interface SleepData {
   goalH:      number
   log:        Record<string, SleepEntry>   // key = Aufwach-Datum YYYY-MM-DD
-  statsOpen?: boolean   // Wochenstatistik auf-/eingeklappt
+  statsOpen?:  boolean   // Wochenstatistik auf-/eingeklappt
+  // Zuletzt angezeigte Woche (0 = aktuell, negativ = zurück) — persistiert,
+  // damit der Fokus-Modus (zweites, gleichzeitiges Mounting desselben
+  // Widgets) dieselbe Woche zeigt statt bei der aktuellen neu zu starten.
+  weekOffset?: number
 }
 
 // ─── Agenda ───────────────────────────────────────────────────────────────────
@@ -109,7 +113,16 @@ export interface CalendarEvent {
   reminderMinutesBefore?: number  // fehlt = keine Erinnerung; 0 = zum Zeitpunkt des Termins
 }
 
-export interface CalendarData { events: CalendarEvent[] }
+export interface CalendarData {
+  events: CalendarEvent[]
+  // Zuletzt angezeigter Ausschnitt (Monat/Woche/Tag) — persistiert, damit ein
+  // zweites gleichzeitiges Mounting desselben Widgets (Fokus-Modus) exakt
+  // denselben Ausschnitt zeigt statt bei "heute" neu zu starten.
+  viewYear?:  number
+  viewMonth?: number
+  weekStart?: string   // YYYY-MM-DD, bereits auf Montag normalisiert
+  dayDate?:   string   // YYYY-MM-DD
+}
 
 // ─── Chart widget ─────────────────────────────────────────────────────────────
 export type ChartType = 'column' | 'bar' | 'line' | 'radar' | 'pie'

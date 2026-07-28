@@ -13,6 +13,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { saveBlob, getBlob, useBlobUrl } from '@/lib/blobStore'
 import { registerReader, unregisterReader } from '@/lib/ai/readerRegistry'
 import { LIGHT_THEME_IDS } from '@/lib/themes'
+import { extractNoteTitle } from '@/lib/noteTitle'
 import { useT } from '@/hooks/useT'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import type { Widget, ReaderHighlight, ReaderFileType } from '@/types'
@@ -1097,13 +1098,13 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button
                   onClick={() => setPendingFile(null)}
-                  style={{ padding: '7px 16px', fontSize: 13, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
+                  style={{ padding: '7px 16px', fontSize: 13, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
                 >
                   {t('Cancel')}
                 </button>
                 <button
                   onClick={() => { cleanupLinkedNotes(); handleFileUpload(pendingFile); setPendingFile(null) }}
-                  style={{ padding: '7px 16px', fontSize: 13, fontWeight: 600, borderRadius: 8, border: 'none', background: '#e53e3e', color: 'white', cursor: 'pointer' }}
+                  style={{ padding: '7px 16px', fontSize: 13, fontWeight: 600, borderRadius: 999, border: 'none', background: '#e53e3e', color: 'white', cursor: 'pointer' }}
                 >
                   {t('Replace & delete everything')}
                 </button>
@@ -1137,11 +1138,11 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
                 onClick={() => setConfirmDeleteHl(null)}
-                style={{ padding: '6px 14px', fontSize: 12, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
+                style={{ padding: '6px 14px', fontSize: 12, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
               >{t('Cancel')}</button>
               <button
                 onClick={() => doDeleteHighlight(confirmDeleteHl.id, true)}
-                style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, borderRadius: 8, border: 'none', background: '#e53e3e', color: 'white', cursor: 'pointer' }}
+                style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, borderRadius: 999, border: 'none', background: '#e53e3e', color: 'white', cursor: 'pointer' }}
               >{t('Delete')}</button>
             </div>
           </div>
@@ -1525,7 +1526,7 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
                               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--accent) 12%, transparent)' }}
                               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
                             >
-                              {(nw.data.title as string | undefined) ?? t('Note')}
+                              {extractNoteTitle(nw.data.content as string | undefined) ?? t('Note')}
                             </button>
                           ))}
                         </div>

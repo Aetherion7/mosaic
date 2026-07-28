@@ -59,7 +59,7 @@ const DEFAULT_SPANS: Record<WidgetType, { colSpan: number; rowSpan: number }> = 
   image:       { colSpan: 4, rowSpan: 2 },
   calendar:    { colSpan: 6, rowSpan: 3 },
   chart:       { colSpan: 6, rowSpan: 3 },
-  text:        { colSpan: 4, rowSpan: 1 },
+  text:        { colSpan: 4, rowSpan: 2 },
   spreadsheet: { colSpan: 8, rowSpan: 4 },
   drawboard:   { colSpan: 6, rowSpan: 4 },
   clock:       { colSpan: 4, rowSpan: 2 },

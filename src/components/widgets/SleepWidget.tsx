@@ -32,7 +32,8 @@ export default function SleepWidget({ widget }: { widget: Widget }) {
   const mode = useUIStore(s => s.mode)
   const d    = widget.data as SleepData
 
-  const [weekOffset, setWeekOffset] = useState(0)
+  // s. types/index.ts SleepData.weekOffset — persistiert für den Fokus-Modus
+  const [weekOffset, setWeekOffset] = useState(() => d.weekOffset ?? 0)
 
   const goalH = d.goalH ?? 8
   const log   = d.log ?? {}
@@ -118,15 +119,21 @@ export default function SleepWidget({ widget }: { widget: Widget }) {
         {statsOpen && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', padding: '0 6px 4px', gap: 2, justifyContent: 'center' }}>
-              <button onPointerDown={e => e.stopPropagation()} onClick={() => setWeekOffset(o => o - 1)}
-                style={navBtnStyle(false)}>
+              <button onPointerDown={e => e.stopPropagation()} onClick={() => {
+                const next = weekOffset - 1
+                setWeekOffset(next)
+                updateTaskData(widget.id, { weekOffset: next })
+              }} style={navBtnStyle(false)}>
                 <svg width="7" height="7" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="7,1 3,5 7,9"/></svg>
               </button>
               <span style={{ fontSize: 8, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', textAlign: 'center', minWidth: 68 }}>
                 {weekRangeLabel(weekOffset, t)}
               </span>
-              <button onPointerDown={e => e.stopPropagation()} onClick={() => setWeekOffset(o => Math.min(0, o + 1))} disabled={weekOffset >= 0}
-                style={navBtnStyle(weekOffset >= 0)}>
+              <button onPointerDown={e => e.stopPropagation()} onClick={() => {
+                const next = Math.min(0, weekOffset + 1)
+                setWeekOffset(next)
+                updateTaskData(widget.id, { weekOffset: next })
+              }} disabled={weekOffset >= 0} style={navBtnStyle(weekOffset >= 0)}>
                 <svg width="7" height="7" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3,1 7,5 3,9"/></svg>
               </button>
             </div>

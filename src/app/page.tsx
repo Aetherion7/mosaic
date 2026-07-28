@@ -1324,11 +1324,11 @@ export default function HomePage() {
                   />
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                     <button onClick={() => setCreatingFolder(false)}
-                      style={{ padding: '9px 16px', fontSize: 13, borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
+                      style={{ padding: '9px 16px', fontSize: 13, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
                     >{t('Cancel')}</button>
                     <button onClick={createFolder} disabled={!newFolderName.trim()}
                       style={{
-                        padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 9, border: 'none',
+                        padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 999, border: 'none',
                         background: 'var(--accent)', color: 'white',
                         cursor: newFolderName.trim() ? 'pointer' : 'default', opacity: newFolderName.trim() ? 1 : 0.4,
                       }}
@@ -1450,13 +1450,13 @@ export default function HomePage() {
                     onClick={handleCreate}
                     style={{
                       flex: 1, padding: '8px', fontSize: 13, fontWeight: 600,
-                      borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer',
+                      borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer',
                     }}
                   >{t('Create')} →</button>
                   <button
                     onClick={() => { setCreating(false); setNewName('') }}
                     style={{
-                      padding: '8px 14px', fontSize: 13, borderRadius: 10,
+                      padding: '8px 14px', fontSize: 13, borderRadius: 999,
                       border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer',
                     }}
                   >{t('Cancel')}</button>
@@ -1577,7 +1577,7 @@ export default function HomePage() {
                   <button
                     onClick={() => setConfirmEmptyTrash(true)}
                     style={{
-                      fontSize: 11, fontWeight: 600, padding: '6px 12px', borderRadius: 8,
+                      fontSize: 11, fontWeight: 600, padding: '6px 12px', borderRadius: 999,
                       border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.1)',
                       color: 'var(--danger)', cursor: 'pointer', flexShrink: 0,
                     }}
@@ -1594,11 +1594,11 @@ export default function HomePage() {
                   </span>
                   <button
                     onClick={() => { emptyTrash(); setConfirmEmptyTrash(false); setTrashOpen(false) }}
-                    style={{ fontSize: 11, fontWeight: 700, padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer', flexShrink: 0 }}
+                    style={{ fontSize: 11, fontWeight: 700, padding: '6px 12px', borderRadius: 999, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer', flexShrink: 0 }}
                   >{t('Yes, empty it')}</button>
                   <button
                     onClick={() => setConfirmEmptyTrash(false)}
-                    style={{ fontSize: 11, padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', flexShrink: 0 }}
+                    style={{ fontSize: 11, padding: '6px 10px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', flexShrink: 0 }}
                   >{t('Cancel')}</button>
                 </div>
               )}
@@ -1631,7 +1631,7 @@ export default function HomePage() {
                       <button
                         onClick={() => restoreBoard(entry.board.id)}
                         style={{
-                          flexShrink: 0, fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 8,
+                          flexShrink: 0, fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 999,
                           border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer',
                         }}
                       >{t('Restore')}</button>
@@ -1689,14 +1689,14 @@ export default function HomePage() {
                   onClick={() => { deleteBoard(confirmDelete); setConfirmDelete(null) }}
                   style={{
                     flex: 1, padding: '9px', fontSize: 13, fontWeight: 600,
-                    borderRadius: 10, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer',
+                    borderRadius: 999, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer',
                   }}
                 >{t('Move to trash')}</button>
                 <button
                   onClick={() => setConfirmDelete(null)}
                   style={{
                     flex: 1, padding: '9px', fontSize: 13,
-                    borderRadius: 10, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer',
+                    borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer',
                   }}
                 >{t('Cancel')}</button>
               </div>
@@ -1758,14 +1758,14 @@ export default function HomePage() {
                   onClick={() => deleteFolder(confirmFolderDelete, deleteBoardsToo)}
                   style={{
                     flex: 1, padding: '9px', fontSize: 13, fontWeight: 600,
-                    borderRadius: 10, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer',
+                    borderRadius: 999, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer',
                   }}
                 >{deleteBoardsToo ? t('Delete folder & boards') : t('Delete folder')}</button>
                 <button
                   onClick={() => setConfirmFolderDelete(null)}
                   style={{
                     flex: 1, padding: '9px', fontSize: 13,
-                    borderRadius: 10, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer',
+                    borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer',
                   }}
                 >{t('Cancel')}</button>
               </div>
@@ -1817,13 +1817,13 @@ export default function HomePage() {
               )}
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button onClick={() => setRenamingFolder(null)}
-                  style={{ padding: '9px 16px', fontSize: 13, borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
+                  style={{ padding: '9px 16px', fontSize: 13, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
                 >{t('Cancel')}</button>
                 <button
                   onClick={() => renameFolder(renamingFolder, renameFolderValue)}
                   disabled={!renameFolderValue.trim() || (renameFolderValue.trim() !== renamingFolder && folderNames.includes(renameFolderValue.trim().slice(0, 30)))}
                   style={{
-                    padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 9, border: 'none',
+                    padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 999, border: 'none',
                     background: 'var(--accent)', color: 'white',
                     cursor: renameFolderValue.trim() ? 'pointer' : 'default',
                     opacity: (!renameFolderValue.trim() || (renameFolderValue.trim() !== renamingFolder && folderNames.includes(renameFolderValue.trim().slice(0, 30)))) ? 0.4 : 1,

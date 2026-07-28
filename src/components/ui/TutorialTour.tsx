@@ -584,7 +584,7 @@ export default function TutorialTour() {
         <div style={{ flex: 1 }} />
         {idx > 0 && !interactive && (
           <button onClick={() => setIdx(i => i - 1)} style={{
-            fontSize: 13, fontWeight: 600, padding: '9px 18px', borderRadius: 9,
+            fontSize: 13, fontWeight: 600, padding: '9px 18px', borderRadius: 999,
             border: '1px solid var(--border)', background: 'var(--surface2)',
             color: 'var(--text2)', cursor: 'pointer',
           }}>
@@ -610,7 +610,7 @@ export default function TutorialTour() {
           </span>
         ) : (
           <button onClick={() => isLast ? setShowDonate(true) : setIdx(i => i + 1)} style={{
-            fontSize: 13, fontWeight: 700, padding: '9px 22px', borderRadius: 9,
+            fontSize: 13, fontWeight: 700, padding: '9px 22px', borderRadius: 999,
             border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer',
             boxShadow: '0 4px 18px color-mix(in srgb, var(--accent) 45%, transparent)',
           }}>

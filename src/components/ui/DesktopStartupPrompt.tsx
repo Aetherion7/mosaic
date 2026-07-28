@@ -80,7 +80,7 @@ export default function DesktopStartupPrompt() {
             {t('Maybe later')}
           </button>
           <button onClick={() => confirm(true)} style={{
-            fontSize: 13, fontWeight: 700, padding: '9px 22px', borderRadius: 9,
+            fontSize: 13, fontWeight: 700, padding: '9px 22px', borderRadius: 999,
             border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer',
             boxShadow: '0 4px 18px color-mix(in srgb, var(--accent) 45%, transparent)',
           }}>

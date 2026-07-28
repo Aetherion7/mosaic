@@ -440,7 +440,7 @@ function FontPicker({ value, onChange }: {
                     onClick={addFont}
                     disabled={uploading}
                     style={{
-                      flex: 1, padding: '5px 0', borderRadius: 6,
+                      flex: 1, padding: '5px 0', borderRadius: 999,
                       border: 'none', background: 'var(--accent)',
                       color: 'white', cursor: uploading ? 'default' : 'pointer', fontSize: 11, fontWeight: 600,
                       opacity: uploading ? 0.6 : 1,
@@ -450,7 +450,7 @@ function FontPicker({ value, onChange }: {
                     onClick={cancelAdding}
                     title={t('Cancel')}
                     style={{
-                      padding: '5px 10px', borderRadius: 6,
+                      padding: '5px 10px', borderRadius: 999,
                       border: '1px solid var(--border)',
                       background: 'transparent', color: 'var(--text2)',
                       cursor: 'pointer', fontSize: 11,
@@ -544,30 +544,6 @@ export default function TextWidget({ widget }: { widget: Widget }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const outerRef = useRef<HTMLDivElement>(null)
   const toolbarRef = useRef<HTMLDivElement>(null)
-  const [compact, setCompact] = useState(false)
-  const [toolbarH, setToolbarH] = useState(0)
-
-  useEffect(() => {
-    const el = outerRef.current
-    if (!el) return
-    const obs = new ResizeObserver(entries => {
-      setCompact((entries[0]?.contentRect.height ?? 999) < 150)
-    })
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
-
-  // Im Compact-Modus schwebt die Toolbar über dem Text — Höhe messen, damit der
-  // Textbereich (inkl. Platzhalter) darunter beginnt und immer sichtbar bleibt.
-  useEffect(() => {
-    const el = toolbarRef.current
-    if (!el) { setToolbarH(0); return }
-    const obs = new ResizeObserver(entries => {
-      setToolbarH(entries[0]?.borderBoxSize?.[0]?.blockSize ?? el.offsetHeight)
-    })
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [mode, compact])
 
   useEffect(() => {
     const id = 'gfonts-textwidget'
@@ -633,23 +609,22 @@ export default function TextWidget({ widget }: { widget: Widget }) {
   return (
     <div
       ref={outerRef}
-      style={{ display: 'flex', flexDirection: 'column', gap: 6, height: '100%', position: 'relative' }}
+      style={{ height: '100%', position: 'relative' }}
       onPointerDown={e => e.stopPropagation()}
     >
+      {/* Die Toolbar schwebt IMMER über dem Textbereich (statt im Editmodus
+          Platz im Layout einzunehmen) — sonst verschiebt sich der Text beim
+          Wechsel zwischen Edit-/Ansichtsmodus, weil die Toolbar dort
+          verschwindet/erscheint und den verbleibenden Raum verändert. So
+          bleibt die Position des Texts in beiden Modi exakt identisch. */}
       {mode === 'edit' && (
         <div ref={toolbarRef} style={{
+          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
           display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4,
           padding: '4px 6px', borderRadius: 8,
-          background: compact
-            ? 'color-mix(in srgb, var(--surface2) 92%, transparent)'
-            : 'var(--surface2)',
+          background: 'color-mix(in srgb, var(--surface2) 92%, transparent)',
           border: '1px solid var(--border)',
-          backdropFilter: compact ? 'blur(8px)' : undefined,
-          WebkitBackdropFilter: compact ? 'blur(8px)' : undefined,
-          flexShrink: compact ? undefined : 0,
-          ...(compact ? {
-            position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-          } : {}),
+          backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
         }}>
 
           {/* Font family – custom picker with preview */}
@@ -861,32 +836,47 @@ export default function TextWidget({ widget }: { widget: Widget }) {
         </div>
       )}
 
-      {/* Text area */}
-      {mode === 'edit' ? (
-        <textarea
-          ref={textareaRef}
-          value={d.content}
-          onChange={e => patch({ content: e.target.value })}
-          placeholder={t('Enter text here…')}
-          style={{
+      {/* Textbereich — nimmt IMMER die volle Widget-Fläche ein und zentriert
+          seinen Inhalt darin (unabhängig von der schwebenden Toolbar oben),
+          damit der Text in Edit- und Ansichtsmodus exakt an derselben
+          Stelle sitzt und beim Umschalten nicht nach oben "springt". */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '2px 4px', overflow: 'hidden',
+      }}>
+        {mode === 'edit' ? (
+          <textarea
+            ref={textareaRef}
+            value={d.content}
+            onChange={e => patch({ content: e.target.value })}
+            placeholder={t('Enter text here…')}
+            style={{
+              ...textStyle,
+              resize: 'none',
+              background: 'transparent', border: 'none', outline: 'none',
+              maxHeight: '100%', overflowY: 'auto',
+              // Lässt die Textarea auf ihre tatsächliche Inhaltshöhe
+              // schrumpfen/wachsen (Breite bleibt über width:100% oben fix),
+              // erst DAS macht "vom Flex-Eltern vertikal zentriert" möglich —
+              // eine Textarea kann ihren eigenen Inhalt sonst nicht zentrieren,
+              // sie richtet Text immer oben aus. Wird von älteren Browsern
+              // (kein field-sizing) einfach ignoriert und fällt auf
+              // Vollhöhe/oben ausgerichtet zurück statt kaputtzugehen.
+              fieldSizing: 'content',
+              color: d.color.startsWith('var') ? undefined : d.color,
+            } as React.CSSProperties}
+          />
+        ) : (
+          <div style={{
             ...textStyle,
-            flex: 1, minHeight: 0, resize: 'none',
-            background: 'transparent', border: 'none', outline: 'none',
-            padding: '2px 4px',
-            marginTop: compact ? toolbarH + 4 : 0,
-            color: d.color.startsWith('var') ? undefined : d.color,
-          }}
-        />
-      ) : (
-        <div style={{
-          ...textStyle,
-          flex: 1, padding: '2px 4px',
-          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-          overflowY: 'auto',
-        }}>
-          {d.content || <span style={{ opacity: 0.3 }}>{t('No text')}</span>}
-        </div>
-      )}
+            maxHeight: '100%', overflowY: 'auto',
+            whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+          }}>
+            {d.content || <span style={{ opacity: 0.3 }}>{t('No text')}</span>}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

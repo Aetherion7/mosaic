@@ -86,18 +86,18 @@ export default function BoardsPanel() {
           {emptyConfirm ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
               <button onClick={() => setEmptyConfirm(false)}
-                style={{ fontSize: 11, padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
+                style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
                 {t('Cancel')}
               </button>
               <button onClick={() => { emptyTrash(); setEmptyConfirm(false) }}
-                style={{ fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 8, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer' }}>
+                style={{ fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 999, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer' }}>
                 {t('Yes, empty it')}
               </button>
             </div>
           ) : (
             <button onClick={() => setEmptyConfirm(true)} title={t('Empty trash')}
               style={{
-                flexShrink: 0, padding: '4px 12px', borderRadius: 8,
+                flexShrink: 0, padding: '4px 12px', borderRadius: 999,
                 border: '1px solid color-mix(in srgb, var(--danger) 40%, transparent)',
                 background: 'none', color: 'var(--danger)', cursor: 'pointer',
                 fontSize: 11, fontWeight: 600,

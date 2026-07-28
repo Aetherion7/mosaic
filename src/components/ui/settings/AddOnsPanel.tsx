@@ -72,7 +72,7 @@ export default function AddOnsPanel() {
               {p.desc && <span>{p.desc} · </span>}v{p.version}{p.author ? ` · ${p.author}` : ''}
             </div>
           </div>
-          <button onClick={() => uninstallPlugin(p.id)} style={{ padding: '4px 12px', borderRadius: 8, border: '1px solid #ef444455', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
+          <button onClick={() => uninstallPlugin(p.id)} style={{ padding: '4px 12px', borderRadius: 999, border: '1px solid #ef444455', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
             {t('Remove')}
           </button>
         </div>
@@ -129,11 +129,11 @@ export default function AddOnsPanel() {
           )}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button onClick={() => { setShowInstallForm(false); setJsonInput(''); setPreview(null); setParseError(null) }}
-              style={{ fontSize: 11, padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
+              style={{ fontSize: 11, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
               {t('Cancel')}
             </button>
             <button onClick={doInstall} disabled={!preview}
-              style={{ fontSize: 11, fontWeight: 700, padding: '6px 14px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'white', cursor: preview ? 'pointer' : 'default', opacity: preview ? 1 : 0.4 }}>
+              style={{ fontSize: 11, fontWeight: 700, padding: '6px 14px', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'white', cursor: preview ? 'pointer' : 'default', opacity: preview ? 1 : 0.4 }}>
               {t('Install')}
             </button>
           </div>

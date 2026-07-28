@@ -5,6 +5,7 @@ import { useBoardStore } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { selectBoard } from '@/store/boardStore'
 import { TYPE_LABELS } from '@/components/board/TileWrapper'
+import { extractNoteTitle } from '@/lib/noteTitle'
 import { useT } from '@/hooks/useT'
 import type { Widget } from '@/types'
 import {
@@ -71,8 +72,10 @@ export default function SearchModal({ onClose }: Props) {
     const out: Result[] = []
     for (const widget of Object.values(board.widgets)) {
       const d = widget.data as Record<string, unknown>
+      const noteTitle = widget.type === 'note' ? extractNoteTitle(d.content as string | undefined) : null
       const label =
         (d.name as string | undefined) ||
+        noteTitle ||
         (d.title as string | undefined) ||
         (d.content as string | undefined) ||
         t(TYPE_LABELS[widget.type]) ||

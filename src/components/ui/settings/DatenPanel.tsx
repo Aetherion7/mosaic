@@ -261,11 +261,11 @@ export default function DatenPanel() {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => applyBoardsImport(pendingImport.boards, pendingImport.settings)}
-              style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#f59e0b', color: '#1a1200', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+              style={{ padding: '7px 14px', borderRadius: 999, border: 'none', background: '#f59e0b', color: '#1a1200', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
               {t('Overwrite & import')}
             </button>
             <button onClick={() => setPendingImport(null)}
-              style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', fontSize: 12 }}>
+              style={{ padding: '7px 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', fontSize: 12 }}>
               {t('Cancel')}
             </button>
           </div>
@@ -280,10 +280,10 @@ export default function DatenPanel() {
             {t('This action is')} <strong>{t('irreversible')}</strong>. {t('All boards, widgets and settings will be deleted.')}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={doClearAll} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+            <button onClick={doClearAll} style={{ padding: '8px 16px', borderRadius: 999, border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
               {t('Yes, delete everything')}
             </button>
-            <button onClick={() => setClearConfirm(false)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', fontSize: 12 }}>
+            <button onClick={() => setClearConfirm(false)} style={{ padding: '8px 16px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', fontSize: 12 }}>
               {t('Cancel')}
             </button>
           </div>
@@ -292,7 +292,7 @@ export default function DatenPanel() {
         <div style={{ padding: 14, borderRadius: 10, border: '1px solid #ef444455', background: '#ef444408' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#ef4444', marginBottom: 4 }}>{t('Delete all data')}</div>
           <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 10, lineHeight: 1.5 }}>{t(isDesktop ? 'Irreversibly deletes all boards, widgets and settings from this device.' : 'Irreversibly deletes all boards, widgets and settings from the browser.')}</div>
-          <button onClick={() => setClearConfirm(true)} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #ef4444', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+          <button onClick={() => setClearConfirm(true)} style={{ padding: '8px 14px', borderRadius: 999, border: '1px solid #ef4444', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
             {t('Delete all data')}
           </button>
         </div>
