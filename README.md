@@ -16,6 +16,7 @@ No account. No server. Your data stays on your device.
 [![CI](https://github.com/Aetherion7/mosaic/actions/workflows/ci.yml/badge.svg)](https://github.com/Aetherion7/mosaic/actions/workflows/ci.yml)
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE.md)
 [![Latest release](https://img.shields.io/github/v/release/Aetherion7/mosaic?label=release)](https://github.com/Aetherion7/mosaic/releases/latest)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=kofi&logoColor=white)](https://ko-fi.com/mosaicboard)
 
 [Download](#download) · [Features](#features) · [Getting started](#getting-started) · [Contributing](#contributing) · [Support the project](#support-the-project)
 
@@ -254,7 +255,6 @@ mosaic is free and always will be for personal use. If it's useful to you, a don
 the time that goes into it:
 
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=kofi&logoColor=white)](https://ko-fi.com/mosaicboard)
-[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-support-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Aetherion7)
 
 No pressure at all — using it, starring the repo, or reporting a bug is just as appreciated.
 

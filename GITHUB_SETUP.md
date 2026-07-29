@@ -92,18 +92,10 @@ GitHub Pages serves `docs/index.html` automatically — no build step, it's alre
 If you update the landing page later, just commit and push; Pages redeploys on its own within a
 minute or two.
 
-## 5. Add the GitHub Sponsors / Ko-fi buttons
+## 5. Add the Ko-fi button
 
-`.github/FUNDING.yml` already references both — once the placeholders in it are replaced (step 1),
-GitHub shows a **Sponsor** button on your repo's main page automatically. No extra step needed there.
-
-**Setting up GitHub Sponsors** (optional, takes a few days for approval):
-
-1. [github.com/sponsors](https://github.com/sponsors) → "Join the waitlist" / "Set up GitHub
-   Sponsors" for your account.
-2. Requires a Stripe account for payouts (or Open Collective as an alternative) — GitHub walks you
-   through it.
-3. Once approved, the badge in `.github/FUNDING.yml` and README/UeberPanel links start working.
+`.github/FUNDING.yml` already references it — GitHub shows a **Sponsor** button on your repo's main
+page automatically. No extra step needed there.
 
 **Setting up Ko-fi** (takes about five minutes):
 

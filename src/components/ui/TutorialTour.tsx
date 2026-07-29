@@ -285,21 +285,6 @@ function DonateOverlay({ onClose }: { onClose: () => void }) {
             icon={<img src="/badges/kofi.png" alt="Ko-fi" style={{ height: 34, width: 'auto', position: 'relative', top: 8 }} />}
           />
           <DonateCard
-            href="https://github.com/sponsors/Aetherion7"
-            label="GitHub Sponsors"
-            sub={t('Sponsor development directly on GitHub')}
-            glow="#db61a2"
-            // github.png ist ein weißer Kreis mit transparent ausgeschnittenem
-            // Octocat — braucht einen FEST dunklen Hintergrund (nicht vom
-            // Theme abhängig), sonst verschwindet er auf hellen Themes.
-            icon={
-              <span style={{ background: '#0d1117', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/badges/github.png" alt="GitHub" style={{ width: '78%', height: '78%' }} />
-              </span>
-            }
-          />
-          <DonateCard
             href="https://github.com/Aetherion7/mosaic"
             label={t('Star on GitHub')}
             sub={t('Costs nothing, helps a lot')}

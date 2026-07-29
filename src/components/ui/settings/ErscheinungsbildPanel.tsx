@@ -242,12 +242,13 @@ function CustomThemesSection() {
 }
 
 // Programm-Schrift (global, gesamte Oberfläche) + Board-Schrift (überschreibt
-// die Programm-Schrift nur für das gerade offene Board). Board-Schrift ist
-// nur relevant, solange ein Board offen ist — `board` ist dann einfach
-// undefined und dieser Teil rendert nicht, s. unten. Exportiert, damit
-// GeneralPanel.tsx sie auch auf der Startseite (Board-Auswahl) zeigen kann,
-// wo es kein offenes Board (und daher keine Board-Schrift) gibt.
-export function FontSection() {
+// die Programm-Schrift nur für das gerade offene Board). Exportiert, damit
+// GeneralPanel.tsx sie auch auf der Startseite (Board-Auswahl) zeigen kann —
+// dort ausdrücklich mit showBoardFont={false}: currentBoardId im Store bleibt
+// nach dem Verlassen eines Boards bestehen (wird beim Zurückkehren zur
+// Startseite nicht geleert), `board` wäre also fälschlich noch gesetzt und
+// würde die Board-Schrift-Zeile zeigen, obwohl kein Board offen ist.
+export function FontSection({ showBoardFont = true }: { showBoardFont?: boolean }) {
   const t = useT()
   const programFont      = useSettings(s => s.programFont)
   const setSetting       = useSettings(s => s.setSetting)
@@ -291,7 +292,7 @@ export function FontSection() {
     deleteBlob(font.blobRef).catch(() => {})
     // Nichts soll auf eine gelöschte Font-ID zeigen bleiben
     if (programFont === font.id) setSetting({ programFont: 'inter' })
-    if (board?.fontFamily === font.id) setBoardFont(null)
+    if (showBoardFont && board?.fontFamily === font.id) setBoardFont(null)
   }
 
   return (
@@ -314,7 +315,7 @@ export function FontSection() {
       </div>
       {error && <div style={{ fontSize: 11, color: 'var(--danger)' }}>{error}</div>}
 
-      {board && (
+      {showBoardFont && board && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text1)' }}>{t('Board font')}</div>

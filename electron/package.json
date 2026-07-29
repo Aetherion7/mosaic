@@ -1,5 +1,6 @@
 {
   "name": "mosaic-electron",
+  "desktopName": "mosaic.desktop",
   "version": "1.8.0",
   "private": true,
   "author": {

@@ -65,7 +65,7 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
             Schrift — der Board-Schrift-Teil rendert nur, wenn ein Board offen
             ist, s. Kommentar dort. */}
         <div style={{ marginTop: 20 }}>
-          <FontSection />
+          <FontSection showBoardFont={false} />
         </div>
 
         <div style={{ marginTop: 20 }}>

@@ -159,7 +159,11 @@
       ],
       "icon": "electron/build/icon.png",
       "category": "Office",
-      "maintainer": "Aetherion7 <Aetherion7@users.noreply.github.com>"
+      "maintainer": "Aetherion7 <Aetherion7@users.noreply.github.com>",
+      "syncDesktopName": true
+    },
+    "appImage": {
+      "artifactName": "${productName}-linux-${arch}.${ext}"
     }
   }
 }

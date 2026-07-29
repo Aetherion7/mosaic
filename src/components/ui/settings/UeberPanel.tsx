@@ -6,7 +6,7 @@ import { APP_VERSION } from '@/lib/version'
 // Externe Links öffnen in einem echten Tab/Fenster außerhalb der App —
 // im Electron-Build fängt main.js das über setWindowOpenHandler ab und
 // reicht es an den System-Browser weiter, statt es im App-Fenster zu laden.
-// glow: optionale Marken-Tönung (Ko-fi-Orange, GitHub-Sponsors-Pink, Stern-Gold)
+// glow: optionale Marken-Tönung (Ko-fi-Orange, Stern-Gold)
 // für die Support-Zeilen — dieselbe Hover-Wirkung wie bei den Spenden-Karten
 // am Ende der Tutorial-Tour. Ohne glow bleibt es beim neutralen Akzent-Hover
 // (Project-Sektion oben: Quellcode/Issue-Link).
@@ -92,21 +92,6 @@ export default function UeberPanel() {
         glow="#ff6154"
         // eslint-disable-next-line @next/next/no-img-element
         icon={<img src="/badges/kofi.png" alt="Ko-fi" style={{ height: 22, width: 'auto' }} />}
-      />
-      <LinkRow
-        href="https://github.com/sponsors/Aetherion7"
-        label="GitHub Sponsors"
-        sub={t('Sponsor development directly on GitHub')}
-        glow="#db61a2"
-        // github.png ist ein weißer Kreis mit transparent ausgeschnittenem
-        // Octocat — braucht einen FEST dunklen Hintergrund (nicht vom Theme
-        // abhängig), sonst verschwindet er auf hellen Themes.
-        icon={
-          <span style={{ background: '#0d1117', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/badges/github.png" alt="GitHub" style={{ width: '78%', height: '78%' }} />
-          </span>
-        }
       />
       <LinkRow
         href="https://github.com/Aetherion7/mosaic"
