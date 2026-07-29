@@ -7,6 +7,7 @@ import { useIsDesktop } from '@/hooks/useIsDesktop'
 import { SectionTitle, SettingItem, Row } from './shared'
 import SlidingTabs from '@/components/ui/SlidingTabs'
 import AddOnsPanel from './AddOnsPanel'
+import { FontSection } from './ErscheinungsbildPanel'
 
 const LANGUAGES: { id: Lang; label: string; native: string }[] = [
   { id: 'en', label: 'English', native: 'English' },
@@ -20,6 +21,7 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
   const homeThemeMode = useSettings(s => s.homeThemeMode)
   const language = useSettings(s => s.language)
   const animations = useSettings(s => s.animations)
+  const showMinimap = useSettings(s => s.showMinimap)
   const showKbdHints = useSettings(s => s.showKbdHints)
   const launchAtLogin = useSettings(s => s.launchAtLogin)
   const keepRunningInBackground = useSettings(s => s.keepRunningInBackground)
@@ -57,6 +59,13 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
             desc={t('Switches every label, button and message in the app')}
             control={<LanguageSelect value={language} onChange={lng => setSetting({ language: lng })} />}
           />
+        </div>
+
+        {/* FontSection zeigt hier (ohne offenes Board) nur die Programm-
+            Schrift — der Board-Schrift-Teil rendert nur, wenn ein Board offen
+            ist, s. Kommentar dort. */}
+        <div style={{ marginTop: 20 }}>
+          <FontSection />
         </div>
 
         <div style={{ marginTop: 20 }}>
@@ -106,6 +115,14 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
           desc={t('Turns decorative transitions and effects on or off across the entire app')}
           value={animations}
           onChange={v => setSetting({ animations: v })}
+        />
+      </div>
+      <div style={{ marginTop: 20 }}>
+        <Row
+          label={t('Minimap')}
+          desc={t('Shows a live overview of the board in the bottom-left corner')}
+          value={showMinimap}
+          onChange={v => setSetting({ showMinimap: v })}
         />
       </div>
       <div style={{ marginTop: 20 }}>

@@ -67,6 +67,7 @@ export interface AppSettings {
   keyboardShortcuts:      Record<ShortcutAction, string>
   keyboardShortcutsHome:  Record<HomeShortcutAction, string>
   animations:             boolean
+  showMinimap:            boolean
   headerStyle:            'default' | 'island'
   programFont:            string   // Schrift der gesamten Oberfläche (Startseite, Einstellungen, Boards ohne eigene Board-Schrift)
   disabledWidgetTypes:    string[]
@@ -75,6 +76,14 @@ export interface AppSettings {
   customTemplates:        CustomTemplate[]
   customFonts:            CustomFont[]
   calendarFadePastEvents: boolean
+  // ── Widget-Erinnerungen (ReminderScheduler.tsx) — global, nicht pro Widget-
+  // Instanz, weil es hier um eine persönliche Gewohnheit geht, nicht um ein
+  // einzelnes Board. Bewusst standardmäßig aus: neue Benachrichtigungen
+  // sollen nicht überraschend auftauchen, ohne dass man sie angefordert hat.
+  waterRemindersEnabled:      boolean
+  waterReminderCount:         number   // 3–6, s. WATER_REMINDER_HOURS
+  sleepBedtimeReminderEnabled: boolean
+  sleepBedtimeReminderTime:    string  // HH:MM
   statsDisabledTypes:     string[]  // Widget-Typen, deren Statistik-Bereich ausgeblendet ist (task/water/sleep)
   lastThemeId:            string | null
   defaultThemeId:         string   // Theme für neu erstellte Boards
@@ -119,6 +128,7 @@ export const useSettings = create<SettingsStore>()(
       keyboardShortcuts:      DEFAULT_SHORTCUTS,
       keyboardShortcutsHome:  DEFAULT_HOME_SHORTCUTS,
       animations:             true,
+      showMinimap:            true,
       headerStyle:            'default',
       programFont:            'inter',
       disabledWidgetTypes:    [],
@@ -127,6 +137,10 @@ export const useSettings = create<SettingsStore>()(
       customTemplates:        [],
       customFonts:            [],
       calendarFadePastEvents: false,
+      waterRemindersEnabled:       false,
+      waterReminderCount:          3,
+      sleepBedtimeReminderEnabled: false,
+      sleepBedtimeReminderTime:    '22:00',
       statsDisabledTypes:     [],
       lastThemeId:            null,
       defaultThemeId:         'dark',

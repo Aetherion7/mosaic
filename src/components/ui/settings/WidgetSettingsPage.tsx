@@ -4,7 +4,7 @@ import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useT } from '@/hooks/useT'
 import { TYPE_LABELS } from '@/components/board/TileWrapper'
 import type { WidgetType } from '@/types'
-import { Row, SectionTitle } from './shared'
+import { Row, SectionTitle, SettingItem } from './shared'
 import { BUILT_IN_WIDGETS } from './widgetCatalog'
 
 // Eigene Unterseite je Widget-Typ (Sidebar → "WIDGETS" → einzelner Eintrag):
@@ -63,6 +63,10 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
   const statsDisabledTypes = useSettings(s => s.statsDisabledTypes)
   const setSetting = useSettings(s => s.setSetting)
   const calendarFadePastEvents = useSettings(s => s.calendarFadePastEvents)
+  const waterRemindersEnabled = useSettings(s => s.waterRemindersEnabled)
+  const waterReminderCount = useSettings(s => s.waterReminderCount)
+  const sleepBedtimeReminderEnabled = useSettings(s => s.sleepBedtimeReminderEnabled)
+  const sleepBedtimeReminderTime = useSettings(s => s.sleepBedtimeReminderTime)
   const t = useT()
   const entry    = BUILT_IN_WIDGETS.find(w => w.type === type)
   const disabled = disabledWidgetTypes.includes(type)
@@ -107,6 +111,57 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
         />
       )}
 
+      {type === 'water' && (
+        <>
+          <SectionTitle>{t('Water')}</SectionTitle>
+          <Row
+            label={t('Water reminders')}
+            desc={t('Notify you to drink water at least 3 times a day, until today\'s goal is reached')}
+            value={waterRemindersEnabled}
+            onChange={v => setSetting({ waterRemindersEnabled: v })}
+          />
+          {waterRemindersEnabled && (
+            <SettingItem
+              label={t('Reminders per day')}
+              control={
+                <select
+                  value={waterReminderCount}
+                  onChange={e => setSetting({ waterReminderCount: Number(e.target.value) })}
+                  style={selStyle}
+                >
+                  {[3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              }
+            />
+          )}
+        </>
+      )}
+
+      {type === 'sleep' && (
+        <>
+          <SectionTitle>{t('Sleep')}</SectionTitle>
+          <Row
+            label={t('Bedtime reminder')}
+            desc={t('Notify you once in the evening if you haven\'t logged a bedtime yet')}
+            value={sleepBedtimeReminderEnabled}
+            onChange={v => setSetting({ sleepBedtimeReminderEnabled: v })}
+          />
+          {sleepBedtimeReminderEnabled && (
+            <SettingItem
+              label={t('Reminder time')}
+              control={
+                <input
+                  type="time"
+                  value={sleepBedtimeReminderTime}
+                  onChange={e => setSetting({ sleepBedtimeReminderTime: e.target.value })}
+                  style={selStyle}
+                />
+              }
+            />
+          )}
+        </>
+      )}
+
       {type === 'calendar' && (
         <>
           <SectionTitle>{t('Calendar')}</SectionTitle>
@@ -125,4 +180,10 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
 
     </div>
   )
+}
+
+const selStyle: React.CSSProperties = {
+  fontSize: 12, background: 'var(--surface2)', color: 'var(--text1)',
+  border: '1px solid var(--border)', borderRadius: 7,
+  padding: '5px 8px', cursor: 'pointer', height: 28,
 }

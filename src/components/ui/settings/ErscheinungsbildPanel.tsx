@@ -243,9 +243,11 @@ function CustomThemesSection() {
 
 // Programm-Schrift (global, gesamte Oberfläche) + Board-Schrift (überschreibt
 // die Programm-Schrift nur für das gerade offene Board). Board-Schrift ist
-// nur relevant, solange ein Board offen ist — dieses Panel wird über die
-// Kategorie-Filterung (SettingsModal) ohnehin nur im Board-Kontext gezeigt.
-function FontSection() {
+// nur relevant, solange ein Board offen ist — `board` ist dann einfach
+// undefined und dieser Teil rendert nicht, s. unten. Exportiert, damit
+// GeneralPanel.tsx sie auch auf der Startseite (Board-Auswahl) zeigen kann,
+// wo es kein offenes Board (und daher keine Board-Schrift) gibt.
+export function FontSection() {
   const t = useT()
   const programFont      = useSettings(s => s.programFont)
   const setSetting       = useSettings(s => s.setSetting)

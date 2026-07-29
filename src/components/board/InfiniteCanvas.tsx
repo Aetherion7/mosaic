@@ -3,6 +3,7 @@ import { useRef, useState, useMemo, useCallback, useEffect, useLayoutEffect, for
 import { useShallow } from 'zustand/react/shallow'
 import { useUIStore } from '@/store/uiStore'
 import { useBoardStore, selectBoard } from '@/store/boardStore'
+import { useSettings } from '@/store/settingsStore'
 import { INFINITE_COL_W, INFINITE_GRID_COLS, INFINITE_GRID_ROWS, GRID_GAP, GRID_ROW_H } from '@/lib/constants'
 import { useT } from '@/hooks/useT'
 
@@ -111,6 +112,7 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
 
   const widgets    = useBoardStore(useShallow(s => selectBoard(s)?.widgets ?? {}))
   const widgetList = useMemo(() => Object.values(widgets), [widgets])
+  const showMinimap = useSettings(s => s.showMinimap)
 
   const mmViewportRef = useRef<HTMLDivElement>(null)
   const mmTileRefs    = useRef(new Map<string, HTMLDivElement>())
@@ -416,7 +418,7 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
       </div>
 
       {/* Live-Minimap */}
-      {widgetList.length > 0 && (
+      {showMinimap && widgetList.length > 0 && (
         <div
           onPointerDown={e => e.stopPropagation()}
           onClick={onMinimapClick}

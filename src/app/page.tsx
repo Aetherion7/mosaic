@@ -1452,7 +1452,7 @@ export default function HomePage() {
                       flex: 1, padding: '8px', fontSize: 13, fontWeight: 600,
                       borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer',
                     }}
-                  >{t('Create')} →</button>
+                  >{t('Create')}</button>
                   <button
                     onClick={() => { setCreating(false); setNewName('') }}
                     style={{
