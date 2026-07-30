@@ -138,12 +138,37 @@ h2 { font-family: 'Guavine', serif; font-size: clamp(30px, 4vw, 42px); font-weig
 .tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
 
 /* Screenshot showcase */
-.showcase { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+.showcase { display: flex; flex-direction: column; gap: 16px; }
 .showcase .shot { display: flex; flex-direction: column; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); background: var(--surface); }
-.showcase .shot img { flex: 1 1 auto; width: 100%; height: 100%; min-height: 0; object-fit: cover; }
-.showcase .stack { display: flex; flex-direction: column; gap: 16px; }
-.showcase .stack .shot { flex: 1 1 0; }
+.showcase .shot img { display: block; width: 100%; object-fit: cover; }
+.showcase-hero img { height: 440px; object-position: center 20%; }
+.showcase-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.showcase-row .shot img { height: 240px; }
 .shot figcaption { padding: 14px 16px; font-size: 12.5px; color: var(--text3); border-top: 1px solid var(--border); }
+.showcase .shot img, .hero-shot img { cursor: zoom-in; transition: filter .15s; }
+.showcase .shot img:hover, .hero-shot img:hover { filter: brightness(1.08); }
+
+/* Screenshot lightbox */
+.lightbox {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  align-items: center; justify-content: center; padding: 5vh 5vw;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  cursor: zoom-out;
+}
+.lightbox.open { display: flex; }
+.lightbox img {
+  max-width: 100%; max-height: 100%; display: block; cursor: default;
+  border-radius: 12px; border: 1px solid var(--border);
+  box-shadow: 0 40px 100px rgba(0,0,0,.6);
+}
+.lightbox-close {
+  position: absolute; top: 20px; right: 24px; width: 40px; height: 40px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text1);
+  font-size: 16px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.lightbox-close:hover { background: var(--surface3); }
 
 /* Download */
 .downloads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
@@ -154,6 +179,7 @@ h2 { font-family: 'Guavine', serif; font-size: clamp(30px, 4vw, 42px); font-weig
 }
 .dl-card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); transform: translateY(-2px); }
 .dl-card .plat-ic { font-size: 30px; margin-bottom: 12px; }
+.dl-card .plat-ic img { display: block; margin: 0 auto; }
 .dl-card .plat-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
 .dl-card .plat-sub { font-size: 12px; color: var(--text3); }
 .note-box {
@@ -199,7 +225,8 @@ footer .flinks a { font-size: 12.5px; color: var(--text2); text-decoration: none
 footer .flinks a:hover { color: var(--text1); }
 
 @media (max-width: 860px) {
-  .grid, .showcase, .priv-grid, .downloads { grid-template-columns: 1fr; }
+  .grid, .showcase-row, .priv-grid, .downloads { grid-template-columns: 1fr; }
+  .showcase-hero img { height: 260px; }
   header nav a:not(.btn) { display: none; }
   .hero { padding: 64px 0 40px; }
   section { padding: 56px 0; }
@@ -237,7 +264,7 @@ footer .flinks a:hover { color: var(--text1); }
         <a class="btn btn-outline" href="https://github.com/Aetherion7/mosaic">View source on GitHub</a>
       </div>
       <div class="hero-shot">
-        <img src="screenshots/board.png" alt="A mosaic board with task, calendar, water tracker, weather, note, clock and chart widgets arranged together">
+        <img src="screenshots/board.png" alt="A mosaic board with task, calendar, water tracker, weather, note, clock and chart widgets arranged together" onclick="openLightbox(this)" tabindex="0" role="button" aria-label="Enlarge screenshot">
       </div>
     </div>
   </section>
@@ -325,17 +352,17 @@ footer .flinks a:hover { color: var(--text1); }
       <h2>A closer look.</h2>
       <p class="section-sub">Every screenshot on this page comes straight from the running app — no staged mockups.</p>
       <div class="showcase">
-        <figure class="shot">
-          <img src="screenshots/themes.png" alt="Theme picker showing 18 built-in themes plus background and grid pattern options">
+        <figure class="shot showcase-hero">
+          <img src="screenshots/themes.png" alt="Theme picker showing 18 built-in themes plus background and grid pattern options" onclick="openLightbox(this)" tabindex="0" role="button" aria-label="Enlarge screenshot">
           <figcaption>18 built-in themes, dark and light, with background and pattern controls</figcaption>
         </figure>
-        <div class="stack">
+        <div class="showcase-row">
           <figure class="shot">
-            <img src="screenshots/ai-assistant.png" alt="The AI assistant panel, ready to connect a BYOK API key">
+            <img src="screenshots/ai-assistant.png" alt="The AI assistant panel, ready to connect a BYOK API key" onclick="openLightbox(this)" tabindex="0" role="button" aria-label="Enlarge screenshot">
             <figcaption>The AI assistant — bring your own key, fully optional</figcaption>
           </figure>
           <figure class="shot">
-            <img src="screenshots/home.png" alt="The board overview page showing a list of boards">
+            <img src="screenshots/home.png" alt="The board overview page showing a list of boards" onclick="openLightbox(this)" tabindex="0" role="button" aria-label="Enlarge screenshot">
             <figcaption>Board overview — search, sort, and organize into folders</figcaption>
           </figure>
         </div>
@@ -355,21 +382,13 @@ footer .flinks a:hover { color: var(--text1); }
           <div class="plat-sub" id="dl-win-sub">.exe installer</div>
         </a>
         <a class="dl-card" id="dl-mac" href="https://github.com/Aetherion7/mosaic/releases/latest">
-          <div class="plat-ic"><svg width="27" height="27" viewBox="0 0 24 24" fill="currentColor" style="margin:0 auto"><path d="M16.365 1.43c0 1.14-.462 2.15-1.213 2.9-.826.83-2.067 1.47-3.087 1.39-.14-1.1.45-2.24 1.196-2.98.79-.8 2.14-1.4 3.104-1.31zM20.5 17.02c-.53 1.2-.78 1.74-1.46 2.8-.94 1.47-2.27 3.31-3.92 3.32-1.47.02-1.85-.96-3.85-.95-1.99.01-2.42.97-3.89.95-1.65-.02-2.9-1.68-3.84-3.15C1.03 16.2.63 11.1 2.32 8.13c1.2-2.09 3.16-3.35 5.03-3.35 1.9 0 3.1 1.03 4.68 1.03 1.53 0 2.44-1.03 4.68-1.03 1.65 0 3.4.9 4.64 2.46-4.08 2.24-3.42 8.06-.85 9.78z"/></svg></div>
+          <div class="plat-ic"><img src="icons/apple.png" alt="" width="26" height="31"></div>
           <div class="plat-name">macOS</div>
           <div class="plat-sub" id="dl-mac-sub">.dmg, Apple Silicon</div>
         </a>
         <div class="dl-card" style="position:relative">
           <a id="dl-linux" href="https://github.com/Aetherion7/mosaic/releases/latest" style="position:absolute;inset:0;border-radius:inherit;z-index:0" aria-label="Download mosaic for Linux (.AppImage)"></a>
-          <div class="plat-ic"><svg width="27" height="27" viewBox="0 0 16 16" fill="currentColor" style="margin:0 auto">
-            <path d="M8 1.6c-1.3 0-2.3 1.1-2.3 2.5 0 .7.2 1.3.6 1.8-1.7 1.1-2.8 4.2-2.8 6.9 0 1.2.3 2.1.9 2.6.5.4 1.1.3 1.6-.2.4-.4.8-.6 1.3-.6h1.4c.5 0 .9.2 1.3.6.5.5 1.1.6 1.6.2.6-.5.9-1.4.9-2.6 0-2.7-1.1-5.8-2.8-6.9.4-.5.6-1.1.6-1.8 0-1.4-1-2.5-2.3-2.5z"/>
-            <ellipse cx="8" cy="10.4" rx="1.5" ry="3.1" fill="var(--surface)"/>
-            <circle cx="7" cy="4" r="0.45" fill="var(--surface)"/>
-            <circle cx="9" cy="4" r="0.45" fill="var(--surface)"/>
-            <path d="M7.55 5.1h.9l-.45.7z" fill="#fbbf24"/>
-            <ellipse cx="6.3" cy="14.3" rx="0.9" ry="0.45" fill="#fbbf24"/>
-            <ellipse cx="9.7" cy="14.3" rx="0.9" ry="0.45" fill="#fbbf24"/>
-          </svg></div>
+          <div class="plat-ic"><img src="icons/linux.png" alt="" width="26" height="30"></div>
           <div class="plat-name">Linux</div>
           <div class="plat-sub"><span id="dl-linux-sub">.AppImage</span> — <a id="dl-deb" href="https://github.com/Aetherion7/mosaic/releases/latest" style="position:relative;z-index:1;color:var(--accent2)">.deb instead</a></div>
         </div>
@@ -461,6 +480,36 @@ footer .flinks a:hover { color: var(--text1); }
     </div>
   </div>
 </footer>
+
+<div id="lightbox" class="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close preview">✕</button>
+  <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()">
+</div>
+
+<script>
+// Click-to-enlarge for every screenshot on the page: opens the same image
+// at full size/aspect ratio (no object-fit crop) in a simple overlay.
+function openLightbox(imgEl) {
+  var lb = document.getElementById('lightbox');
+  var lbImg = document.getElementById('lightbox-img');
+  lbImg.src = imgEl.src;
+  lbImg.alt = imgEl.alt;
+  lb.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') closeLightbox();
+});
+document.querySelectorAll('.showcase .shot img, .hero-shot img').forEach(function (img) {
+  img.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(img); }
+  });
+});
+</script>
 
 <script>
 // Points the three download buttons straight at the current release's
