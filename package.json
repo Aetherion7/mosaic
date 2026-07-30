@@ -1,6 +1,6 @@
 {
   "name": "mosaic",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "A local-first, widget-based personal dashboard — boards full of tasks, notes, calendars, trackers and more, running entirely in your browser or as a desktop app. No account, no server, your data never leaves your device (except the optional BYOK AI assistant).",
   "author": {
     "name": "Aetherion7"
@@ -43,6 +43,7 @@
     "@tiptap/extension-placeholder": "^3.27.1",
     "@tiptap/extension-task-item": "^3.27.1",
     "@tiptap/extension-task-list": "^3.27.1",
+    "@tiptap/extension-text-align": "3.27.1",
     "@tiptap/react": "^3.27.1",
     "@tiptap/starter-kit": "^3.27.1",
     "@types/leaflet": "^1.9.21",

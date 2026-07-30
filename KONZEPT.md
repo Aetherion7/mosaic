@@ -198,14 +198,14 @@ Ein neuer Widget-Typ berührt immer dieselben Stellen — in dieser Reihenfolge:
 7. `components/ui/SettingsModal.tsx` — `BUILT_IN_WIDGETS` (De-/Aktivierbarkeit)
 8. `components/ui/SearchModal.tsx` — `TYPE_ICON_MAP`
 
-### 5.3 Die 17 Widgets
+### 5.3 Die 16 Widgets
 
 **Produktivität**
 
 | Widget | Kern | Besonderheiten |
 |---|---|---|
 | **Aufgabe** | Mehrere Gewohnheiten mit Mo–So-Wochenkacheln | Wochenarchiv (`weeklyLog`, ISO-Wochen), 3 Chart-Ansichten (Kachel/Balken/Verlauf) mit Wochennavigation, vergangene Tage nicht klickbar, stündlicher Wochen-Reset |
-| **Notiz** | TipTap-Markdown-Editor | Task-Listen, Code-Blöcke mit Syntax-Highlighting, Tab-Handling, PDF-Referenz-Spans (klickbar → springt zur PDF-Seite) |
+| **Notiz** | TipTap-Markdown-Editor | Task-Listen, Code-Blöcke mit Syntax-Highlighting, Tab-Handling, PDF-Referenz-Spans (klickbar → springt zur PDF-Seite); eigene Schrift/Größe/Farbe/Zeilenhöhe/Schatten/Kontur/transparenter Hintergrund (übernommen vom entfernten Text-Widget), B/I/U und Ausrichtung als echte Tiptap-Marks pro Auswahl |
 | **Tabelle** | Kalkulationsblatt | Formel-Engine (`=SUMME(...)`-Stil: SUM/AVERAGE/IF/COUNTIF/VLOOKUP-artige Funktionen), Zellformate, Spaltenbreiten |
 | **Timer** | Countdown mit Fortschrittsring | Abschluss-Sound (WebAudio), läuft über Reloads hinweg korrekt weiter (`startedAt`-basiert) |
 | **Agenda** | Nächste N Tage aller Kalender-Widgets des Boards | Gruppiert nach Heute/Morgen/Datum, Zeitraum 3/7/14/30 Tage, nutzt geteilte Wiederholungslogik |
@@ -230,7 +230,6 @@ Ein neuer Widget-Typ berührt immer dieselben Stellen — in dieser Reihenfolge:
 | **PDF-Leser** | react-pdf | Textmarkierungen in 4 Farben (positionsgenau als %-Rects), Markierungs-Seitenleiste, **Verknüpfung von Markierungen in Notiz-Widgets** (Klick in der Notiz springt zur PDF-Seite), Seiten-Thumbnails, Zoom, Blätter-Animation |
 | **Zeichenbrett** | Freies Zeichnen/Skizzieren | |
 | **Bild** | Foto/Grafik | Automatische Client-Kompression (max. 1920 px, JPEG/PNG-Erkennung), Cover/Contain, rahmenloser Modus |
-| **Text** | Freie Beschriftung | Schrift, Größe, Schatten, Kontur, transparenter Hintergrund (für Overlays auf dem Canvas) |
 
 Dazu existiert ein **Plugin-Widget** als experimentelles Konzept: In den Einstellungen lassen sich
 Plugin-Definitionen (JSON mit `embedUrl`) installieren, die als iframe-Kachel erscheinen.
@@ -345,7 +344,7 @@ Unter 768 px wechselt das Board in ein eigenes **2-Spalten-Layout**:
   Überspringbar per Esc, neu startbar unter Einstellungen → Über mosaic.
   Flag: `settingsStore.hasSeenTutorial`.
 - **`/landing.html`** — statische Produktseite (eigenständiges HTML im `public/`-Ordner),
-  gleiche Markenfarbe (`#7c6fe8`), stellt Konzept und alle 17 Widgets vor.
+  gleiche Markenfarbe (`#7c6fe8`), stellt Konzept und alle 16 Widgets vor.
 
 ---
 

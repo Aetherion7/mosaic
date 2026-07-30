@@ -103,7 +103,7 @@ export default function FocusOverlay() {
   // Dieselbe "rahmenlos" Bedingung wie im TileWrapper auf dem Board — steuert
   // dort, ob Hintergrund/Rahmen des Widgets ausgeblendet werden.
   const isTransparent = !!widget && (
-    (widget.type === 'text' && !!widget.data?.noBg) ||
+    (widget.type === 'note' && !!widget.data?.noBg) ||
     (widget.type === 'image' && !!widget.data?.noBar) ||
     (widget.type === 'clock' && !!widget.data?.noBg)
   )

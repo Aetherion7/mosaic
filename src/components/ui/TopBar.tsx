@@ -56,7 +56,12 @@ export default function TopBar() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = (e.target ?? document.activeElement) as HTMLElement
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      const inTextField =
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(el?.tagName) ||
+        el?.isContentEditable ||
+        !!el?.closest('[contenteditable]') ||
+        !!el?.closest('[data-widget-content]')
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k' && !inTextField) {
         e.preventDefault()
         setSearchOpen(o => !o)
         return
@@ -73,12 +78,7 @@ export default function TopBar() {
         ;(document.activeElement as HTMLElement | null)?.blur?.()
         return
       }
-      if (
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(el?.tagName) ||
-        el?.isContentEditable ||
-        !!el?.closest('[contenteditable]') ||
-        !!el?.closest('[data-widget-content]')
-      ) return
+      if (inTextField) return
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault()
         useBoardStore.getState().undo()
@@ -158,7 +158,9 @@ export default function TopBar() {
     <>
     <header style={{
       position: 'fixed', top: 0, left: 0, right: 0,
-      height: headerHeight, zIndex: 1000,
+      // Höher als BoardGrid.tsx's Auswahlrechteck (zIndex 2000) — sonst
+      // malt die Marquee-Auswahl über Logo/Titel/Buttons hinweg.
+      height: headerHeight, zIndex: 2001,
       display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center',
       columnGap: 0,
       padding: isIsland ? '6px 16px' : '0 16px',

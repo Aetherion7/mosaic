@@ -25,7 +25,7 @@ export interface AiToolResult {
 }
 
 const WIDGET_TYPES: WidgetType[] = [
-  'task', 'note', 'timer', 'water', 'image', 'calendar', 'chart', 'text',
+  'task', 'note', 'timer', 'water', 'image', 'calendar', 'chart',
   'spreadsheet', 'drawboard', 'clock', 'weather', 'map', 'reader',
   'sleep', 'agenda', 'quicklinks',
 ]
@@ -34,13 +34,12 @@ const WIDGET_TYPES: WidgetType[] = [
 // ab, Datenformen zu erfinden. Bewusst nur die praktisch editierbaren Felder.
 export const WIDGET_DATA_DOC = `Widget "data" shapes (only set fields you need; unknown fields are ignored by widgets):
 - task: { habits: [{id, name, color, weekDays: string[], weeklyLog: {} }] }
-- note: { title: string, content: string (markdown) }
+- note: { title: string, content: string (markdown), fontFamily?, fontSize?, color?, lineHeight?, textShadow?, textStroke?, noBg? }
 - timer: { name: string, durationMin: number }
 - water: { goalMl: number, mlPerSection: number }
 - image: { src: string (URL), alt: string, objectFit: 'cover'|'contain' }
 - calendar: { events: [{id, date: 'YYYY-MM-DD', dateEnd?, timeStart?: 'HH:MM', timeEnd?, title, color: hex, location?, description?, recurrence?: 'daily'|'weekly'|'monthly'|'yearly'}] }
 - chart: { title, chartType: 'column'|'bar'|'line'|'radar'|'pie', labels: string[], datasets: [{label, values: number[], color: hex}] }
-- text: { content: string, fontSize: number, textAlign: 'left'|'center'|'right', color }
 - spreadsheet: { title, rows: number, cols: number, cells: { "A1": {v: string} } } (keys like "A1","B3"; v may start with '=' for formulas, e.g. "=SUM(A1:A5)")
 - clock: { clockStyle: 'digital'|'analog'|'minimal'|'flip', showSeconds: boolean }
 - weather: { manualCity: string, unit: 'celsius'|'fahrenheit' }
@@ -145,7 +144,6 @@ function digestData(w: Widget): string {
     case 'calendar':   return `${(d.events ?? []).length} events`
     case 'quicklinks': return `${(d.links ?? []).length} links`
     case 'chart':      return `"${d.title ?? ''}" (${d.chartType})`
-    case 'text':       return `"${String(d.content ?? '').slice(0, 60)}"`
     case 'timer':      return `${d.durationMin} min`
     case 'weather':    return `city="${d.manualCity || 'auto'}"`
     case 'reader':     return d.fileName ? `file="${d.fileName}"` : 'no file'

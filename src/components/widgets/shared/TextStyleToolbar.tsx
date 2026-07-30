@@ -2,15 +2,17 @@
 import { useRef, useEffect, useState } from 'react'
 import { ColorSwatch } from '@/components/ui/ColorSwatch'
 import { createPortal } from 'react-dom'
-import { useBoardStore } from '@/store/boardStore'
-import { useUIStore } from '@/store/uiStore'
 import { useSettings } from '@/store/settingsStore'
 import { saveBlob, deleteBlob } from '@/lib/blobStore'
 import { customFontStack } from '@/lib/fonts'
 import { useT } from '@/hooks/useT'
-import type { Widget, TextData } from '@/types'
 
-const FONT_SIZES = [10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 60, 72]
+// Font picker, small toolbar building blocks, and the built-in Google Fonts
+// stylesheet loader used by NoteWidget's text-style toolbar. Originally lived
+// only in the now-removed TextWidget; kept as its own module in case another
+// widget ever needs the same font/color/shadow/stroke controls.
+
+export const FONT_SIZES = [10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 60, 72]
 
 const FONT_CATEGORIES = [
   {
@@ -124,7 +126,7 @@ function injectGoogleFont(family: string) {
   document.head.appendChild(link)
 }
 
-function getFontCss(value: string): string {
+export function getFontCss(value: string): string {
   if (value?.startsWith('custom:')) {
     return `"${value.slice(7)}", system-ui, sans-serif`
   }
@@ -135,9 +137,41 @@ function getFontCss(value: string): string {
   return value ? customFontStack(value) : 'system-ui, sans-serif'
 }
 
+// Lädt die Google-Fonts-Stylesheet-Verknüpfung für alle eingebauten
+// Schriften genau einmal — welches Note-Widget zuerst mountet, gewinnt; jedes
+// weitere findet die <link> bereits vor.
+export function useInjectBuiltinGoogleFonts() {
+  useEffect(() => {
+    const id = 'gfonts-text-style-widgets'
+    if (document.getElementById(id)) return
+    const link = document.createElement('link')
+    link.id = id
+    link.rel = 'stylesheet'
+    const sansSerif = [
+      'Inter', 'Roboto', 'Open+Sans', 'Lato', 'Poppins', 'Nunito',
+      'Montserrat', 'Raleway', 'DM+Sans', 'Outfit', 'Plus+Jakarta+Sans', 'Mulish',
+    ]
+    const serif = [
+      'Playfair+Display', 'Merriweather', 'Lora',
+      'Cormorant+Garamond', 'EB+Garamond', 'Libre+Baskerville',
+    ]
+    const display = ['Oswald', 'Righteous']
+    const mono = ['JetBrains+Mono', 'Fira+Code', 'Space+Mono', 'IBM+Plex+Mono']
+    const handwriting = ['Dancing+Script', 'Caveat', 'Pacifico']
+    link.href =
+      'https://fonts.googleapis.com/css2?' +
+      [...sansSerif, ...serif, ...display, ...mono, ...handwriting]
+        .map(f => `family=${f}:wght@400;700`)
+        .concat('family=Bebas+Neue:wght@400')
+        .join('&') +
+      '&display=swap'
+    document.head.appendChild(link)
+  }, [])
+}
+
 // ─── Font Picker ──────────────────────────────────────────────────────────────
 
-function FontPicker({ value, onChange }: {
+export function FontPicker({ value, onChange }: {
   value: string
   onChange: (v: string) => void
 }) {
@@ -534,356 +568,9 @@ function CustomFontRow({ label, css, active, onSelect, onRemove, removeLabel }: 
   )
 }
 
-// ─── Main widget ──────────────────────────────────────────────────────────────
+// ─── Shared small toolbar pieces ───────────────────────────────────────────────
 
-export default function TextWidget({ widget }: { widget: Widget }) {
-  const t = useT()
-  const updateTaskData = useBoardStore(s => s.updateTaskData)
-  const mode = useUIStore(s => s.mode)
-  const d = widget.data
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const outerRef = useRef<HTMLDivElement>(null)
-  const toolbarRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const id = 'gfonts-textwidget'
-    if (document.getElementById(id)) return
-    const link = document.createElement('link')
-    link.id = id
-    link.rel = 'stylesheet'
-    const sansSerif = [
-      'Inter', 'Roboto', 'Open+Sans', 'Lato', 'Poppins', 'Nunito',
-      'Montserrat', 'Raleway', 'DM+Sans', 'Outfit', 'Plus+Jakarta+Sans', 'Mulish',
-    ]
-    const serif = [
-      'Playfair+Display', 'Merriweather', 'Lora',
-      'Cormorant+Garamond', 'EB+Garamond', 'Libre+Baskerville',
-    ]
-    const display = ['Oswald', 'Righteous']
-    const mono = ['JetBrains+Mono', 'Fira+Code', 'Space+Mono', 'IBM+Plex+Mono']
-    const handwriting = ['Dancing+Script', 'Caveat', 'Pacifico']
-    link.href =
-      'https://fonts.googleapis.com/css2?' +
-      [...sansSerif, ...serif, ...display, ...mono, ...handwriting]
-        .map(f => `family=${f}:wght@400;700`)
-        .concat('family=Bebas+Neue:wght@400')
-        .join('&') +
-      '&display=swap'
-    document.head.appendChild(link)
-  }, [])
-
-  function patch(update: Record<string, unknown>) {
-    updateTaskData(widget.id, update)
-  }
-
-  const palette: string[] = d.colorPalette ?? []
-
-  function addToPalette() {
-    const color = d.color
-    if (!color || palette.includes(color)) return
-    patch({ colorPalette: [...palette, color] })
-  }
-
-  function removeFromPalette(color: string) {
-    patch({ colorPalette: palette.filter((c: string) => c !== color) })
-  }
-
-  const textStyle: React.CSSProperties = {
-    fontSize:           d.fontSize,
-    fontWeight:         d.fontWeight,
-    fontStyle:          d.fontStyle,
-    textDecoration:     d.textDecoration ?? 'none',
-    textAlign:          d.textAlign,
-    color:              d.color,
-    fontFamily:         getFontCss(d.fontFamily),
-    lineHeight:         d.lineHeight,
-    width:              '100%',
-    textShadow:         d.textShadow
-                          ? `${d.textShadowX ?? 1}px ${d.textShadowY ?? 2}px ${d.textShadowBlur ?? 6}px ${d.textShadowColor ?? '#000000'}`
-                          : undefined,
-    WebkitTextStroke:   d.textStroke
-                          ? `${d.textStrokeWidth ?? 1}px ${d.textStrokeColor ?? '#000000'}`
-                          : undefined,
-  }
-
-  return (
-    <div
-      ref={outerRef}
-      style={{ height: '100%', position: 'relative' }}
-      onPointerDown={e => e.stopPropagation()}
-    >
-      {/* Die Toolbar schwebt IMMER über dem Textbereich (statt im Editmodus
-          Platz im Layout einzunehmen) — sonst verschiebt sich der Text beim
-          Wechsel zwischen Edit-/Ansichtsmodus, weil die Toolbar dort
-          verschwindet/erscheint und den verbleibenden Raum verändert. So
-          bleibt die Position des Texts in beiden Modi exakt identisch. */}
-      {mode === 'edit' && (
-        <div ref={toolbarRef} style={{
-          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-          display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4,
-          padding: '4px 6px', borderRadius: 8,
-          background: 'color-mix(in srgb, var(--surface2) 92%, transparent)',
-          border: '1px solid var(--border)',
-          backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        }}>
-
-          {/* Font family – custom picker with preview */}
-          <FontPicker
-            value={d.fontFamily ?? 'inter'}
-            onChange={v => patch({ fontFamily: v })}
-          />
-
-          <Divider />
-
-          {/* Font size */}
-          <select
-            value={d.fontSize}
-            onChange={e => patch({ fontSize: Number(e.target.value) })}
-            style={selStyle}
-            title={t('Font size')}
-          >
-            {FONT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-
-          <Divider />
-
-          {/* Bold */}
-          <ToolBtn
-            active={d.fontWeight === 'bold'}
-            onClick={() => patch({ fontWeight: d.fontWeight === 'bold' ? 'normal' : 'bold' })}
-            title={t('Bold')}
-          >
-            <span style={{ fontWeight: 700, fontSize: 13 }}>B</span>
-          </ToolBtn>
-
-          {/* Italic */}
-          <ToolBtn
-            active={d.fontStyle === 'italic'}
-            onClick={() => patch({ fontStyle: d.fontStyle === 'italic' ? 'normal' : 'italic' })}
-            title={t('Italic')}
-          >
-            <span style={{ fontStyle: 'italic', fontSize: 13 }}>I</span>
-          </ToolBtn>
-
-          {/* Underline */}
-          <ToolBtn
-            active={(d.textDecoration ?? 'none') === 'underline'}
-            onClick={() => patch({ textDecoration: (d.textDecoration ?? 'none') === 'underline' ? 'none' : 'underline' })}
-            title={t('Underline')}
-          >
-            <span style={{ textDecoration: 'underline', fontSize: 13 }}>U</span>
-          </ToolBtn>
-
-          <Divider />
-
-          {/* Align */}
-          {(['left', 'center', 'right'] as const).map(align => (
-            <ToolBtn
-              key={align}
-              active={d.textAlign === align}
-              onClick={() => patch({ textAlign: align })}
-              title={align === 'left' ? t('Left') : align === 'center' ? t('Center') : t('Right')}
-            >
-              <AlignIcon align={align} />
-            </ToolBtn>
-          ))}
-
-          <Divider />
-
-          {/* Line height */}
-          <select
-            value={d.lineHeight}
-            onChange={e => patch({ lineHeight: Number(e.target.value) })}
-            style={selStyle}
-            title={t('Line height')}
-          >
-            {[1, 1.2, 1.4, 1.6, 1.8, 2, 2.5].map(v => (
-              <option key={v} value={v}>{v}×</option>
-            ))}
-          </select>
-
-          <Divider />
-
-          {/* Color */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <ColorSwatch
-              value={d.color.startsWith('#') ? d.color : '#000000'}
-              onChange={v => patch({ color: v })}
-              trigger={(onClick) => (
-                <div onClick={onClick} title={t('Text color')} style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  justifyContent: 'center', gap: 1,
-                  padding: '3px 5px', borderRadius: 5,
-                  minWidth: 22, height: 22, cursor: 'pointer',
-                }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1, color: d.color }}>A</span>
-                  <div style={{ width: 13, height: 3, background: d.color, borderRadius: 1 }} />
-                </div>
-              )}
-            />
-
-            {palette.map((c: string) => (
-              <button
-                key={c}
-                onClick={() => patch({ color: c })}
-                onContextMenu={e => { e.preventDefault(); removeFromPalette(c) }}
-                title={`${c} (${t('right-click to remove')})`}
-                style={{
-                  width: 18, height: 18, borderRadius: 4, border: 'none',
-                  background: c, cursor: 'pointer', flexShrink: 0,
-                  outline: d.color === c ? '2px solid var(--accent)' : '2px solid transparent',
-                  outlineOffset: 1,
-                }}
-              />
-            ))}
-
-            <button
-              onClick={addToPalette}
-              title={t('Add current color to palette')}
-              style={{
-                width: 18, height: 18, borderRadius: 4, border: '1.5px dashed var(--border)',
-                background: 'transparent', color: 'var(--text3)',
-                cursor: 'pointer', fontSize: 14, lineHeight: 1,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >+</button>
-          </div>
-
-          <Divider />
-
-          {/* Text shadow */}
-          <ToolBtn
-            active={!!d.textShadow}
-            onClick={() => patch({ textShadow: !d.textShadow })}
-            title={t('Text shadow')}
-          >
-            <span style={{ fontSize: 12, fontWeight: 700, textShadow: '1px 2px 3px rgba(0,0,0,0.9)' }}>S</span>
-          </ToolBtn>
-          {d.textShadow && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <ColorSwatchSmall
-                value={d.textShadowColor ?? '#000000'}
-                onChange={v => patch({ textShadowColor: v })}
-                title={t('Shadow color')}
-              />
-              <select
-                value={d.textShadowBlur ?? 6}
-                onChange={e => patch({ textShadowBlur: Number(e.target.value) })}
-                style={selStyle}
-                title={t('Blur')}
-              >
-                {[0, 2, 4, 6, 8, 12, 16, 24].map(v => <option key={v} value={v}>{v}px</option>)}
-              </select>
-              <select
-                value={d.textShadowX ?? 1}
-                onChange={e => patch({ textShadowX: Number(e.target.value) })}
-                style={selStyle}
-                title={t('X offset')}
-              >
-                {[-6, -4, -2, -1, 0, 1, 2, 4, 6].map(v => <option key={v} value={v}>x{v}</option>)}
-              </select>
-              <select
-                value={d.textShadowY ?? 2}
-                onChange={e => patch({ textShadowY: Number(e.target.value) })}
-                style={selStyle}
-                title={t('Y offset')}
-              >
-                {[-6, -4, -2, -1, 0, 1, 2, 4, 6].map(v => <option key={v} value={v}>y{v}</option>)}
-              </select>
-            </div>
-          )}
-
-          <Divider />
-
-          {/* Text stroke */}
-          <ToolBtn
-            active={!!d.textStroke}
-            onClick={() => patch({ textStroke: !d.textStroke })}
-            title={t('Text outline (stroke)')}
-          >
-            <span style={{ fontSize: 12, fontWeight: 700, WebkitTextStroke: '0.6px currentColor' }}>O</span>
-          </ToolBtn>
-          {d.textStroke && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <ColorSwatchSmall
-                value={d.textStrokeColor ?? '#000000'}
-                onChange={v => patch({ textStrokeColor: v })}
-                title={t('Outline color')}
-              />
-              <select
-                value={d.textStrokeWidth ?? 1}
-                onChange={e => patch({ textStrokeWidth: Number(e.target.value) })}
-                style={selStyle}
-                title={t('Outline width')}
-              >
-                {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}px</option>)}
-              </select>
-            </div>
-          )}
-
-          <Divider />
-
-          {/* No background */}
-          <ToolBtn
-            active={!!d.noBg}
-            onClick={() => patch({ noBg: !d.noBg })}
-            title={t('Hide widget background')}
-          >
-            <NoBgIcon active={!!d.noBg} />
-          </ToolBtn>
-
-        </div>
-      )}
-
-      {/* Textbereich — nimmt IMMER die volle Widget-Fläche ein und zentriert
-          seinen Inhalt darin (unabhängig von der schwebenden Toolbar oben),
-          damit der Text in Edit- und Ansichtsmodus exakt an derselben
-          Stelle sitzt und beim Umschalten nicht nach oben "springt". */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '2px 4px', overflow: 'hidden',
-      }}>
-        {mode === 'edit' ? (
-          <textarea
-            ref={textareaRef}
-            value={d.content}
-            onChange={e => patch({ content: e.target.value })}
-            placeholder={t('Enter text here…')}
-            style={{
-              ...textStyle,
-              resize: 'none',
-              background: 'transparent', border: 'none', outline: 'none',
-              maxHeight: '100%', overflowY: 'auto',
-              // Lässt die Textarea auf ihre tatsächliche Inhaltshöhe
-              // schrumpfen/wachsen (Breite bleibt über width:100% oben fix),
-              // erst DAS macht "vom Flex-Eltern vertikal zentriert" möglich —
-              // eine Textarea kann ihren eigenen Inhalt sonst nicht zentrieren,
-              // sie richtet Text immer oben aus. Wird von älteren Browsern
-              // (kein field-sizing) einfach ignoriert und fällt auf
-              // Vollhöhe/oben ausgerichtet zurück statt kaputtzugehen.
-              fieldSizing: 'content',
-              color: d.color.startsWith('var') ? undefined : d.color,
-            } as React.CSSProperties}
-          />
-        ) : (
-          <div style={{
-            ...textStyle,
-            maxHeight: '100%', overflowY: 'auto',
-            whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-          }}>
-            {d.content || <span style={{ opacity: 0.3 }}>{t('No text')}</span>}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ─── Shared sub-components ────────────────────────────────────────────────────
-
-function ToolBtn({ children, active, onClick, title }: {
+export function ToolBtn({ children, active, onClick, title }: {
   children: React.ReactNode; active: boolean; onClick: () => void; title?: string
 }) {
   return (
@@ -902,11 +589,11 @@ function ToolBtn({ children, active, onClick, title }: {
   )
 }
 
-function Divider() {
+export function Divider() {
   return <div style={{ width: 1, height: 16, background: 'var(--border)', flexShrink: 0, margin: '0 1px' }} />
 }
 
-function ColorSwatchSmall({ value, onChange, title }: { value: string; onChange: (v: string) => void; title?: string }) {
+export function ColorSwatchSmall({ value, onChange, title }: { value: string; onChange: (v: string) => void; title?: string }) {
   return (
     <ColorSwatch value={value} onChange={onChange}
       trigger={(onClick) => (
@@ -916,7 +603,7 @@ function ColorSwatchSmall({ value, onChange, title }: { value: string; onChange:
   )
 }
 
-function NoBgIcon({ active }: { active: boolean }) {
+export function NoBgIcon({ active }: { active: boolean }) {
   return (
     <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
       <rect x="1" y="1" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"
@@ -926,7 +613,7 @@ function NoBgIcon({ active }: { active: boolean }) {
   )
 }
 
-function AlignIcon({ align }: { align: 'left' | 'center' | 'right' }) {
+export function AlignIcon({ align }: { align: 'left' | 'center' | 'right' }) {
   const lines =
     align === 'left'   ? [[0,0],[1,0],[0,1],[0.6,1],[0,2],[0.8,2]] :
     align === 'center' ? [[0.1,0],[0.9,0],[0.2,1],[0.8,1],[0,2],[1,2]] :
@@ -945,13 +632,13 @@ function AlignIcon({ align }: { align: 'left' | 'center' | 'right' }) {
   )
 }
 
-const selStyle: React.CSSProperties = {
+export const selStyle: React.CSSProperties = {
   fontSize: 11, background: 'var(--surface)', color: 'var(--text1)',
   border: '1px solid var(--border)', borderRadius: 5,
   padding: '2px 6px', cursor: 'pointer', height: 22,
 }
 
-const inputStyle: React.CSSProperties = {
+export const inputStyle: React.CSSProperties = {
   width: '100%', padding: '4px 7px', borderRadius: 6, fontSize: 11,
   border: '1px solid var(--border)', background: 'var(--surface2)',
   color: 'var(--text1)', outline: 'none',

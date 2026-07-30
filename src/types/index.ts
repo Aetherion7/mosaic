@@ -43,7 +43,27 @@ export interface TaskData {
   statsOpen?: boolean   // Wochenstatistik auf-/eingeklappt
 }
 
-export interface NoteData { title: string; content: string }
+// Font/color/shadow/stroke fields are optional — pre-existing notes on
+// people's boards don't have them (undefined = NoteWidget falls back to the
+// theme's fixed typography, same as before this was added).
+export interface NoteData {
+  title:           string
+  content:         string
+  fontFamily?:     string
+  fontSize?:       number
+  color?:          string
+  colorPalette?:   string[]
+  textShadow?:      boolean
+  textShadowColor?: string
+  textShadowBlur?:  number
+  textShadowX?:     number
+  textShadowY?:     number
+  textStroke?:      boolean
+  textStrokeColor?: string
+  textStrokeWidth?: number
+  lineHeight?:      number
+  noBg?:            boolean
+}
 
 // Hochgeladene Alarmtöne — nur die idb-blob://-Referenz wird gespeichert
 // (s. lib/blobStore.ts), nicht die Audiodaten selbst; collectBlobRefs()/
@@ -168,7 +188,7 @@ export type ClockStyle = 'digital' | 'analog' | 'minimal' | 'flip'
 export interface ClockData {
   clockStyle: ClockStyle
   showSeconds: boolean
-  noBg?: boolean   // Leiste + Rahmen ausblenden (wie TextWidget)
+  noBg?: boolean   // Leiste + Rahmen ausblenden (wie NoteWidget)
 }
 
 export interface WeatherWidgetData {
@@ -277,7 +297,7 @@ export type WidgetData = Record<string, any>
 
 export type WidgetType =
   | 'task' | 'note' | 'timer'
-  | 'water' | 'image' | 'calendar' | 'chart' | 'text' | 'spreadsheet' | 'drawboard'
+  | 'water' | 'image' | 'calendar' | 'chart' | 'spreadsheet' | 'drawboard'
   | 'clock' | 'weather' | 'map' | 'plugin' | 'reader'
   | 'sleep' | 'agenda' | 'quicklinks'
 

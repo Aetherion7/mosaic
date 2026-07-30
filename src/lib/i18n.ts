@@ -151,12 +151,11 @@ export const de: Record<string, string> = {
   'Location & forecast': 'Standort & Vorhersage',
   'OpenStreetMap, markers & routes': 'OpenStreetMap, Marker & Routen',
   'Tasks & habit tracking': 'Aufgaben & Gewohnheits-Tracking',
-  'Markdown notes & thoughts': 'Markdown-Notizen & Gedanken',
+  'Markdown notes with custom fonts, color, shadow & outline': 'Markdown-Notizen mit eigener Schrift, Farbe, Schatten & Kontur',
   'Countdown & time tracking': 'Countdown & Zeiterfassung',
   'Track daily water intake': 'Täglichen Konsum tracken',
   'Embed a photo or graphic': 'Foto oder Grafik einbetten',
   'Month view with events': 'Monatsansicht mit Terminen',
-  'Free-form formatted text': 'Freier Text mit Formatierung',
   'Spreadsheet with formulas': 'Tabelle mit Formeln',
   'Draw sketches & diagrams': 'Skizzen & Diagramme zeichnen',
   'Digital, analog & more': 'Digital, Analog & mehr',
@@ -211,6 +210,8 @@ export const de: Record<string, string> = {
   'Navigate cells': 'Zelle navigieren',
   'Copy cell': 'Zelle kopieren',
   'Paste': 'Einfügen',
+  'Cut': 'Ausschneiden',
+  'Select All': 'Alles auswählen',
   'Clear cell': 'Zelle leeren',
   'Drawboard widget': 'Zeichenbrett-Widget',
   'Reset zoom': 'Zoom zurücksetzen',
@@ -283,7 +284,7 @@ export const de: Record<string, string> = {
   'Settings (incl. your AI API key, if set)': 'Einstellungen (inkl. deinem KI-API-Schlüssel, falls gesetzt)',
   'Settings': 'Einstellungen',
   'Fonts': 'Schriftarten',
-  'Google Font shortcuts (Text widget)': 'Google-Fonts-Kurzwahl (Text-Widget)',
+  'Google Font shortcuts (Note widget)': 'Google-Fonts-Kurzwahl (Notiz-Widget)',
   'Tracking & cookies': 'Tracking & Cookies',
   'No tracking, no cookies, no ads, no analytics — mosaic itself never phones home.':
     'Kein Tracking, keine Cookies, keine Werbung, keine Analytics — mosaic selbst „telefoniert“ nie nach Hause.',
@@ -673,7 +674,7 @@ export const de: Record<string, string> = {
   'Enter a city…': 'Stadt eingeben…',
   'Search city': 'Stadt suchen',
 
-  // ── TextWidget ──
+  // ── NoteWidget text styling (font, color, shadow, outline, …) ──
   'Handwriting': 'Handschrift',
   'Choose font': 'Schriftart wählen',
   'Added fonts': 'Hinzugefügte Fonts',
@@ -702,8 +703,6 @@ export const de: Record<string, string> = {
   'Outline color': 'Umrissfarbe',
   'Outline width': 'Umrissbreite',
   'Hide widget background': 'Widget-Hintergrund ausblenden',
-  'Enter text here…': 'Text hier eingeben…',
-  'No text': 'Kein Text',
 
   // ── ChartWidget ──
   'Columns': 'Säulen',

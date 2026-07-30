@@ -403,7 +403,7 @@ export default function ClockWidget({ widget }: { widget: Widget }) {
               style={togglePillStyle(d.showSeconds)}
             >:ss</button>
 
-            {/* Frameless toggle — hides bar + frame in view mode (like TextWidget) */}
+            {/* Frameless toggle — hides bar + frame in view mode (like NoteWidget) */}
             <button
               onClick={() => patch({ noBg: !d.noBg })}
               title={d.noBg ? t('Show bar & frame again') : t('Hide bar & frame (clock only in view)')}

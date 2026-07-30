@@ -175,6 +175,61 @@ function patchWidget(s: BoardState, id: string, fn: (w: Widget) => Widget): Part
   })
 }
 
+// ─── Text-widget → Note-widget migration (v2 → v3) ───────────────────────────
+// The old, now-removed Text widget's font/color/shadow/stroke/lineHeight/noBg
+// fields share the exact same names as the ones added to NoteData, so most
+// fields carry over directly. Bold/italic/underline were a single flat
+// widget-wide toggle in Text (there's no per-character formatting in a plain
+// textarea) but are real per-selection Tiptap marks in Note — the closest
+// lossless equivalent is wrapping the whole (escaped) content in the
+// matching HTML tag once, which Markdown-parses back into a real mark on
+// load. textAlign has no such 1:1 mapping (Note's TextAlign extension is
+// per-paragraph, stored in the document itself, not a widget-level field) and
+// is intentionally dropped — a reasonable one-time fidelity loss next to
+// preserving content/font/color/shadow/stroke.
+function _escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function _migrateTextDataToNote(d: any): Widget['data'] {
+  let content = _escapeHtml(String(d.content ?? '')).replace(/\n/g, '<br>\n')
+  if (d.textDecoration === 'underline') content = `<u>${content}</u>`
+  if (d.fontStyle === 'italic')         content = `<em>${content}</em>`
+  if (d.fontWeight === 'bold')          content = `<strong>${content}</strong>`
+  return {
+    title:            '',
+    content,
+    fontFamily:       d.fontFamily,
+    fontSize:         d.fontSize,
+    color:            d.color,
+    colorPalette:     d.colorPalette,
+    textShadow:       d.textShadow,
+    textShadowColor:  d.textShadowColor,
+    textShadowBlur:   d.textShadowBlur,
+    textShadowX:      d.textShadowX,
+    textShadowY:      d.textShadowY,
+    textStroke:       d.textStroke,
+    textStrokeColor:  d.textStrokeColor,
+    textStrokeWidth:  d.textStrokeWidth,
+    lineHeight:       d.lineHeight,
+    noBg:             d.noBg,
+  }
+}
+
+function _migrateTextWidgetsToNote(board: Board): Board {
+  let changed = false
+  const widgets: Record<string, Widget> = { ...board.widgets }
+  for (const [wId, w] of Object.entries(widgets)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((w.type as any) === 'text') {
+      widgets[wId] = { ...w, type: 'note', data: _migrateTextDataToNote(w.data) }
+      changed = true
+    }
+  }
+  return changed ? { ...board, widgets } : board
+}
+
 // ─── Compact layout helper ────────────────────────────────────────────────────
 // Removes empty column and row gaps between widgets while preserving the 2D
 // structure. Only remaps coordinates — colSpan/rowSpan stay unchanged.
@@ -554,18 +609,26 @@ export const useBoardStore = create<S>()(
     }),
     {
       name: 'planboard-v2',
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => idbStorage),
       partialize: (s) => ({ boards: s.boards, currentBoardId: s.currentBoardId, trash: s.trash }),
       migrate: (persisted: unknown, fromVersion: number) => {
-        const s = persisted as { boards: Record<string, Board>; currentBoardId: string }
+        let s = persisted as { boards: Record<string, Board>; currentBoardId: string; trash?: TrashedBoard[] }
         if (fromVersion < 2 && s?.boards) {
           const newBoards: Record<string, Board> = {}
           for (const [id, board] of Object.entries(s.boards)) {
             const all = Object.values(board.widgets)
             newBoards[id] = { ...board, widgets: _compactWidgets(all, board.layoutMode ?? 'infinite') }
           }
-          return { ...s, boards: newBoards }
+          s = { ...s, boards: newBoards }
+        }
+        if (fromVersion < 3 && s?.boards) {
+          const newBoards: Record<string, Board> = {}
+          for (const [id, board] of Object.entries(s.boards)) {
+            newBoards[id] = _migrateTextWidgetsToNote(board)
+          }
+          const newTrash = s.trash?.map(t => ({ ...t, board: _migrateTextWidgetsToNote(t.board) }))
+          s = { ...s, boards: newBoards, ...(newTrash ? { trash: newTrash } : {}) }
         }
         return s
       },

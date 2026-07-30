@@ -1,7 +1,7 @@
 import type { WidgetType } from '@/types'
 import {
   IconTask, IconNote, IconTimer, IconWater, IconImage,
-  IconCalendar, IconChart, IconText, IconTable, IconDraw, IconClock, IconWeather, IconMap, IconReader,
+  IconCalendar, IconChart, IconTable, IconDraw, IconClock, IconWeather, IconMap, IconReader,
   IconSleep, IconAgenda, IconLinks,
 } from '@/components/ui/Icons'
 
@@ -16,12 +16,11 @@ export const BUILT_IN_WIDGETS: { type: WidgetType; icon: React.ReactNode; desc: 
   { type: 'weather',     icon: <IconWeather size={18} />,    desc: 'Location & forecast' },
   { type: 'map',         icon: <IconMap size={18} />,        desc: 'OpenStreetMap, markers & routes' },
   { type: 'task',        icon: <IconTask size={18} />,       desc: 'Tasks & habit tracking' },
-  { type: 'note',        icon: <IconNote size={18} />,       desc: 'Markdown notes & thoughts' },
+  { type: 'note',        icon: <IconNote size={18} />,       desc: 'Markdown notes with custom fonts, color, shadow & outline' },
   { type: 'timer',       icon: <IconTimer size={18} />,      desc: 'Countdown & time tracking' },
   { type: 'water',       icon: <IconWater size={18} />,      desc: 'Track daily water intake' },
   { type: 'image',       icon: <IconImage size={18} />,      desc: 'Embed a photo or graphic' },
   { type: 'calendar',    icon: <IconCalendar size={18} />,   desc: 'Month view with events' },
-  { type: 'text',        icon: <IconText size={18} />,       desc: 'Free-form formatted text' },
   { type: 'spreadsheet', icon: <IconTable size={18} />,      desc: 'Spreadsheet with formulas' },
   { type: 'drawboard',   icon: <IconDraw size={18} />,       desc: 'Draw sketches & diagrams' },
   { type: 'clock',       icon: <IconClock size={18} />,      desc: 'Digital, analog & more' },

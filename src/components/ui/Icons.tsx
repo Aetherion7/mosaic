@@ -61,15 +61,6 @@ export function IconCalendar({ size, strokeWidth }: P) {
     <rect x="9" y="9" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/>
   </Ic>
 }
-export function IconText({ size, strokeWidth }: P) {
-  return <Ic size={size} strokeWidth={strokeWidth}>
-    <line x1="2" y1="3.5" x2="14" y2="3.5"/>
-    <line x1="8" y1="3.5" x2="8" y2="13"/>
-    <line x1="5" y1="13" x2="11" y2="13"/>
-    <line x1="2" y1="2" x2="2" y2="5.5"/>
-    <line x1="14" y1="2" x2="14" y2="5.5"/>
-  </Ic>
-}
 export function IconChart({ size, strokeWidth }: P) {
   return <Ic size={size} strokeWidth={strokeWidth}>
     <line x1="2" y1="13.5" x2="14" y2="13.5"/>

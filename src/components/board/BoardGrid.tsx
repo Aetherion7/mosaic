@@ -134,6 +134,12 @@ export default function BoardGrid() {
       if (useUIStore.getState().mode !== 'edit') return
       if (useUIStore.getState().panel !== null) return
       if ((e.target as HTMLElement).closest('[data-widget-tile]')) return
+      // Zoom-HUD/Minimap liegen als absolut positionierte Kinder INNERHALB
+      // von outerRef — ihr eigenes onPointerDown+stopPropagation() greift zu
+      // spät, weil dieser Listener hier nativ auf outerRef sitzt und daher
+      // VOR Reacts synthetischem Event-Dispatch feuert. Deshalb ein
+      // explizites Attribut statt uns auf stopPropagation() zu verlassen.
+      if ((e.target as HTMLElement).closest('[data-board-chrome]')) return
       selStateRef.current = { x1: e.clientX, y1: e.clientY, x2: e.clientX, y2: e.clientY, active: false }
       window.addEventListener('pointermove', onMove, { passive: true })
       window.addEventListener('pointerup',   onUp,   { once: true })

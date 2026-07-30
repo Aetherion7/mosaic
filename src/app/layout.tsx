@@ -7,6 +7,7 @@ import ReminderScheduler from '@/components/ReminderScheduler'
 import ElectronBridge from '@/components/ElectronBridge'
 import DesktopStartupPrompt from '@/components/ui/DesktopStartupPrompt'
 import UpdateAvailablePopup from '@/components/ui/UpdateAvailablePopup'
+import GlobalContextMenu from '@/components/ui/GlobalContextMenu'
 import './globals.css'
 
 // Alle wählbaren Programm-/Board-Schriften (Einstellungen → Erscheinungsbild,
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ElectronBridge />
         <DesktopStartupPrompt />
         <UpdateAvailablePopup />
+        <GlobalContextMenu />
       </body>
     </html>
   )

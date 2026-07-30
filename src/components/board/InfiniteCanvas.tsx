@@ -364,8 +364,12 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
 
       {/* zoom HUD */}
       <div
+        data-board-chrome="1"
         style={{
-          position: 'absolute', bottom: 16, right: 16, zIndex: 50,
+          // Höher als BoardGrid.tsx's Auswahlrechteck (zIndex 2000) — sonst
+          // malt die Marquee-Auswahl darüber; data-board-chrome verhindert
+          // zusätzlich, dass ein Drag hier überhaupt erst startet (s. dort).
+          position: 'absolute', bottom: 16, right: 16, zIndex: 2001,
           display: 'flex', alignItems: 'center', gap: 2,
           background: 'color-mix(in srgb, var(--surface) 88%, transparent)',
           backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
@@ -420,11 +424,13 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
       {/* Live-Minimap */}
       {showMinimap && widgetList.length > 0 && (
         <div
+          data-board-chrome="1"
           onPointerDown={e => e.stopPropagation()}
           onClick={onMinimapClick}
           title={t('Click to jump to that area')}
           style={{
-            position: 'absolute', bottom: 16, left: 16, zIndex: 50,
+            // s. Kommentar beim zoom-HUD oben — dieselbe Marquee-Auswahl-Fix-Begründung.
+            position: 'absolute', bottom: 16, left: 16, zIndex: 2001,
             width: MM_W, height: MM_H,
             background: 'color-mix(in srgb, var(--surface) 88%, transparent)',
             backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',

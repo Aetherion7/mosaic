@@ -360,6 +360,18 @@ function buildMenu() {
       { type: 'separator' },
       { role: 'quit' },
     ],
+  }, {
+    // Nicht sichtbar (keine Menüleiste im Fenster), aber auf macOS PFLICHT:
+    // Cmd+C/V/X/A/Z laufen dort über die NSMenu-Tastenkürzel dieser Rollen zum
+    // fokussierten Element durch — ohne dieses Menü tut Cmd+V in JEDEM Textfeld
+    // der App schlicht gar nichts, unabhängig vom Fokus. Windows/Linux brauchen
+    // das nicht (dort gehen Tastatur-Events direkt ans DOM), daher isMac-Gate.
+    label: 'Edit',
+    submenu: [
+      { role: 'undo' }, { role: 'redo' }, { type: 'separator' },
+      { role: 'cut' }, { role: 'copy' }, { role: 'paste' },
+      { role: 'pasteAndMatchStyle' }, { role: 'delete' }, { role: 'selectAll' },
+    ],
   }]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }

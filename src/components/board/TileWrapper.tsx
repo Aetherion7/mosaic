@@ -14,7 +14,6 @@ import WaterWidget     from '@/components/widgets/WaterWidget'
 import ImageWidget     from '@/components/widgets/ImageWidget'
 import CalendarWidget  from '@/components/widgets/CalendarWidget'
 import ChartWidget     from '@/components/widgets/ChartWidget'
-import TextWidget      from '@/components/widgets/TextWidget'
 import TableWidget     from '@/components/widgets/TableWidget'
 import DrawboardWidget from '@/components/widgets/DrawboardWidget'
 import ClockWidget     from '@/components/widgets/ClockWidget'
@@ -27,7 +26,7 @@ import QuicklinksWidget from '@/components/widgets/QuicklinksWidget'
 import dynamic         from 'next/dynamic'
 const ReaderWidget = dynamic(() => import('@/components/widgets/ReaderWidget'), { ssr: false })
 import {
-  IconTask, IconNote, IconTimer, IconWater, IconImage, IconCalendar, IconChart, IconText, IconTable, IconDraw, IconClock, IconWeather, IconMap, IconReader,
+  IconTask, IconNote, IconTimer, IconWater, IconImage, IconCalendar, IconChart, IconTable, IconDraw, IconClock, IconWeather, IconMap, IconReader,
   IconSleep, IconAgenda, IconLinks, IconPlugin,
   IconDrag, IconDuplicate, IconSliders, IconX, IconExpand,
 } from '@/components/ui/Icons'
@@ -51,7 +50,6 @@ export const TYPE_ICONS: Record<string, React.ReactNode> = {
   image:       <IconImage size={13} />,
   calendar:    <IconCalendar size={13} />,
   chart:       <IconChart size={13} />,
-  text:        <IconText size={13} />,
   spreadsheet: <IconTable size={13} />,
   drawboard:   <IconDraw size={13} />,
   clock:       <IconClock size={13} />,
@@ -68,7 +66,7 @@ export const TYPE_ICONS: Record<string, React.ReactNode> = {
   plugin:      <IconPlugin size={13} />,
 }
 // Werte sind englische Quelltexte (Default-Sprache) — an Verwendungsstellen mit t() übersetzen
-export const TYPE_LABELS: Record<string, string> = { task:'Task', note:'Note', timer:'Timer', water:'Water', image:'Image', calendar:'Calendar', chart:'Chart', text:'Text', spreadsheet:'Table', drawboard:'Drawboard', clock:'Clock', weather:'Weather', map:'Map', plugin:'Plugin', reader:'Reader', sleep:'Sleep', agenda:'Agenda', quicklinks:'Quicklinks' }
+export const TYPE_LABELS: Record<string, string> = { task:'Task', note:'Note', timer:'Timer', water:'Water', image:'Image', calendar:'Calendar', chart:'Chart', spreadsheet:'Table', drawboard:'Drawboard', clock:'Clock', weather:'Weather', map:'Map', plugin:'Plugin', reader:'Reader', sleep:'Sleep', agenda:'Agenda', quicklinks:'Quicklinks' }
 
 // Für Plugin-Widgets: das eigene Icon des installierten Plugins (in
 // widget.data.pluginIcon abgelegt, s. TilePicker.tsx) statt des generischen
@@ -156,7 +154,6 @@ export function TileContent({ widget }: { widget: Widget }) {
     case 'image':     return <ImageWidget     widget={widget} />
     case 'calendar':  return <CalendarWidget  widget={widget} />
     case 'chart':     return <ChartWidget     widget={widget} />
-    case 'text':        return <TextWidget      widget={widget} />
     case 'spreadsheet': return <TableWidget     widget={widget} />
     case 'drawboard':   return <DrawboardWidget widget={widget} />
     case 'clock':       return <ClockWidget     widget={widget} />
@@ -476,15 +473,16 @@ function TileWrapperInner({ widget, gridRef }: Props) {
     // weil beide plus die Stadt-Zeile nicht in eine Grid-Reihe passen.
     weather:     { colSpan: 3, rowSpan: 2 },
     clock:       { colSpan: 2, rowSpan: 1 },
-    note:        { colSpan: 2, rowSpan: 1 },
+    // War 2×1 — seit der Note-Widget-Erweiterung um die Text-Widget-
+    // Funktionen (Schrift/Größe/B/I/U/Ausrichtung/Farbe/Schatten/Kontur/
+    // Zeilenhöhe) trägt Note dieselbe mehrzeilige Toolbar wie früher das
+    // Text-Widget — braucht also auch dessen Mindestgröße.
+    note:        { colSpan: 4, rowSpan: 2 },
     water:       { colSpan: 2, rowSpan: 1 },
     image:       { colSpan: 2, rowSpan: 1 },
     sleep:       { colSpan: 3, rowSpan: 2 },
     agenda:      { colSpan: 2, rowSpan: 2 },
     quicklinks:  { colSpan: 2, rowSpan: 1 },
-    // War 2×1 — zu flach, um Toolbar + Text ohne Überlappung/Quetschen zu
-    // zeigen. Passt jetzt zur Beispielgröße aus dem Nutzer-Feedback.
-    text:        { colSpan: 4, rowSpan: 2 },
     // Fehlte komplett — ließ sich auf 1×1 schrumpfen und quetschte den fixen
     // 160px-Ring samt Start/Pause/Reset-Buttons unbenutzbar zusammen.
     timer:       { colSpan: 2, rowSpan: 2 },
@@ -553,7 +551,7 @@ function TileWrapperInner({ widget, gridRef }: Props) {
     border: '2px solid var(--bg)', borderRadius: 4, touchAction: 'none',
   }
 
-  const isTransparent = (widget.type === 'text' && !!widget.data?.noBg) ||
+  const isTransparent = (widget.type === 'note' && !!widget.data?.noBg) ||
     (widget.type === 'image' && !!widget.data?.noBar) ||
     (widget.type === 'clock' && !!widget.data?.noBg)
 

@@ -58,7 +58,7 @@ export default function DatenschutzPanel() {
         [t('Files & images'),   'IndexedDB', 'planboard-blobs'],
         [t('Settings (incl. your AI API key, if set)'), 'localStorage', 'planboard-settings'],
         [t('Fonts'),     'localStorage', 'planboard-settings'],
-        [t('Google Font shortcuts (Text widget)'), 'localStorage', 'planboard-text-google-fonts'],
+        [t('Google Font shortcuts (Note widget)'), 'localStorage', 'planboard-text-google-fonts'],
       ].map(([label, type, key]) => (
         <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: 12, gap: 8 }}>
           <span style={{ color: 'var(--text1)', fontWeight: 500 }}>{label}</span>

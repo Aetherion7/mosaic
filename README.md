@@ -36,9 +36,9 @@ that look and behave exactly the way you want. Everything lives in your browser'
 is no mosaic server and no account, so there's nothing to sign up for and nothing that can lock you
 out of your own data.
 
-- **17 widget types** — task/habit tracking, notes, calendar, spreadsheet with formulas, drawboard,
-  PDF/EPUB reader with highlights, charts, weather, map, clock, timer, water and sleep tracking,
-  agenda, quicklinks, images, and free text.
+- **16 widget types** — task/habit tracking, notes with custom fonts/color/shadow/outline, calendar,
+  spreadsheet with formulas, drawboard, PDF/EPUB reader with highlights, charts, weather, map, clock,
+  timer, water and sleep tracking, agenda, quicklinks, and images.
 - **18 built-in themes** (plus your own custom ones) — from Deep Space to Soft Light, each with its
   own accent colors and background pattern; every widget can additionally be styled individually.
 - **Optional AI assistant (bring your own key)** — connect your own Anthropic/OpenAI/Gemini (or any

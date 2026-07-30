@@ -10,7 +10,7 @@ import { useT } from '@/hooks/useT'
 import type { Widget } from '@/types'
 import {
   IconTask, IconNote, IconTimer, IconWater, IconImage,
-  IconCalendar, IconChart, IconText, IconTable, IconDraw, IconClock,
+  IconCalendar, IconChart, IconTable, IconDraw, IconClock,
   IconWeather, IconMap, IconReader,
   IconSleep, IconAgenda, IconLinks,
 } from '@/components/ui/Icons'
@@ -31,7 +31,6 @@ const TYPE_ICON_MAP: Record<string, React.ReactNode> = {
   image:       <IconImage size={18} />,
   calendar:    <IconCalendar size={18} />,
   chart:       <IconChart size={18} />,
-  text:        <IconText size={18} />,
   spreadsheet: <IconTable size={18} />,
   drawboard:   <IconDraw size={18} />,
   clock:       <IconClock size={18} />,

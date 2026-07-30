@@ -11,7 +11,7 @@ import { INFINITE_COL_W, INFINITE_GRID_COLS, GRID_GAP, GRID_ROW_H } from './Tile
 import { getTheme } from '@/lib/themes'
 import type { WidgetType } from '@/types'
 import {
-  IconTask, IconNote, IconTimer, IconWater, IconImage, IconCalendar, IconChart, IconText, IconTable, IconDraw, IconClock, IconWeather, IconMap, IconReader,
+  IconTask, IconNote, IconTimer, IconWater, IconImage, IconCalendar, IconChart, IconTable, IconDraw, IconClock, IconWeather, IconMap, IconReader,
   IconSleep, IconAgenda, IconLinks,
 } from '@/components/ui/Icons'
 
@@ -26,12 +26,11 @@ export const TILES: { type: WidgetType; icon: React.ReactNode; label: string; de
   { type: 'weather',     icon: <IconWeather />,    label: 'Weather',    desc: 'Location & forecast' },
   { type: 'map',         icon: <IconMap />,        label: 'Map',        desc: 'OpenStreetMap, markers & routes' },
   { type: 'task',        icon: <IconTask />,       label: 'Task',       desc: 'Tasks & habit tracking' },
-  { type: 'note',        icon: <IconNote />,       label: 'Note',       desc: 'Markdown notes & thoughts' },
+  { type: 'note',        icon: <IconNote />,       label: 'Note',       desc: 'Markdown notes with custom fonts, color, shadow & outline' },
   { type: 'timer',       icon: <IconTimer />,      label: 'Timer',      desc: 'Countdown & time tracking' },
   { type: 'water',       icon: <IconWater />,      label: 'Water',      desc: 'Track daily water intake' },
   { type: 'image',       icon: <IconImage />,      label: 'Image',      desc: 'Embed a photo or graphic' },
   { type: 'calendar',    icon: <IconCalendar />,   label: 'Calendar',   desc: 'Month view with events' },
-  { type: 'text',        icon: <IconText />,       label: 'Text',       desc: 'Free-form formatted text' },
   { type: 'spreadsheet', icon: <IconTable />,      label: 'Table',      desc: 'Spreadsheet with formulas' },
   { type: 'drawboard',   icon: <IconDraw />,       label: 'Drawboard',  desc: 'Draw sketches & diagrams' },
   { type: 'clock',       icon: <IconClock />,      label: 'Clock',      desc: 'Digital, analog & more' },

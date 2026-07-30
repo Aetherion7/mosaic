@@ -59,7 +59,6 @@ const DEFAULT_SPANS: Record<WidgetType, { colSpan: number; rowSpan: number }> = 
   image:       { colSpan: 4, rowSpan: 2 },
   calendar:    { colSpan: 6, rowSpan: 3 },
   chart:       { colSpan: 6, rowSpan: 3 },
-  text:        { colSpan: 4, rowSpan: 2 },
   spreadsheet: { colSpan: 8, rowSpan: 4 },
   drawboard:   { colSpan: 6, rowSpan: 4 },
   clock:       { colSpan: 4, rowSpan: 2 },
@@ -161,28 +160,6 @@ export function defaultWidget(
       return { ...base, type, data: { src: '', alt: tr('Image'), objectFit: 'contain', noBar: false } }
     case 'calendar':
       return { ...base, type, data: { events: [] } }
-    case 'text':
-      return { ...base, type, data: {
-        content:         '',
-        fontSize:        24,
-        fontWeight:      'normal',
-        fontStyle:       'normal',
-        textDecoration:  'none',
-        textAlign:       'left',
-        color:           'var(--text1)',
-        colorPalette:    [],
-        fontFamily:      'inter',
-        lineHeight:      1.4,
-        textShadow:      false,
-        textShadowColor: '#000000',
-        textShadowBlur:  6,
-        textShadowX:     1,
-        textShadowY:     2,
-        textStroke:      false,
-        textStrokeColor: '#000000',
-        textStrokeWidth: 1,
-        noBg:            false,
-      }}
     case 'chart':
       return { ...base, type, data: {
         title:     tr('Chart'),
