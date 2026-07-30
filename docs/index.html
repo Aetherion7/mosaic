@@ -5,7 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>mosaic — a personal dashboard you actually own</title>
 <meta name="description" content="A local-first, widget-based personal dashboard. 17 widgets, 18 themes, an optional BYOK AI assistant, and native desktop apps — no account, no server, your data stays on your device.">
-<link rel="icon" href="mosaiclogo.png">
+<link rel="canonical" href="https://aetherion7.github.io/mosaic/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://aetherion7.github.io/mosaic/">
+<meta property="og:title" content="mosaic — a personal dashboard you actually own">
+<meta property="og:description" content="A local-first, widget-based personal dashboard. 17 widgets, 18 themes, an optional BYOK AI assistant, and native desktop apps — no account, no server, your data stays on your device.">
+<meta property="og:image" content="https://aetherion7.github.io/mosaic/screenshots/board.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="mosaic — a personal dashboard you actually own">
+<meta name="twitter:description" content="A local-first, widget-based personal dashboard. 17 widgets, 18 themes, an optional BYOK AI assistant, and native desktop apps — no account, no server, your data stays on your device.">
+<meta name="twitter:image" content="https://aetherion7.github.io/mosaic/screenshots/board.png">
+<link rel="icon" href="mosaiclogo-round.png">
 <style>
 @font-face {
   font-family: 'Guavine';
@@ -129,8 +139,10 @@ h2 { font-family: 'Guavine', serif; font-size: clamp(30px, 4vw, 42px); font-weig
 
 /* Screenshot showcase */
 .showcase { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
-.showcase .shot { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); background: var(--surface); }
+.showcase .shot { display: flex; flex-direction: column; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); background: var(--surface); }
+.showcase .shot img { flex: 1 1 auto; width: 100%; height: 100%; min-height: 0; object-fit: cover; }
 .showcase .stack { display: flex; flex-direction: column; gap: 16px; }
+.showcase .stack .shot { flex: 1 1 0; }
 .shot figcaption { padding: 14px 16px; font-size: 12.5px; color: var(--text3); border-top: 1px solid var(--border); }
 
 /* Download */
@@ -309,9 +321,9 @@ footer .flinks a:hover { color: var(--text1); }
 
   <section id="screenshots">
     <div class="wrap">
-      <div class="eyebrow">See it for yourself</div>
-      <h2>Real screenshots, not mockups.</h2>
-      <p class="section-sub">Every image on this page is a real screenshot of the app running — nothing staged.</p>
+      <div class="eyebrow">Product tour</div>
+      <h2>A closer look.</h2>
+      <p class="section-sub">Every screenshot on this page comes straight from the running app — no staged mockups.</p>
       <div class="showcase">
         <figure class="shot">
           <img src="screenshots/themes.png" alt="Theme picker showing 18 built-in themes plus background and grid pattern options">
@@ -337,21 +349,30 @@ footer .flinks a:hover { color: var(--text1); }
       <h2>Download, or just run it in your browser.</h2>
       <p class="section-sub">Native desktop apps update themselves automatically — install once, forget about it.</p>
       <div class="downloads">
-        <a class="dl-card" href="https://github.com/Aetherion7/mosaic/releases/latest">
+        <a class="dl-card" id="dl-win" href="https://github.com/Aetherion7/mosaic/releases/latest">
           <div class="plat-ic"><svg width="30" height="30" viewBox="0 0 16 16" fill="currentColor" style="margin:0 auto"><rect x="1" y="1" width="6.3" height="6.3"/><rect x="8.3" y="1" width="6.3" height="6.3"/><rect x="1" y="8.3" width="6.3" height="6.3"/><rect x="8.3" y="8.3" width="6.3" height="6.3"/></svg></div>
           <div class="plat-name">Windows</div>
-          <div class="plat-sub">.exe installer</div>
+          <div class="plat-sub" id="dl-win-sub">.exe installer</div>
         </a>
-        <a class="dl-card" href="https://github.com/Aetherion7/mosaic/releases/latest">
-          <div class="plat-ic"><svg width="30" height="30" viewBox="0 0 16 16" fill="currentColor" style="margin:0 auto"><path d="M10.9 5.3c-.9 0-1.7.5-2.2.5-.6 0-1.3-.5-2.1-.5-1.6 0-3.2 1.3-3.2 3.8 0 2.7 2 5.6 3.4 5.6.6 0 .9-.4 1.9-.4s1.2.4 1.9.4c1.1 0 2.2-1.6 2.9-3-1.4-.6-1.6-2.5-.3-3.4-.6-.8-1.5-1.3-2.3-1z"/><path d="M8.3 4.6c.2-.9.9-1.6 1.7-1.7.1.9-.7 1.9-1.7 1.7z"/></svg></div>
+        <a class="dl-card" id="dl-mac" href="https://github.com/Aetherion7/mosaic/releases/latest">
+          <div class="plat-ic"><svg width="27" height="27" viewBox="0 0 24 24" fill="currentColor" style="margin:0 auto"><path d="M16.365 1.43c0 1.14-.462 2.15-1.213 2.9-.826.83-2.067 1.47-3.087 1.39-.14-1.1.45-2.24 1.196-2.98.79-.8 2.14-1.4 3.104-1.31zM20.5 17.02c-.53 1.2-.78 1.74-1.46 2.8-.94 1.47-2.27 3.31-3.92 3.32-1.47.02-1.85-.96-3.85-.95-1.99.01-2.42.97-3.89.95-1.65-.02-2.9-1.68-3.84-3.15C1.03 16.2.63 11.1 2.32 8.13c1.2-2.09 3.16-3.35 5.03-3.35 1.9 0 3.1 1.03 4.68 1.03 1.53 0 2.44-1.03 4.68-1.03 1.65 0 3.4.9 4.64 2.46-4.08 2.24-3.42 8.06-.85 9.78z"/></svg></div>
           <div class="plat-name">macOS</div>
-          <div class="plat-sub">.dmg, Apple Silicon &amp; Intel</div>
+          <div class="plat-sub" id="dl-mac-sub">.dmg, Apple Silicon</div>
         </a>
-        <a class="dl-card" href="https://github.com/Aetherion7/mosaic/releases/latest">
-          <div class="plat-ic"><svg width="30" height="30" viewBox="0 0 16 16" fill="currentColor" style="margin:0 auto"><ellipse cx="8" cy="6" rx="2.6" ry="3"/><path d="M5.5 8c-1.5 1-2.3 3.5-1.8 5.5.3 1 1.2 1.3 1.8.5.3-.4.6-.6 1-.6h2.9c.4 0 .8.2 1 .6.6.8 1.5.5 1.8-.5.5-2-.3-4.5-1.8-5.5-.6 1-1.4 1.6-2.5 1.6S6.1 9 5.5 8z"/><circle cx="7" cy="5.3" r="0.35" fill="#09090f"/><circle cx="9" cy="5.3" r="0.35" fill="#09090f"/><path d="M7.6 6.4h.8l-.4.6z" fill="#fbbf24"/></svg></div>
+        <div class="dl-card" style="position:relative">
+          <a id="dl-linux" href="https://github.com/Aetherion7/mosaic/releases/latest" style="position:absolute;inset:0;border-radius:inherit;z-index:0" aria-label="Download mosaic for Linux (.AppImage)"></a>
+          <div class="plat-ic"><svg width="27" height="27" viewBox="0 0 16 16" fill="currentColor" style="margin:0 auto">
+            <path d="M8 1.6c-1.3 0-2.3 1.1-2.3 2.5 0 .7.2 1.3.6 1.8-1.7 1.1-2.8 4.2-2.8 6.9 0 1.2.3 2.1.9 2.6.5.4 1.1.3 1.6-.2.4-.4.8-.6 1.3-.6h1.4c.5 0 .9.2 1.3.6.5.5 1.1.6 1.6.2.6-.5.9-1.4.9-2.6 0-2.7-1.1-5.8-2.8-6.9.4-.5.6-1.1.6-1.8 0-1.4-1-2.5-2.3-2.5z"/>
+            <ellipse cx="8" cy="10.4" rx="1.5" ry="3.1" fill="var(--surface)"/>
+            <circle cx="7" cy="4" r="0.45" fill="var(--surface)"/>
+            <circle cx="9" cy="4" r="0.45" fill="var(--surface)"/>
+            <path d="M7.55 5.1h.9l-.45.7z" fill="#fbbf24"/>
+            <ellipse cx="6.3" cy="14.3" rx="0.9" ry="0.45" fill="#fbbf24"/>
+            <ellipse cx="9.7" cy="14.3" rx="0.9" ry="0.45" fill="#fbbf24"/>
+          </svg></div>
           <div class="plat-name">Linux</div>
-          <div class="plat-sub">.AppImage / .deb</div>
-        </a>
+          <div class="plat-sub"><span id="dl-linux-sub">.AppImage</span> — <a id="dl-deb" href="https://github.com/Aetherion7/mosaic/releases/latest" style="position:relative;z-index:1;color:var(--accent2)">.deb instead</a></div>
+        </div>
       </div>
       <div class="note-box">
         <strong>Unsigned builds:</strong> Windows SmartScreen and macOS Gatekeeper will warn about an
@@ -406,12 +427,6 @@ footer .flinks a:hover { color: var(--text1); }
           <h3>&nbsp;</h3>
           <p>One-time or monthly</p>
         </a>
-        <a class="support-card" href="https://github.com/sponsors/Aetherion7">
-          <!-- github.png ist ein weißer Kreis mit transparent ausgeschnittenem Octocat — braucht einen dunklen Hintergrund, sonst verschwindet er -->
-          <div class="emoji"><span style="background:#0d1117;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center"><img src="badges/github.png" alt="GitHub" style="width:78%;height:78%"></span></div>
-          <h3>GitHub Sponsors</h3>
-          <p>Sponsor development directly</p>
-        </a>
         <a class="support-card" href="https://github.com/Aetherion7/mosaic">
           <div class="emoji"><img src="badges/github-star.webp" alt="" style="height:34px;width:auto"></div>
           <h3>Star on GitHub</h3>
@@ -429,7 +444,7 @@ footer .flinks a:hover { color: var(--text1); }
           PolyForm Noncommercial License 1.0.0 — free to use, modify and self-host for personal,
           educational or nonprofit purposes; not for resale or commercial hosting.
         </p>
-        <a class="btn btn-outline" href="https://github.com/Aetherion7/mosaic/blob/main/LICENSE.md">Read the license</a>
+        <a class="btn btn-outline" href="https://github.com/Aetherion7/mosaic?tab=License-1-ov-file">Read the license</a>
       </div>
     </div>
   </section>
@@ -446,6 +461,51 @@ footer .flinks a:hover { color: var(--text1); }
     </div>
   </div>
 </footer>
+
+<script>
+// Points the three download buttons straight at the current release's
+// installer files (not just the releases page) and keeps them accurate
+// forever — filenames embed the version (e.g. mosaic-1.10.0-win-x64.exe),
+// so this refetches on every page load instead of ever hardcoding one.
+// Static releases/latest hrefs above stay as the fallback if the API call
+// fails (offline, rate-limited) or a matching asset isn't found.
+(function () {
+  var REPO = 'Aetherion7/mosaic';
+  var TARGETS = {
+    win:   { link: 'dl-win',   sub: 'dl-win-sub',   match: /\.exe$/i },
+    mac:   { link: 'dl-mac',   sub: 'dl-mac-sub',   match: /\.dmg$/i },
+    linux: { link: 'dl-linux', sub: null,           match: /\.AppImage$/i },
+    deb:   { link: 'dl-deb',   sub: null,           match: /\.deb$/i },
+  };
+
+  function archLabel(name) {
+    var m = name.match(/(arm64|x64|amd64|x86_64)/i);
+    if (!m) return '';
+    var a = m[1].toLowerCase();
+    if (a === 'amd64' || a === 'x86_64') a = 'x64';
+    return ' (' + a + ')';
+  }
+
+  fetch('https://api.github.com/repos/' + REPO + '/releases/latest')
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function (release) {
+      var assets = release.assets || [];
+      var version = (release.tag_name || '').replace(/^v/, '');
+      Object.keys(TARGETS).forEach(function (key) {
+        var t = TARGETS[key];
+        var asset = assets.find(function (a) { return t.match.test(a.name); });
+        if (!asset) return;
+        var linkEl = document.getElementById(t.link);
+        if (linkEl) linkEl.href = asset.browser_download_url;
+        if (t.sub) {
+          var subEl = document.getElementById(t.sub);
+          if (subEl) subEl.textContent = 'v' + version + archLabel(asset.name);
+        }
+      });
+    })
+    .catch(function () { /* keep static releases/latest fallback links */ });
+})();
+</script>
 
 </body>
 </html>
