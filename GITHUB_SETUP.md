@@ -127,9 +127,11 @@ it up on its own — that's the "every update reaches everyone" behavior across 
 
 ### Code signing (optional, costs money)
 
-Without signing, Windows SmartScreen and macOS Gatekeeper show an "unknown publisher" warning on
-first launch. The app still works — users just have to click through "More info → Run anyway"
-(Windows) or right-click → Open (macOS) once. To remove that warning:
+Without signing, Windows SmartScreen shows an "unknown publisher" warning on first launch, and
+current macOS versions show **"'mosaic' is damaged and can't be opened"** instead of the older
+"unidentified developer" dialog. The app still works — users just have to click through "More
+info → Run anyway" (Windows) or run `xattr -cr /Applications/mosaic.app` in Terminal once (macOS;
+right-click → Open no longer clears this on current macOS). To remove that warning entirely:
 
 - **Windows**: buy a code-signing certificate (~$70–400/yr from a CA like SSL.com or DigiCert), then
   add it as the `WIN_CSC_LINK` (base64-encoded `.pfx`) and `WIN_CSC_KEY_PASSWORD` secrets in

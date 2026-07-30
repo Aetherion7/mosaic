@@ -394,9 +394,15 @@ footer .flinks a:hover { color: var(--text1); }
         </div>
       </div>
       <div class="note-box">
-        <strong>Unsigned builds:</strong> Windows SmartScreen and macOS Gatekeeper will warn about an
-        "unknown publisher" on first launch — that's expected for a build without a paid code-signing
-        certificate, not a sign of anything wrong. Prefer no install at all? Clone the
+        <strong>Unsigned builds:</strong> Windows SmartScreen will warn about an "unknown publisher"
+        on first launch — click "More info" → "Run anyway". On macOS you'll likely see
+        <strong>"'mosaic' is damaged and can't be opened. You should move it to the Trash"</strong> —
+        the download isn't actually broken, that's just Gatekeeper's generic message for any app
+        without a paid Developer ID signature, and right-click → "Open" no longer clears it on
+        current macOS. Fix it by moving <code class="mono">mosaic.app</code> to
+        <code class="mono">/Applications</code>, then running
+        <code class="mono">xattr -cr /Applications/mosaic.app</code> in Terminal. Prefer no install
+        at all? Clone the
         <a href="https://github.com/Aetherion7/mosaic" style="color:var(--accent)">repository</a>
         and run <code class="mono">npm install &amp;&amp; npm run dev</code> — mosaic works entirely in the browser.
       </div>

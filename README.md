@@ -77,8 +77,16 @@ background — you'll always be on the latest version.
 > workflow, so the `.exe`/`.dmg` you download is exactly what that workflow produced from this
 > code, nothing more. To proceed anyway:
 > - **Windows**: click "More info", then "Run anyway" in the SmartScreen dialog.
-> - **macOS**: right-click (or Ctrl-click) the app → "Open" → confirm "Open" in the dialog —
->   double-clicking normally will just refuse to launch it.
+> - **macOS**: current macOS versions usually skip the old "unidentified developer" dialog
+>   entirely and instead say **"'mosaic' is damaged and can't be opened. You should move it to
+>   the Trash."** — despite the wording, the download isn't actually corrupted; that's just
+>   Gatekeeper's generic message for any app without a paid Developer ID signature. Right-click →
+>   "Open" alone no longer clears it on current macOS. Move `mosaic.app` to `/Applications`, then
+>   in Terminal run:
+>   ```bash
+>   xattr -cr /Applications/mosaic.app
+>   ```
+>   and launch it normally.
 >
 > If you'd rather not click through a warning at all, the [Linux install](#linux-install) below
 > and [running from source](#getting-started) don't trigger this, since neither goes through
