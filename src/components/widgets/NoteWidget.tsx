@@ -7,6 +7,8 @@ import TaskItem from '@tiptap/extension-task-item'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Markdown } from 'tiptap-markdown'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import { TextStyle } from '@tiptap/extension-text-style'
+import Color from '@tiptap/extension-color'
 import { mergeAttributes, Extension, Mark } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
 import { createLowlight, common } from 'lowlight'
@@ -203,7 +205,7 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
   const palette: string[] = d.colorPalette ?? []
 
   function addToPalette() {
-    const color = d.color
+    const color = activeColor
     if (!color || palette.includes(color)) return
     patch({ colorPalette: [...palette, color] })
   }
@@ -282,6 +284,8 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
     Placeholder.configure({ placeholder: t('# Heading\n\nNote here…') }),
     Markdown.configure({ html: true, transformPastedText: true }),
     CodeBlockHighlight.configure({ lowlight, defaultLanguage: 'plaintext' }),
+    TextStyle,
+    Color,
     PreventTabEscape,
     PdfRef.configure({ onNavigate: (r, p) => navigateRef.current(r, p) }),
   ])
@@ -299,6 +303,10 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
   })
 
   editorRef.current = editor
+
+  // Current selection's color (or the stored mark at the cursor if the
+  // selection is collapsed) — undefined means "no color mark here", not black.
+  const activeColor: string | undefined = editor?.getAttributes('textStyle').color
 
   useEffect(() => {
     editor?.setEditable(mode === 'edit')
@@ -454,11 +462,13 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
 
           <Divider />
 
-          {/* Color */}
+          {/* Color — applied to the current SELECTION only (a real per-span
+              Tiptap mark via Color/TextStyle), not the whole note. Multiple
+              differently-colored spans can coexist in the same note. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
             <ColorSwatch
-              value={d.color?.startsWith('#') ? d.color : '#000000'}
-              onChange={v => patch({ color: v })}
+              value={activeColor?.startsWith('#') ? activeColor : '#000000'}
+              onChange={v => editor?.chain().focus().setColor(v).run()}
               trigger={(onClick) => (
                 <div onClick={onClick} title={t('Text color')} style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -466,8 +476,8 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
                   padding: '3px 5px', borderRadius: 5,
                   minWidth: 22, height: 22, cursor: 'pointer',
                 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1, color: d.color ?? 'var(--text2)' }}>A</span>
-                  <div style={{ width: 13, height: 3, background: d.color ?? 'var(--text2)', borderRadius: 1 }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1, color: activeColor ?? 'var(--text2)' }}>A</span>
+                  <div style={{ width: 13, height: 3, background: activeColor ?? 'var(--text2)', borderRadius: 1 }} />
                 </div>
               )}
             />
@@ -475,13 +485,13 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
             {palette.map((c: string) => (
               <button
                 key={c}
-                onClick={() => patch({ color: c })}
+                onClick={() => editor?.chain().focus().setColor(c).run()}
                 onContextMenu={e => { e.preventDefault(); removeFromPalette(c) }}
                 title={`${c} (${t('right-click to remove')})`}
                 style={{
                   width: 18, height: 18, borderRadius: 4, border: 'none',
                   background: c, cursor: 'pointer', flexShrink: 0,
-                  outline: d.color === c ? '2px solid var(--accent)' : '2px solid transparent',
+                  outline: activeColor === c ? '2px solid var(--accent)' : '2px solid transparent',
                   outlineOffset: 1,
                 }}
               />

@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/Icons'
 import WidgetErrorBoundary from './WidgetErrorBoundary'
 import { getTheme } from '@/lib/themes'
-import { extractNoteTitle } from '@/lib/noteTitle'
+import { extractNoteTitle, renderNoteTitleHtml } from '@/lib/noteTitle'
 import SlidingTabs from '@/components/ui/SlidingTabs'
 import WidgetAiChat from './WidgetAiChat'
 import { useWidgetAiStore } from '@/store/aiStore'
@@ -696,7 +696,10 @@ function TileWrapperInner({ widget, gridRef }: Props) {
               {widget.type === 'note' && (() => {
                 const title = extractNoteTitle(widget.data.content as string | undefined)
                 return title && (
-                  <span style={{ textTransform: 'none', fontWeight: 600, color: 'var(--text2)' }}> · {title}</span>
+                  <span style={{ textTransform: 'none', fontWeight: 600, color: 'var(--text2)' }}>
+                    {' · '}
+                    <span dangerouslySetInnerHTML={{ __html: renderNoteTitleHtml(title) }} />
+                  </span>
                 )
               })()}
             </span>

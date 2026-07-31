@@ -5,7 +5,7 @@ import { useBoardStore } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { selectBoard } from '@/store/boardStore'
 import { TYPE_LABELS } from '@/components/board/TileWrapper'
-import { extractNoteTitle } from '@/lib/noteTitle'
+import { extractNoteTitle, renderNoteTitleHtml } from '@/lib/noteTitle'
 import { useT } from '@/hooks/useT'
 import type { Widget } from '@/types'
 import {
@@ -48,6 +48,10 @@ interface Result {
   boardName: string
   widget:    Widget
   label:     string
+  // Only true when `label` came from a note's Markdown heading — other
+  // widgets' labels are plain content and must NOT be run through the
+  // Markdown renderer (a task name with a literal "*" shouldn't turn italic).
+  isNoteTitle?: boolean
 }
 
 interface Props { onClose: () => void }
@@ -84,7 +88,7 @@ export default function SearchModal({ onClose }: Props) {
         widget.type.toLowerCase().includes(q) ||
         t(TYPE_LABELS[widget.type] ?? '').toLowerCase().includes(q)
       ) {
-        out.push({ boardId: board.id, boardName: board.name, widget, label })
+        out.push({ boardId: board.id, boardName: board.name, widget, label, isNoteTitle: !!noteTitle && label === noteTitle })
       }
     }
     return out.slice(0, 40)
@@ -200,7 +204,9 @@ export default function SearchModal({ onClose }: Props) {
               </span>
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {r.label}
+                  {r.isNoteTitle
+                    ? <span dangerouslySetInnerHTML={{ __html: renderNoteTitleHtml(r.label) }} />
+                    : r.label}
                 </span>
                 <span style={{ fontSize: 11, color: 'var(--text3)' }}>
                   {t(TYPE_LABELS[r.widget.type] ?? r.widget.type)}

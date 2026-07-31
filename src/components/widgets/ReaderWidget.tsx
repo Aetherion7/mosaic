@@ -13,7 +13,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { saveBlob, getBlob, useBlobUrl } from '@/lib/blobStore'
 import { registerReader, unregisterReader } from '@/lib/ai/readerRegistry'
 import { LIGHT_THEME_IDS } from '@/lib/themes'
-import { extractNoteTitle } from '@/lib/noteTitle'
+import { extractNoteTitle, renderNoteTitleHtml } from '@/lib/noteTitle'
 import { useT } from '@/hooks/useT'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import type { Widget, ReaderHighlight, ReaderFileType } from '@/types'
@@ -1519,16 +1519,19 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
                           <div style={{ fontSize: 8, fontWeight: 700, color: 'var(--text3)', padding: '4px 7px 2px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                             {t('Choose note:')}
                           </div>
-                          {noteWidgets.map(nw => (
-                            <button key={nw.id}
-                              onClick={e => { e.stopPropagation(); linkHighlightToNote(nw.id, h) }}
-                              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 7px', fontSize: 9, color: 'var(--text1)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}
-                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--accent) 12%, transparent)' }}
-                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
-                            >
-                              {extractNoteTitle(nw.data.content as string | undefined) ?? t('Note')}
-                            </button>
-                          ))}
+                          {noteWidgets.map(nw => {
+                            const title = extractNoteTitle(nw.data.content as string | undefined)
+                            return (
+                              <button key={nw.id}
+                                onClick={e => { e.stopPropagation(); linkHighlightToNote(nw.id, h) }}
+                                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 7px', fontSize: 9, color: 'var(--text1)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'color-mix(in srgb, var(--accent) 12%, transparent)' }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
+                              >
+                                {title ? <span dangerouslySetInnerHTML={{ __html: renderNoteTitleHtml(title) }} /> : t('Note')}
+                              </button>
+                            )
+                          })}
                         </div>
                       )}
                     </div>
