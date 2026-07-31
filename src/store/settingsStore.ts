@@ -11,6 +11,7 @@ export interface InstalledPlugin {
   version:  string
   author?:  string
   embedUrl?: string
+  html?:    string   // self-contained plugin page source — no hosting needed, rendered via a Blob URL
 }
 
 // Eigenes Theme des Nutzers — wie ThemePreset, aber mit freier ID.

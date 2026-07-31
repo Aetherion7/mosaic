@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Editor — mosaic plugin</title>
+<style>
+  /* Same design tokens as the mosaic landing page (Deep Space theme), so this
+     reads as part of the app rather than a random embedded website. */
+  :root {
+    --bg: #09090f; --surface: #12131e; --surface2: #191a2c; --border: #2c2d4a;
+    --accent: #7c6fe8; --accent2: #4ecdc4; --text1: #edeaf8; --text2: #8986a8; --text3: #6b6990;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--text1);
+    font-family: Inter, system-ui, sans-serif;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-bottom: 1px solid var(--border);
+    background: var(--surface); flex-shrink: 0;
+  }
+  select {
+    background: var(--surface2); color: var(--text1); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer;
+  }
+  button {
+    background: var(--surface2); color: var(--text1); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer;
+  }
+  button:hover, select:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+  button:active { transform: translateY(1px); }
+  #status { margin-left: auto; font-size: 11px; color: var(--text3); }
+  main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  #editor { flex: 1; min-height: 0; }
+  .cm-editor { height: 100%; font-size: 13px; }
+  .cm-editor.cm-focused { outline: none; }
+  #output {
+    flex-shrink: 0; max-height: 35%; overflow: auto; display: none;
+    border-top: 1px solid var(--border); background: var(--surface);
+    padding: 8px 10px; font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px; white-space: pre-wrap; word-break: break-word;
+  }
+  #output.show { display: block; }
+  #output .err { color: #ff6b6b; }
+  .hint { font-size: 11px; color: var(--text3); padding: 0 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <select id="lang">
+    <option value="javascript">JavaScript</option>
+    <option value="python">Python</option>
+    <option value="html">HTML</option>
+    <option value="css">CSS</option>
+    <option value="json">JSON</option>
+    <option value="markdown">Markdown</option>
+  </select>
+  <button id="runBtn" title="Run (JavaScript only)">▶ Run</button>
+  <button id="copyBtn" title="Copy all code">⧉ Copy</button>
+  <button id="clearBtn" title="Clear editor">✕ Clear</button>
+  <span class="hint" id="hint"></span>
+  <span id="status"></span>
+</header>
+
+<main>
+  <div id="editor"></div>
+  <div id="output"></div>
+</main>
+
+<script type="module">
+  import { EditorView, keymap, lineNumbers } from 'https://esm.sh/@codemirror/view@6';
+  import { EditorState } from 'https://esm.sh/@codemirror/state@6';
+  import { defaultKeymap, indentWithTab, history, historyKeymap } from 'https://esm.sh/@codemirror/commands@6';
+  import { syntaxHighlighting, defaultHighlightStyle, indentOnInput, bracketMatching } from 'https://esm.sh/@codemirror/language@6';
+  import { javascript } from 'https://esm.sh/@codemirror/lang-javascript@6';
+  import { python } from 'https://esm.sh/@codemirror/lang-python@6';
+  import { html } from 'https://esm.sh/@codemirror/lang-html@6';
+  import { css } from 'https://esm.sh/@codemirror/lang-css@6';
+  import { json } from 'https://esm.sh/@codemirror/lang-json@6';
+  import { markdown } from 'https://esm.sh/@codemirror/lang-markdown@6';
+  import { oneDark } from 'https://esm.sh/@codemirror/theme-one-dark@6';
+
+  const langs = { javascript: javascript(), python: python(), html: html(), css: css(), json: json(), markdown: markdown() };
+  const samples = {
+    javascript: '// Scratch pad — nothing here is saved between reloads.\nfunction greet(name) {\n  return `Hello, ${name}!`\n}\n\nconsole.log(greet("mosaic"))\n',
+    python:     '# Scratch pad — nothing here is saved between reloads.\ndef greet(name):\n    return f"Hello, {name}!"\n\nprint(greet("mosaic"))\n',
+    html:       '<!-- Scratch pad — nothing here is saved between reloads. -->\n<h1>Hello, mosaic!</h1>\n',
+    css:        '/* Scratch pad — nothing here is saved between reloads. */\nbody {\n  background: #09090f;\n  color: #edeaf8;\n}\n',
+    json:       '{\n  "hello": "mosaic"\n}\n',
+    markdown:   '# Scratch pad\n\nNothing here is **saved** between reloads.\n',
+  };
+
+  const langSelect = document.getElementById('lang');
+  const runBtn     = document.getElementById('runBtn');
+  const copyBtn    = document.getElementById('copyBtn');
+  const clearBtn   = document.getElementById('clearBtn');
+  const statusEl   = document.getElementById('status');
+  const hintEl     = document.getElementById('hint');
+  const outputEl   = document.getElementById('output');
+
+  let langCompartmentView;
+  const view = new EditorView({
+    state: EditorState.create({
+      doc: samples.javascript,
+      extensions: [
+        lineNumbers(),
+        history(),
+        indentOnInput(),
+        bracketMatching(),
+        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+        oneDark,
+        langs.javascript,
+      ],
+    }),
+    parent: document.getElementById('editor'),
+  });
+  langCompartmentView = view;
+
+  function setLanguage(lang) {
+    const state = EditorState.create({
+      doc: samples[lang] ?? '',
+      extensions: [
+        lineNumbers(), history(), indentOnInput(), bracketMatching(),
+        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+        oneDark, langs[lang],
+      ],
+    });
+    langCompartmentView.setState(state);
+    runBtn.style.display = lang === 'javascript' ? '' : 'none';
+    outputEl.classList.remove('show');
+    hintEl.textContent = lang === 'javascript' ? '' : 'Run only supports JavaScript.';
+  }
+
+  langSelect.addEventListener('change', () => setLanguage(langSelect.value));
+  setLanguage('javascript');
+
+  runBtn.addEventListener('click', () => {
+    const code = view.state.doc.toString();
+    const logs = [];
+    const fakeConsole = {
+      log:   (...a) => logs.push(a.map(String).join(' ')),
+      error: (...a) => logs.push('ERR: ' + a.map(String).join(' ')),
+      warn:  (...a) => logs.push('WARN: ' + a.map(String).join(' ')),
+    };
+    outputEl.classList.add('show');
+    try {
+      // eslint-disable-next-line no-new-func
+      const fn = new Function('console', code);
+      fn(fakeConsole);
+      outputEl.innerHTML = logs.length
+        ? logs.map(l => `<div>${l.replace(/</g, '&lt;')}</div>`).join('')
+        : '<span style="color:var(--text3)">(no output — use console.log)</span>';
+    } catch (e) {
+      outputEl.innerHTML = `<div class="err">${String(e.message ?? e).replace(/</g, '&lt;')}</div>`;
+    }
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    const text = view.state.doc.toString();
+    try {
+      await navigator.clipboard.writeText(text);
+      statusEl.textContent = 'Copied!';
+    } catch {
+      // Clipboard API can be blocked inside a sandboxed iframe without
+      // explicit permission — fall back to select-all so the user can
+      // still copy manually with Ctrl/Cmd+C.
+      view.dispatch({ selection: { anchor: 0, head: text.length } });
+      view.focus();
+      statusEl.textContent = 'Select all — press Ctrl/Cmd+C';
+    }
+    setTimeout(() => { statusEl.textContent = ''; }, 2000);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: '' } });
+    outputEl.classList.remove('show');
+  });
+</script>
+
+</body>
+</html>

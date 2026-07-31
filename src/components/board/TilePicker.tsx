@@ -185,7 +185,7 @@ export default function TilePicker() {
     const w = defaultWidget(type, pos, theme.widgetStyle)
     if (pluginId) {
       const plugin = useSettings.getState().installedPlugins.find(p => p.id === pluginId)
-      if (plugin) w.data = { pluginId: plugin.id, pluginName: plugin.name, pluginIcon: plugin.icon, pluginDesc: plugin.desc, embedUrl: plugin.embedUrl }
+      if (plugin) w.data = { pluginId: plugin.id, pluginName: plugin.name, pluginIcon: plugin.icon, pluginDesc: plugin.desc, embedUrl: plugin.embedUrl, html: plugin.html }
     }
     pushRecentType(pluginId ? `plugin-${pluginId}` : type)
     addWidget(w)

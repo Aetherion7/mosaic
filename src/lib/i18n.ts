@@ -178,11 +178,15 @@ export const de: Record<string, string> = {
   'Third-party add-ons': 'Drittanbieter-Add-ons',
   'Install your own widget plugins as JSON. Plugins appear in the add-widget panel.': 'Eigene Widget-Plugins als JSON installieren. Plugins erscheinen im Hinzufügen-Panel.',
   'Install plugin': 'Plugin installieren',
-  'Required fields: "id", "name", "icon" (emoji) — optional "desc", "version", "author", "embedUrl".': 'Pflichtfelder: „id“, „name“, „icon“ (Emoji) — optional „desc“, „version“, „author“, „embedUrl“.',
+  'Required fields: "id", "name", "icon" (emoji) — optional "desc", "version", "author", "embedUrl" or "html".': 'Pflichtfelder: „id“, „name“, „icon“ (Emoji) — optional „desc“, „version“, „author“, „embedUrl“ oder „html“.',
+  'Upload a single .html file — no hosting needed': 'Eine einzelne .html-Datei hochladen — kein Hosting nötig',
+  'or paste JSON manually': 'oder JSON manuell einfügen',
+  'self-contained': 'in sich geschlossen',
+  'hosted URL': 'gehostete URL',
   'Valid': 'Gültig',
   'Install': 'Installieren',
   'Add plugin': 'Plugin hinzufügen',
-  'Install a widget plugin as JSON — template included': 'Widget-Plugin als JSON installieren — Vorlage inklusive',
+  'Install a widget plugin — upload an HTML file, or paste JSON': 'Widget-Plugin installieren — HTML-Datei hochladen oder JSON einfügen',
 
   // ── TastenkuerzelPanel ──
   'Navigation': 'Navigation',

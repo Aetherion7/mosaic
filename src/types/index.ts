@@ -289,6 +289,7 @@ export interface PluginWidgetData {
   pluginIcon: string
   pluginDesc: string
   embedUrl?:  string
+  html?:      string   // self-contained plugin page source — rendered via a Blob URL, no hosting needed
 }
 
 // Specific data types exist for individual widget components to import and cast to.
