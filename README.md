@@ -188,6 +188,23 @@ the file back out of a terminal every time. The `.deb` install gets this the nor
 </tr>
 </table>
 
+## Beyond the basics
+
+A few things that aren't obvious from a feature list:
+
+- **Reader ↔ Note highlight linking.** Highlight text in the PDF/EPUB reader, then link that highlight into any Note widget on the board as a colored inline reference. Clicking it in the note jumps the reader straight back to that page (PDF) or location (EPUB) — works both ways, and a highlight can be linked into more than one note.
+- **Move or copy a widget to a different board.** Every widget's toolbar has a "Move/copy to board" action: pick a target board from a searchable list (each tinted with that board's own accent color) and it's transferred instantly, size and style intact — no dragging across two open windows required.
+- **Map markers and hand-drawn routes.** Drop colored, labeled pins anywhere on the map, or draw a route by clicking a sequence of points — mosaic shows the running distance live as you place them. Routes are plain waypoints you control directly, not an auto-routed driving path.
+- **Per-widget AI chat with hard-enforced scope.** Beyond the board-wide assistant, any widget can get its own pinned mini-chat. That chat is restricted in code, not just by prompt — it physically cannot call a tool against a different widget's ID or touch the board theme, regardless of what it's asked to do.
+- **Focus mode is a true 1:1 mirror, not a preview.** Double-clicking a widget renders the *exact same* component at its real size, scaled up with one CSS transform — so a task list, calendar, or map stays fully interactive (check off a task, drag an event) at full-screen size, pixel-faithful to the board version.
+- **A minimap that zooms with you.** Unlike a typical fit-to-bounds overview, mosaic's live minimap scales in lockstep with your actual board zoom — zoom out on the board and the minimap's tiles shrink too, like radar rather than a static thumbnail.
+- **Real spreadsheet formulas, safely evaluated.** `=SUM(A1:A5)`, `IF`, `COUNTIF`, `TEXTJOIN`, and 40+ other functions, backed by a hand-written parser (no `eval`, no arbitrary code execution) — safe to open boards you didn't build yourself.
+- **Themes as editable JSON, with smart migration.** Write or paste your own theme as JSON with live validation, or tweak a built-in one. Switching a board's theme only replaces the widget styles that still matched the *old* theme's defaults — anything you customized by hand is left alone.
+- **Custom fonts, not just a font list.** Pick from 8 built-in typefaces app-wide or per-board, or upload your own `.ttf`/`.otf`/`.woff2` — it becomes selectable everywhere a font picker shows up, including per-note overrides.
+- **Reminders that actually check your progress.** Water reminders stop once you've hit today's goal; the sleep reminder only fires if you haven't logged a bedtime yet; calendar reminders account for recurrence. All run in the background via a single scheduler, independent of which board is open.
+- **Nothing is really deleted right away.** Deleted boards go to Trash (restorable, auto-expiring) instead of vanishing, and you can save any board's layout as a reusable template.
+- **Calendars round-trip with the outside world.** Import an `.ics` file into a Calendar widget, or export your events back out as one — recurrence rules, colors, and all.
+
 ## Getting started
 
 Run mosaic locally in about a minute:

@@ -127,6 +127,15 @@ h2 { font-family: 'Guavine', serif; font-size: clamp(30px, 4vw, 42px); font-weig
 .card h3 { font-size: 15.5px; font-weight: 700; margin-bottom: 7px; }
 .card p { font-size: 13.5px; color: var(--text2); line-height: 1.6; }
 
+/* Extras grid — same card language, no icon box, accent left-border instead */
+.extra-card {
+  background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  border-radius: var(--radius); padding: 20px 22px; transition: border-color .15s;
+}
+.extra-card:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); border-left-color: var(--accent); }
+.extra-card h3 { font-size: 14.5px; font-weight: 700; margin-bottom: 6px; }
+.extra-card p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
 /* Widget tag cloud */
 .tagcloud { display: flex; flex-wrap: wrap; gap: 9px; }
 .tag {
@@ -240,6 +249,7 @@ footer .flinks a:hover { color: var(--text1); }
     <a href="#" class="logo"><img src="mosaiclogo.png" alt=""><span>mosaic</span></a>
     <nav>
       <a href="#features">Features</a>
+      <a href="#extras">Details</a>
       <a href="#screenshots">Screenshots</a>
       <a href="#download">Download</a>
       <a href="#privacy">Privacy</a>
@@ -341,6 +351,64 @@ footer .flinks a:hover { color: var(--text1); }
         <span class="tag"><span class="dot"></span>Agenda</span>
         <span class="tag"><span class="dot"></span>Quicklinks</span>
         <span class="tag"><span class="dot"></span>Image</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="extras">
+    <div class="wrap">
+      <div class="eyebrow">Beyond the basics</div>
+      <h2>The details you don't expect from a dashboard app.</h2>
+      <p class="section-sub">
+        A few things that only show up once you're actually using it.
+      </p>
+      <div class="grid">
+        <div class="extra-card">
+          <h3>Reader ↔ Note highlight linking</h3>
+          <p>Highlight text in the PDF/EPUB reader, link it into any Note widget as a colored
+          reference — click it later and the reader jumps straight back to that page or location.</p>
+        </div>
+        <div class="extra-card">
+          <h3>Move or copy a widget to another board</h3>
+          <p>Every widget's toolbar can send it to a different board instantly — pick from a
+          searchable list, size and style intact. No dragging across two windows.</p>
+        </div>
+        <div class="extra-card">
+          <h3>Map markers and hand-drawn routes</h3>
+          <p>Drop colored, labeled pins anywhere, or click out a route point by point with live
+          running distance. Routes are your own waypoints, not an auto-routed path.</p>
+        </div>
+        <div class="extra-card">
+          <h3>Per-widget AI chat, hard-scoped</h3>
+          <p>Pin a mini AI chat to a single widget and it is <em>enforced in code</em> to only
+          touch that widget's id — not a prompt suggestion, a hard rule the assistant can't break.</p>
+        </div>
+        <div class="extra-card">
+          <h3>Focus mode is a real 1:1 mirror</h3>
+          <p>Double-click any widget and it's the exact same component, scaled up — not a preview.
+          Check off a task or drag a calendar event full-screen, fully interactive.</p>
+        </div>
+        <div class="extra-card">
+          <h3>A minimap that zooms with you</h3>
+          <p>Instead of a static fit-to-bounds overview, the live minimap scales in lockstep with
+          your actual board zoom — like radar, not a thumbnail.</p>
+        </div>
+        <div class="extra-card">
+          <h3>Real spreadsheet formulas, safely evaluated</h3>
+          <p><code class="mono">=SUM()</code>, <code class="mono">IF</code>,
+          <code class="mono">COUNTIF</code> and 40+ more, backed by a hand-written parser — no
+          <code class="mono">eval</code>, safe to open boards you didn't build yourself.</p>
+        </div>
+        <div class="extra-card">
+          <h3>Themes as editable JSON, migrated smartly</h3>
+          <p>Write your own theme as JSON with live validation. Switching themes only replaces
+          widget styles that matched the old theme's defaults — your manual tweaks stay put.</p>
+        </div>
+        <div class="extra-card">
+          <h3>Reminders that check your actual progress</h3>
+          <p>Water reminders stop once you've hit today's goal; the sleep reminder only fires if
+          you haven't logged a bedtime yet. Runs in the background, any board.</p>
+        </div>
       </div>
     </div>
   </section>
