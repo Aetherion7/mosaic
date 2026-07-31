@@ -9,8 +9,18 @@ import { Markdown } from 'tiptap-markdown'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { TextStyle } from '@tiptap/extension-text-style'
 import Color from '@tiptap/extension-color'
+import TextAlign from '@tiptap/extension-text-align'
+import { Paragraph } from '@tiptap/extension-paragraph'
+import { Heading } from '@tiptap/extension-heading'
+import { Table } from '@tiptap/extension-table'
+import TableRow from '@tiptap/extension-table-row'
+import TableHeader from '@tiptap/extension-table-header'
+import TableCell from '@tiptap/extension-table-cell'
 import { mergeAttributes, Extension, Mark } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
+import type { MarkdownSerializerState } from 'prosemirror-markdown'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PMNode = any
 import { createLowlight, common } from 'lowlight'
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
@@ -74,6 +84,86 @@ const CodeBlockHighlight = CodeBlockLowlight.extend({
       'pre',
       mergeAttributes(HTMLAttributes, { 'data-language': node.attrs.language || '' }),
       ['code', { class: node.attrs.language ? `language-${node.attrs.language}` : '' }, 0],
+    ]
+  },
+})
+
+// ── Paragraph/Heading with persistent per-node alignment ───────────────────────
+// TextAlign's `textAlign` attribute has no native Markdown syntax, so
+// tiptap-markdown's default node serializers silently drop it — confirmed by
+// testing directly: alignment survived in the live document but vanished
+// from the saved string, so it reset on every reload. Fix: when a
+// paragraph/heading's alignment isn't the default, wrap its own Markdown in
+// a blank-line-separated `<div data-mosaic-align="…">` block on save.
+// markdown-it (html:true) treats the div's opening/closing tags as opaque
+// raw HTML but — verified directly against markdown-it — still parses
+// everything BETWEEN two blank-line-separated HTML lines as normal Markdown,
+// so bold/italic/color inside an aligned paragraph keep working. On load, an
+// extra parseHTML rule reads the alignment back off that wrapping div, which
+// itself isn't a registered node — ProseMirror's parser treats unmatched
+// elements as transparent, so only the inner <p>/<hN> becomes a real node.
+function withAlignSerialize(
+  render: (state: MarkdownSerializerState, node: PMNode) => void,
+) {
+  return (state: MarkdownSerializerState, node: PMNode) => {
+    const align = node.attrs.textAlign
+    const wrap = align && align !== 'left'
+    if (wrap) {
+      state.write(`<div data-mosaic-align="${align}">`)
+      state.closeBlock(node)
+    }
+    render(state, node)
+    if (wrap) {
+      state.write('</div>')
+      state.closeBlock(node)
+    }
+  }
+}
+
+function readAlign(dom: HTMLElement) {
+  return (dom.parentElement as HTMLElement)?.getAttribute('data-mosaic-align') ?? null
+}
+
+const ParagraphWithAlign = Paragraph.extend({
+  addStorage() {
+    return {
+      markdown: {
+        serialize: withAlignSerialize((state, node) => {
+          state.renderInline(node)
+          state.closeBlock(node)
+        }),
+        parse: {},
+      },
+    }
+  },
+  parseHTML() {
+    return [
+      { tag: 'div[data-mosaic-align] > p', getAttrs: (dom: HTMLElement) => ({ textAlign: readAlign(dom) }) },
+      ...(this.parent?.() ?? []),
+    ]
+  },
+})
+
+const HeadingWithAlign = Heading.extend({
+  addStorage() {
+    return {
+      markdown: {
+        serialize: withAlignSerialize((state, node) => {
+          state.write(state.repeat('#', node.attrs.level) + ' ')
+          state.renderInline(node, false)
+          state.closeBlock(node)
+        }),
+        parse: {},
+      },
+    }
+  },
+  parseHTML() {
+    return [
+      ...[1, 2, 3, 4, 5, 6].map(level => ({
+        tag: `div[data-mosaic-align] > h${level}`,
+        getAttrs: (dom: HTMLElement) => ({ level, textAlign: readAlign(dom) }),
+      })),
+      ...(this.parent?.() ?? []),
     ]
   },
 })
@@ -258,7 +348,9 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
   // If extensions are new objects each render, it calls editor.setOptions() every render
   // → cascading re-renders → laggy UI. useState ensures stable references.
   const [extensions] = useState(() => [
-    StarterKit.configure({ codeBlock: false }),
+    StarterKit.configure({ codeBlock: false, paragraph: false, heading: false }),
+    ParagraphWithAlign,
+    HeadingWithAlign,
     TaskList,
     TaskItem.configure({
       nested: true,
@@ -286,6 +378,11 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
     CodeBlockHighlight.configure({ lowlight, defaultLanguage: 'plaintext' }),
     TextStyle,
     Color,
+    TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    Table.configure({ resizable: false }),
+    TableRow,
+    TableHeader,
+    TableCell,
     PreventTabEscape,
     PdfRef.configure({ onNavigate: (r, p) => navigateRef.current(r, p) }),
   ])
@@ -431,15 +528,18 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
 
           <Divider />
 
-          {/* Align — a widget-level setting (CSS var), not a per-node Tiptap
-              attribute: node attributes aren't representable in Markdown, so
-              they silently got lost on every reload/remount (the actual bug
-              this replaced). Same pattern as color/fontFamily/etc. below. */}
+          {/* Align — back to a per-paragraph Tiptap attribute (TextAlign
+              extension) so different parts of one note can have different
+              alignment, as expected of a rich editor. Persistence across
+              reloads is handled by ParagraphWithAlign/HeadingWithAlign's
+              custom Markdown serializer below (plain node attributes aren't
+              representable in Markdown on their own — that's what silently
+              dropped alignment the first time this was tried). */}
           {(['left', 'center', 'right'] as const).map(align => (
             <ToolBtn
               key={align}
-              active={(d.textAlign ?? 'left') === align}
-              onClick={() => patch({ textAlign: align })}
+              active={!!editor?.isActive({ textAlign: align })}
+              onClick={() => editor?.chain().focus().setTextAlign(align).run()}
               title={align === 'left' ? t('Left') : align === 'center' ? t('Center') : t('Right')}
             >
               <AlignIcon align={align} />
