@@ -34,7 +34,7 @@ const WIDGET_TYPES: WidgetType[] = [
 // ab, Datenformen zu erfinden. Bewusst nur die praktisch editierbaren Felder.
 export const WIDGET_DATA_DOC = `Widget "data" shapes (only set fields you need; unknown fields are ignored by widgets):
 - task: { habits: [{id, name, color, weekDays: string[], weeklyLog: {} }] }
-- note: { title: string, content: string (markdown), fontFamily?, fontSize?, color?, lineHeight?, textShadow?, textStroke?, noBg? }
+- note: { title: string, content: string (markdown), fontFamily?, fontSize?, color?, lineHeight?, textAlign?: 'left'|'center'|'right', textShadow?, textStroke?, noBg? }
 - timer: { name: string, durationMin: number }
 - water: { goalMl: number, mlPerSection: number }
 - image: { src: string (URL), alt: string, objectFit: 'cover'|'contain' }

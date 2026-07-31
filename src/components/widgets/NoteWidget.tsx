@@ -7,7 +7,6 @@ import TaskItem from '@tiptap/extension-task-item'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Markdown } from 'tiptap-markdown'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-import TextAlign from '@tiptap/extension-text-align'
 import { mergeAttributes, Extension, Mark } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
 import { createLowlight, common } from 'lowlight'
@@ -224,6 +223,7 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
   if (d.fontFamily) noteStyleVars['--note-font-family'] = getFontCss(d.fontFamily)
   if (d.fontSize)   noteStyleVars['--note-font-size']   = `${d.fontSize}px`
   if (d.lineHeight) noteStyleVars['--note-line-height'] = `${d.lineHeight}`
+  if (d.textAlign)  noteStyleVars['--note-text-align']  = d.textAlign
   if (d.color)      noteStyleVars['--note-color']       = d.color
   if (d.textShadow) {
     noteStyleVars['--note-text-shadow'] =
@@ -282,7 +282,6 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
     Placeholder.configure({ placeholder: t('# Heading\n\nNote here…') }),
     Markdown.configure({ html: true, transformPastedText: true }),
     CodeBlockHighlight.configure({ lowlight, defaultLanguage: 'plaintext' }),
-    TextAlign.configure({ types: ['heading', 'paragraph'] }),
     PreventTabEscape,
     PdfRef.configure({ onNavigate: (r, p) => navigateRef.current(r, p) }),
   ])
@@ -424,12 +423,15 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
 
           <Divider />
 
-          {/* Align — per paragraph/heading (TextAlign extension), not global */}
+          {/* Align — a widget-level setting (CSS var), not a per-node Tiptap
+              attribute: node attributes aren't representable in Markdown, so
+              they silently got lost on every reload/remount (the actual bug
+              this replaced). Same pattern as color/fontFamily/etc. below. */}
           {(['left', 'center', 'right'] as const).map(align => (
             <ToolBtn
               key={align}
-              active={!!editor?.isActive({ textAlign: align })}
-              onClick={() => editor?.chain().focus().setTextAlign(align).run()}
+              active={(d.textAlign ?? 'left') === align}
+              onClick={() => patch({ textAlign: align })}
               title={align === 'left' ? t('Left') : align === 'center' ? t('Center') : t('Right')}
             >
               <AlignIcon align={align} />
@@ -603,6 +605,7 @@ const CSS = `
   font-size: var(--note-font-size, 13px);
   font-family: var(--note-font-family, inherit);
   line-height: var(--note-line-height, 1.7);
+  text-align: var(--note-text-align, left);
   color: var(--note-color, var(--text2));
   text-shadow: var(--note-text-shadow, none);
   -webkit-text-stroke: var(--note-text-stroke, 0px transparent);

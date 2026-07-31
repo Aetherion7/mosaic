@@ -176,17 +176,15 @@ function patchWidget(s: BoardState, id: string, fn: (w: Widget) => Widget): Part
 }
 
 // ─── Text-widget → Note-widget migration (v2 → v3) ───────────────────────────
-// The old, now-removed Text widget's font/color/shadow/stroke/lineHeight/noBg
-// fields share the exact same names as the ones added to NoteData, so most
-// fields carry over directly. Bold/italic/underline were a single flat
+// The old, now-removed Text widget's font/color/shadow/stroke/lineHeight/
+// textAlign/noBg fields share the exact same names as the ones on NoteData,
+// so they all carry over directly (both are widget-level settings, not
+// per-node document state). Bold/italic/underline were a single flat
 // widget-wide toggle in Text (there's no per-character formatting in a plain
 // textarea) but are real per-selection Tiptap marks in Note — the closest
 // lossless equivalent is wrapping the whole (escaped) content in the
 // matching HTML tag once, which Markdown-parses back into a real mark on
-// load. textAlign has no such 1:1 mapping (Note's TextAlign extension is
-// per-paragraph, stored in the document itself, not a widget-level field) and
-// is intentionally dropped — a reasonable one-time fidelity loss next to
-// preserving content/font/color/shadow/stroke.
+// load.
 function _escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
@@ -213,6 +211,7 @@ function _migrateTextDataToNote(d: any): Widget['data'] {
     textStrokeColor:  d.textStrokeColor,
     textStrokeWidth:  d.textStrokeWidth,
     lineHeight:       d.lineHeight,
+    textAlign:        d.textAlign,
     noBg:             d.noBg,
   }
 }

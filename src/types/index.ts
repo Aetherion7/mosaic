@@ -62,6 +62,7 @@ export interface NoteData {
   textStrokeColor?: string
   textStrokeWidth?: number
   lineHeight?:      number
+  textAlign?:       'left' | 'center' | 'right'
   noBg?:            boolean
 }
 
