@@ -369,7 +369,12 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
           // Höher als BoardGrid.tsx's Auswahlrechteck (zIndex 2000) — sonst
           // malt die Marquee-Auswahl darüber; data-board-chrome verhindert
           // zusätzlich, dass ein Drag hier überhaupt erst startet (s. dort).
-          position: 'absolute', bottom: 16, right: 16, zIndex: 2001,
+          // position:fixed statt absolute — verankert direkt am Viewport
+          // (wie TopBar), unabhängig von der absolute/inset:0-Elternkette
+          // (BoardGrid → page.tsx-Wrapper), die gemeldete Fälle eines
+          // gelegentlichen Nach-oben-Rutschens dieser Leiste verursacht haben
+          // könnte.
+          position: 'fixed', bottom: 16, right: 16, zIndex: 2001,
           display: 'flex', alignItems: 'center', gap: 2,
           background: 'color-mix(in srgb, var(--surface) 88%, transparent)',
           backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
@@ -429,8 +434,9 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
           onClick={onMinimapClick}
           title={t('Click to jump to that area')}
           style={{
-            // s. Kommentar beim zoom-HUD oben — dieselbe Marquee-Auswahl-Fix-Begründung.
-            position: 'absolute', bottom: 16, left: 16, zIndex: 2001,
+            // s. Kommentar beim zoom-HUD oben — dieselbe Marquee-Auswahl-Fix-
+            // Begründung, plus position:fixed statt absolute.
+            position: 'fixed', bottom: 16, left: 16, zIndex: 2001,
             width: MM_W, height: MM_H,
             background: 'color-mix(in srgb, var(--surface) 88%, transparent)',
             backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',

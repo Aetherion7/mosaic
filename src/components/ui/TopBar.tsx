@@ -27,6 +27,8 @@ export default function TopBar() {
   const toggleMode     = useUIStore(s => s.toggleMode)
   const openPanel      = useUIStore(s => s.openPanel)
   const panel          = useUIStore(s => s.panel)
+  const settingsOpen   = useUIStore(s => s.settingsOpen)
+  const setSettingsOpen = useUIStore(s => s.setSettingsOpen)
   const t              = useT()
 
   const showKbdHints  = useSettings(s => s.showKbdHints)
@@ -36,16 +38,19 @@ export default function TopBar() {
   const isIsland      = headerStyle === 'island'
 
   // Always-current refs — updated every render so the keydown handler never sees stale values
-  const modeRef      = useRef(mode)
-  const panelRef     = useRef(panel)
-  const openPanelRef = useRef(openPanel)
-  modeRef.current      = mode
-  panelRef.current     = panel
-  openPanelRef.current = openPanel
+  const modeRef            = useRef(mode)
+  const panelRef           = useRef(panel)
+  const openPanelRef       = useRef(openPanel)
+  const settingsOpenRef    = useRef(settingsOpen)
+  const setSettingsOpenRef = useRef(setSettingsOpen)
+  modeRef.current            = mode
+  panelRef.current           = panel
+  openPanelRef.current       = openPanel
+  settingsOpenRef.current    = settingsOpen
+  setSettingsOpenRef.current = setSettingsOpen
 
   const [editingName, setEditingName]     = useState(false)
   const [nameVal, setNameVal]             = useState(board?.name ?? '')
-  const [settingsOpen, setSettingsOpen]   = useState(false)
   const [searchOpen, setSearchOpen]       = useState(false)
   const searchOpenRef = useRef(searchOpen)
   searchOpenRef.current = searchOpen
@@ -71,7 +76,7 @@ export default function TopBar() {
         openPanelRef.current(null)
         useUIStore.getState().selectWidget(null)
         useUIStore.getState().clearMultiSelect()
-        setSettingsOpen(false)
+        setSettingsOpenRef.current(false)
         // Fokus aktiv lösen: Er bliebe sonst für die Dauer der Panel-Exit-
         // Animation (~0,5 s) in der unmountenden Textarea hängen und der
         // Eingabefeld-Guard unten würde solange alle Shortcuts schlucken.
@@ -117,7 +122,7 @@ export default function TopBar() {
       const shortcuts = useSettings.getState().keyboardShortcuts
       const key = e.key.toUpperCase()
       if (key === shortcuts.toggleMode) toggleMode()
-      if (key === shortcuts.settings) setSettingsOpen(o => !o)
+      if (key === shortcuts.settings) setSettingsOpenRef.current(!settingsOpenRef.current)
       if (key === shortcuts.addWidget && modeRef.current === 'edit') {
         e.preventDefault()
         openPanelRef.current(panelRef.current === 'addWidget' ? null : 'addWidget')
@@ -330,7 +335,7 @@ export default function TopBar() {
         )}
 
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <IconCircleBtn id="tour-settings" active={settingsOpen} onClick={() => setSettingsOpen(o => !o)} title={`${t("Settings")} [${shortcuts.settings}]`}>
+          <IconCircleBtn id="tour-settings" active={settingsOpen} onClick={() => setSettingsOpen(!settingsOpen)} title={`${t("Settings")} [${shortcuts.settings}]`}>
             <IconGear />
           </IconCircleBtn>
           {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.settings}</span>}

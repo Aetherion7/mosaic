@@ -25,6 +25,11 @@ interface UIState {
   mode:               UIMode
   selectedId:         string | null
   panel:              PanelId
+  // Settings ist ein eigenständiges Modal (SettingsModal.tsx), das TopBar
+  // früher als rein lokalen useState hielt — nicht Teil von `panel`. Musste
+  // in den globalen Store wandern, damit BoardGrid.tsx (Marquee-Auswahl
+  // abbrechen, sobald IRGENDein Panel aufgeht) es überhaupt sehen kann.
+  settingsOpen:       boolean
   lastAddedWidgetId:  string | null
   multiSelectedIds:   string[]
   pendingBulkDelete:  boolean
@@ -37,6 +42,7 @@ interface UIState {
   setFocusedWidget:      (id: string | null) => void
   selectWidget:          (id: string | null) => void
   openPanel:             (p: PanelId) => void
+  setSettingsOpen:       (v: boolean) => void
   toggleMode:            () => void
   setLastAddedWidget:    (id: string | null) => void
   toggleMultiSelect:     (id: string) => void
@@ -54,6 +60,7 @@ export const useUIStore = create<UIState>()((set, get) => ({
   mode:               'view',
   selectedId:         null,
   panel:              null,
+  settingsOpen:       false,
   lastAddedWidgetId:  null,
   multiSelectedIds:   [],
   pendingBulkDelete:  false,
@@ -66,6 +73,7 @@ export const useUIStore = create<UIState>()((set, get) => ({
   setFocusedWidget:    (id)    => set({ focusedId: id }),
   selectWidget:        (id)    => set({ selectedId: id }),
   openPanel:           (panel) => set({ panel }),
+  setSettingsOpen:     (v)     => set({ settingsOpen: v }),
   toggleMode:          ()      => set(s => ({ mode: s.mode === 'edit' ? 'view' : 'edit', panel: null, multiSelectedIds: [], pendingBulkDelete: false, focusedId: null })),
   setLastAddedWidget:  (id)    => set({ lastAddedWidgetId: id }),
   toggleMultiSelect:   (id)    => set(s => ({

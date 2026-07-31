@@ -129,6 +129,23 @@ export default function BoardGrid() {
       }
     }
 
+    // Cancels an ALREADY-ARMED drag the instant a panel opens mid-drag (e.g.
+    // the mouse button is still held down while a keyboard shortcut opens
+    // Settings/Add-widget) — onDown's own `panel !== null` check only stops
+    // a NEW drag from starting, it can't help one already in progress.
+    // Settings is its own separate `settingsOpen` flag (not `panel`) — has
+    // to be checked too, or opening Settings specifically wouldn't cancel.
+    const cancelIfPanelOpened = (state: { panel: unknown; settingsOpen: boolean }) => {
+      if ((state.panel === null && !state.settingsOpen) || !selStateRef.current) return
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      cancelAnimationFrame(selRafRef.current!)
+      selStateRef.current = null
+      if (selBoxElRef.current) selBoxElRef.current.style.display = 'none'
+      useUIStore.getState().clearMultiSelect()
+    }
+    const unsubPanel = useUIStore.subscribe(cancelIfPanelOpened)
+
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0 || spaceHeld.current) return
       if (useUIStore.getState().mode !== 'edit') return
@@ -149,7 +166,9 @@ export default function BoardGrid() {
     cleanupRubber.current = () => {
       el.removeEventListener('pointerdown', onDown)
       window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
       cancelAnimationFrame(selRafRef.current!)
+      unsubPanel()
     }
   }, []) // stable — all state accessed via refs or store.getState()
 
