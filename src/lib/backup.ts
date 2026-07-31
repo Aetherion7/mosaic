@@ -1,7 +1,7 @@
 import { collectBlobRefs, exportBlobs } from '@/lib/blobStore'
 import type { Board } from '@/types'
 import type { TrashedBoard } from '@/store/boardStore'
-import type { CustomTheme, CustomTemplate, InstalledPlugin } from '@/store/settingsStore'
+import type { CustomTheme, CustomTemplate } from '@/store/settingsStore'
 
 // Shared by the "Daten"-settings-panel and the board-overview page — both
 // offer a full-backup export button and previously built this same payload
@@ -18,16 +18,15 @@ export function downloadJson(payload: unknown, filename: string) {
 export async function buildFullBackupPayload(
   boards: Record<string, Board>,
   trash: TrashedBoard[],
-  settings: { customThemes: CustomTheme[]; customTemplates: CustomTemplate[]; installedPlugins: InstalledPlugin[] },
+  settings: { customThemes: CustomTheme[]; customTemplates: CustomTemplate[] },
 ) {
   return {
     format:  'mosaic-backup' as const,
     version: 2,
     boards,
     settings: {
-      customThemes:     settings.customThemes,
-      customTemplates:  settings.customTemplates,
-      installedPlugins: settings.installedPlugins,
+      customThemes:    settings.customThemes,
+      customTemplates: settings.customTemplates,
     },
     blobs: await exportBlobs(collectBlobRefs({ boards, trash })),
   }

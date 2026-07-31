@@ -323,11 +323,11 @@ export function IconLinks({ size, strokeWidth }: P) {
     <polyline points="11,9 14,9 14,12"/>
   </Ic>
 }
-// Generisches Fallback-Icon für Plugin-Widgets (Puzzleteil) — dieselbe Form
-// wie der "Plugin hinzufügen"-Button in den Einstellungen (AddOnsPanel.tsx),
-// nur auf das 16er-Viewbox-Raster der übrigen Icons hier skaliert.
-export function IconPlugin({ size, strokeWidth }: P) {
+// Icon für das HTML-Widget (Code-Klammern) — eigene, per Nutzer eingefügte
+// HTML-Seite, live gerendert.
+export function IconHtml({ size, strokeWidth }: P) {
   return <Ic size={size} strokeWidth={strokeWidth}>
-    <path d="M2.67 2.67 L6 2.67 Q6 0.67 8 0.67 Q10 0.67 10 2.67 L13.33 2.67 L13.33 6 Q15.33 6 15.33 8 Q15.33 10 13.33 10 L13.33 13.33 L10 13.33 Q10 11.33 8 11.33 Q6 11.33 6 13.33 L2.67 13.33 L2.67 10 Q4.67 10 4.67 8 Q4.67 6 2.67 6 Z"/>
+    <polyline points="5.5,4 1.5,8 5.5,12"/>
+    <polyline points="10.5,4 14.5,8 10.5,12"/>
   </Ic>
 }

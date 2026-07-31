@@ -36,9 +36,10 @@ that look and behave exactly the way you want. Everything lives in your browser'
 is no mosaic server and no account, so there's nothing to sign up for and nothing that can lock you
 out of your own data.
 
-- **16 widget types** — task/habit tracking, notes with custom fonts/color/shadow/outline, calendar,
+- **17 widget types** — task/habit tracking, notes with custom fonts/color/shadow/outline, calendar,
   spreadsheet with formulas, drawboard, PDF/EPUB reader with highlights, charts, weather, map, clock,
-  timer, water and sleep tracking, agenda, quicklinks, and images.
+  timer, water and sleep tracking, agenda, quicklinks, images, and a sandboxed HTML widget for your
+  own pasted pages.
 - **18 built-in themes** (plus your own custom ones) — from Deep Space to Soft Light, each with its
   own accent colors and background pattern; every widget can additionally be styled individually.
 - **Optional AI assistant (bring your own key)** — connect your own Anthropic/OpenAI/Gemini (or any
@@ -146,6 +147,7 @@ the file back out of a terminal every time. The `.deb` install gets this the nor
 - Drag, resize, duplicate, lock, and style every widget
 - Undo/redo, board templates, folders, search
 - Import/export boards and full backups as JSON
+- HTML widget: paste any self-contained page and it renders live, sandboxed
 
 </td>
 <td width="50%">
@@ -204,6 +206,7 @@ A few things that aren't obvious from a feature list:
 - **Reminders that actually check your progress.** Water reminders stop once you've hit today's goal; the sleep reminder only fires if you haven't logged a bedtime yet; calendar reminders account for recurrence. All run in the background via a single scheduler, independent of which board is open.
 - **Nothing is really deleted right away.** Deleted boards go to Trash (restorable, auto-expiring) instead of vanishing, and you can save any board's layout as a reusable template.
 - **Calendars round-trip with the outside world.** Import an `.ics` file into a Calendar widget, or export your events back out as one — recurrence rules, colors, and all.
+- **An HTML widget that needs no hosting.** Paste or upload a self-contained `.html` file and it renders live in a sandboxed iframe — no external URL, no server, no install step. Flip to a built-in code view anytime to see or edit the exact source, or hit reload to restart it. Scripts run, but with no access to cookies/storage from any real origin and no way to reach the rest of the page.
 
 ## Getting started
 
@@ -258,6 +261,9 @@ The exceptions, all optional and all documented in-app under **Settings → Priv
 - The **quicklinks** widget fetches favicons from DuckDuckGo.
 - The **AI assistant**, if you enable and configure it, sends your messages directly to the provider
   you chose (your API key never touches anything but that provider).
+- The **HTML widget** renders whatever page you paste into it — if that page itself makes network
+  requests, that's the page's own doing, not mosaic's. It runs sandboxed (no access to your cookies,
+  storage, or any other origin).
 
 No tracking, no analytics, no ads.
 

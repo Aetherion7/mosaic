@@ -2,12 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useIsDesktop } from '@/hooks/useIsDesktop'
 import { useT } from '@/hooks/useT'
-
-interface UpdateInfo {
-  version: string
-  releaseNotes: string
-  releaseUrl: string
-}
+import { useUIStore } from '@/store/uiStore'
 
 // GitHub-Release-Notes kommen als HTML-String (electron-updater rendert das
 // Markdown-Body serverseitig). Nur .textContent der <li>-Einträge wird
@@ -40,22 +35,25 @@ function extractBullets(html: string): string[] {
 export default function UpdateAvailablePopup() {
   const t = useT()
   const isDesktop = useIsDesktop()
-  const [info, setInfo] = useState<UpdateInfo | null>(null)
-  const [visible, setVisible] = useState(false)
+  // Kommt aus dem globalen Store (ElectronBridge.tsx hält den einzigen
+  // onUpdateAvailable-Listener) statt einem eigenen lokalen State/Listener —
+  // sonst würde ein Update, das fertig herunterlädt während dieses Popup
+  // gerade nicht gemountet ist (es wird erst bei visible=true sichtbar),
+  // unbemerkt bleiben. "Cancel" blendet nur für die laufende Sitzung aus
+  // (dismissed), der Store-Wert selbst bleibt — GeneralPanel.tsx zeigt den
+  // bereitstehenden Update-Status unabhängig davon weiter an.
+  const info = useUIStore(s => s.pendingUpdate)
+  const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    if (!isDesktop || !window.mosaicDesktop) return
-    return window.mosaicDesktop.onUpdateAvailable(update => {
-      setInfo(update)
-      setVisible(true)
-    })
-  }, [isDesktop])
+    if (info) setDismissed(false)
+  }, [info])
 
   function installNow() {
     window.mosaicDesktop?.installUpdate()
   }
 
-  if (!visible || !info) return null
+  if (!isDesktop || !info || dismissed) return null
 
   const bullets = extractBullets(info.releaseNotes)
 
@@ -87,7 +85,7 @@ export default function UpdateAvailablePopup() {
         )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 2 }}>
-          <button onClick={() => setVisible(false)} style={{
+          <button onClick={() => setDismissed(true)} style={{
             fontSize: 12.5, fontWeight: 600, padding: '9px 16px', borderRadius: 9,
             border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer',
           }}>

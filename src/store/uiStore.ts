@@ -37,6 +37,12 @@ interface UIState {
   canvasView:         { x: number; y: number; zoom: number }
   pendingCanvasFocus: { col: number; row: number; colSpan: number; rowSpan: number } | null
   focusedId:          string | null   // Widget im Fokus-Modus (Vollbild-Overlay)
+  // Desktop-Update, fertig heruntergeladen und installationsbereit (s.
+  // ElectronBridge.tsx, das den einzigen `onUpdateAvailable`-Listener hält —
+  // globaler Store statt lokalem State, damit sowohl UpdateAvailablePopup.tsx
+  // als auch GeneralPanel.tsx es sehen, egal ob sie beim Eintreffen des
+  // Events überhaupt gemountet waren).
+  pendingUpdate: { version: string; releaseNotes: string; releaseUrl: string } | null
 
   setMode:               (m: UIMode) => void
   setFocusedWidget:      (id: string | null) => void
@@ -54,6 +60,7 @@ interface UIState {
   dismissToast:          (id: string) => void
   setCanvasView:         (x: number, y: number, zoom: number) => void
   setCanvasFocus:        (pos: { col: number; row: number; colSpan: number; rowSpan: number } | null) => void
+  setPendingUpdate:      (info: { version: string; releaseNotes: string; releaseUrl: string } | null) => void
 }
 
 export const useUIStore = create<UIState>()((set, get) => ({
@@ -68,6 +75,7 @@ export const useUIStore = create<UIState>()((set, get) => ({
   canvasView:         { x: 0, y: 0, zoom: 1 },
   pendingCanvasFocus: null,
   focusedId:          null,
+  pendingUpdate:      null,
 
   setMode:             (mode)  => set({ mode, panel: null, focusedId: null }),
   setFocusedWidget:    (id)    => set({ focusedId: id }),
@@ -110,4 +118,5 @@ export const useUIStore = create<UIState>()((set, get) => ({
 
   setCanvasView:  (x, y, zoom) => set({ canvasView: { x, y, zoom } }),
   setCanvasFocus: (pos) => set({ pendingCanvasFocus: pos }),
+  setPendingUpdate: (info) => set({ pendingUpdate: info }),
 }))

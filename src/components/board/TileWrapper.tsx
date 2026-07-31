@@ -19,7 +19,7 @@ import DrawboardWidget from '@/components/widgets/DrawboardWidget'
 import ClockWidget     from '@/components/widgets/ClockWidget'
 import WeatherWidget   from '@/components/widgets/WeatherWidget'
 import MapWidget       from '@/components/widgets/MapWidget'
-import PluginWidget    from '@/components/widgets/PluginWidget'
+import HtmlWidget      from '@/components/widgets/HtmlWidget'
 import SleepWidget      from '@/components/widgets/SleepWidget'
 import AgendaWidget     from '@/components/widgets/AgendaWidget'
 import QuicklinksWidget from '@/components/widgets/QuicklinksWidget'
@@ -27,7 +27,7 @@ import dynamic         from 'next/dynamic'
 const ReaderWidget = dynamic(() => import('@/components/widgets/ReaderWidget'), { ssr: false })
 import {
   IconTask, IconNote, IconTimer, IconWater, IconImage, IconCalendar, IconChart, IconTable, IconDraw, IconClock, IconWeather, IconMap, IconReader,
-  IconSleep, IconAgenda, IconLinks, IconPlugin,
+  IconSleep, IconAgenda, IconLinks, IconHtml,
   IconDrag, IconDuplicate, IconSliders, IconX, IconExpand,
 } from '@/components/ui/Icons'
 import WidgetErrorBoundary from './WidgetErrorBoundary'
@@ -59,22 +59,12 @@ export const TYPE_ICONS: Record<string, React.ReactNode> = {
   sleep:       <IconSleep size={13} />,
   agenda:      <IconAgenda size={13} />,
   quicklinks:  <IconLinks size={13} />,
-  // Generisches Fallback — einzelne Plugin-Widgets zeigen stattdessen ihr
-  // eigenes Icon, s. widgetTypeIcon() unten (Kopfzeilen kennen die konkrete
-  // Widget-Instanz; hier fehlte bisher überhaupt ein Eintrag, wodurch
-  // Plugin-Widgets an mehreren Stellen komplett ikonenlos erschienen).
-  plugin:      <IconPlugin size={13} />,
+  html:        <IconHtml size={13} />,
 }
 // Werte sind englische Quelltexte (Default-Sprache) — an Verwendungsstellen mit t() übersetzen
-export const TYPE_LABELS: Record<string, string> = { task:'Task', note:'Note', timer:'Timer', water:'Water', image:'Image', calendar:'Calendar', chart:'Chart', spreadsheet:'Table', drawboard:'Drawboard', clock:'Clock', weather:'Weather', map:'Map', plugin:'Plugin', reader:'Reader', sleep:'Sleep', agenda:'Agenda', quicklinks:'Quicklinks' }
+export const TYPE_LABELS: Record<string, string> = { task:'Task', note:'Note', timer:'Timer', water:'Water', image:'Image', calendar:'Calendar', chart:'Chart', spreadsheet:'Table', drawboard:'Drawboard', clock:'Clock', weather:'Weather', map:'Map', html:'HTML', reader:'Reader', sleep:'Sleep', agenda:'Agenda', quicklinks:'Quicklinks' }
 
-// Für Plugin-Widgets: das eigene Icon des installierten Plugins (in
-// widget.data.pluginIcon abgelegt, s. TilePicker.tsx) statt des generischen
-// TYPE_ICONS-Fallbacks — jedes Plugin bekommt so sein eigenes Symbol.
 export function widgetTypeIcon(widget: Widget): React.ReactNode {
-  if (widget.type === 'plugin' && widget.data?.pluginIcon) {
-    return <span style={{ fontSize: 13, lineHeight: 1 }}>{widget.data.pluginIcon}</span>
-  }
   return TYPE_ICONS[widget.type]
 }
 
@@ -159,7 +149,7 @@ export function TileContent({ widget }: { widget: Widget }) {
     case 'clock':       return <ClockWidget     widget={widget} />
     case 'weather':     return <WeatherWidget   widget={widget} />
     case 'map':         return <MapWidget        widget={widget} />
-    case 'plugin':      return <PluginWidget     widget={widget} />
+    case 'html':        return <HtmlWidget       widget={widget} />
     case 'sleep':       return <SleepWidget      widget={widget} />
     case 'agenda':      return <AgendaWidget     widget={widget} />
     case 'quicklinks':  return <QuicklinksWidget widget={widget} />

@@ -7,10 +7,12 @@ import type { CustomFont } from '@/store/settingsStore'
 import { FONT_OPTIONS, customFontStack, type FontOption } from '@/lib/fonts'
 import { saveBlob, deleteBlob } from '@/lib/blobStore'
 import { useT } from '@/hooks/useT'
-import { SectionTitle, HeaderStyleCard, AddCardButton, TemplateBox, THEME_JSON_TEMPLATE } from './shared'
+import { SectionTitle, HeaderStyleCard, AddCardButton, TemplateBox, THEME_JSON_TEMPLATE, Row } from './shared'
 
 export default function ErscheinungsbildPanel() {
   const headerStyle    = useSettings(s => s.headerStyle)
+  const animations     = useSettings(s => s.animations)
+  const showMinimap    = useSettings(s => s.showMinimap)
   const setSetting     = useSettings(s => s.setSetting)
   const t = useT()
   return (
@@ -55,6 +57,22 @@ export default function ErscheinungsbildPanel() {
         />
       </div>
 
+      <SectionTitle>{t('Board')}</SectionTitle>
+      <Row
+        label={t('Animations')}
+        desc={t('Turns decorative transitions and effects on or off across the entire app')}
+        value={animations}
+        onChange={v => setSetting({ animations: v })}
+      />
+      <div style={{ marginTop: 20 }}>
+        <Row
+          label={t('Minimap')}
+          desc={t('Shows a live overview of the board in the bottom-left corner')}
+          value={showMinimap}
+          onChange={v => setSetting({ showMinimap: v })}
+        />
+      </div>
+
       <SectionTitle>{t('Font')}</SectionTitle>
       <FontSection />
 
@@ -66,7 +84,7 @@ export default function ErscheinungsbildPanel() {
         onClick={() => {
           // Nur die Einstellungen zurücksetzen, die dieses Panel (Erscheinungsbild)
           // tatsächlich steuert — vorher wurde hier der komplette AppSettings-Store
-          // ersetzt, was auch fachfremde Felder wie disabledWidgetTypes/installedPlugins
+          // ersetzt, was auch fachfremde Felder wie disabledWidgetTypes
           // stillschweigend geleert hat.
           setSetting({
             headerStyle:   'default',

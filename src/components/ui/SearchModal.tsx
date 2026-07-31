@@ -11,17 +11,9 @@ import type { Widget } from '@/types'
 import {
   IconTask, IconNote, IconTimer, IconWater, IconImage,
   IconCalendar, IconChart, IconTable, IconDraw, IconClock,
-  IconWeather, IconMap, IconReader,
+  IconWeather, IconMap, IconReader, IconHtml,
   IconSleep, IconAgenda, IconLinks,
 } from '@/components/ui/Icons'
-
-function PluginIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/>
-    </svg>
-  )
-}
 
 const TYPE_ICON_MAP: Record<string, React.ReactNode> = {
   task:        <IconTask size={18} />,
@@ -37,7 +29,7 @@ const TYPE_ICON_MAP: Record<string, React.ReactNode> = {
   weather:     <IconWeather size={18} />,
   map:         <IconMap size={18} />,
   reader:      <IconReader size={18} />,
-  plugin:      <PluginIcon />,
+  html:        <IconHtml size={18} />,
   sleep:       <IconSleep size={18} />,
   agenda:      <IconAgenda size={18} />,
   quicklinks:  <IconLinks size={18} />,
@@ -200,7 +192,7 @@ export default function SearchModal({ onClose }: Props) {
                 background: 'var(--surface2)', border: '1px solid var(--border)',
                 color: 'var(--text2)',
               }}>
-                {TYPE_ICON_MAP[r.widget.type] ?? <PluginIcon />}
+                {TYPE_ICON_MAP[r.widget.type] ?? <IconHtml size={18} />}
               </span>
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

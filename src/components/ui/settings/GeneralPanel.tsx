@@ -1,17 +1,24 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { useSettings } from '@/store/settingsStore'
+import { useUIStore } from '@/store/uiStore'
 import type { Lang } from '@/lib/i18n'
 import { useT } from '@/hooks/useT'
 import { useIsDesktop } from '@/hooks/useIsDesktop'
 import { SectionTitle, SettingItem, Row } from './shared'
-import SlidingTabs from '@/components/ui/SlidingTabs'
-import AddOnsPanel from './AddOnsPanel'
 import { FontSection } from './ErscheinungsbildPanel'
+import { APP_VERSION } from '@/lib/version'
 
 const LANGUAGES: { id: Lang; label: string; native: string }[] = [
   { id: 'en', label: 'English', native: 'English' },
   { id: 'de', label: 'German',  native: 'Deutsch'  },
+]
+
+type ThemeMode = 'dark' | 'light' | 'system'
+const THEME_MODES: { id: ThemeMode; label: string }[] = [
+  { id: 'system', label: 'System' },
+  { id: 'light',  label: 'Light'  },
+  { id: 'dark',   label: 'Dark'   },
 ]
 
 // `home`: Board-Auswahl (Startseite) bekommt eine bewusst knappe Variante
@@ -20,11 +27,10 @@ const LANGUAGES: { id: Lang; label: string; native: string }[] = [
 export default function GeneralPanel({ onClose, home }: { onClose: () => void; home?: boolean }) {
   const homeThemeMode = useSettings(s => s.homeThemeMode)
   const language = useSettings(s => s.language)
-  const animations = useSettings(s => s.animations)
-  const showMinimap = useSettings(s => s.showMinimap)
   const showKbdHints = useSettings(s => s.showKbdHints)
   const launchAtLogin = useSettings(s => s.launchAtLogin)
   const keepRunningInBackground = useSettings(s => s.keepRunningInBackground)
+  const autoUpdateEnabled = useSettings(s => s.autoUpdateEnabled)
   const setSetting = useSettings(s => s.setSetting)
   const isDesktop = useIsDesktop()
   const t = useT()
@@ -32,25 +38,14 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
   if (home) {
     return (
       <div>
+        {isDesktop && <div style={{ marginBottom: 20 }}><VersionSection /></div>}
+
         {/* Einzeloptionen ohne eigene Überkategorie — Kategorie-Titel lohnen
             sich erst ab 2+ zusammengehörigen Optionen (s. "Desktop" unten). */}
         <SettingItem
           label={t('Theme')}
           desc={t('Light or dark look for the board overview page — independent of each board\'s own theme.')}
-          control={
-            <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, padding: 2 }}>
-              <SlidingTabs<'dark' | 'light' | 'system'>
-                options={[
-                  { value: 'dark',   label: t('Dark') },
-                  { value: 'light',  label: t('Light') },
-                  { value: 'system', label: t('System') },
-                ]}
-                value={homeThemeMode}
-                onChange={v => setSetting({ homeThemeMode: v })}
-                slotW={56} slotH={26} radius={8} fontSize={10.5}
-              />
-            </div>
-          }
+          control={<ThemeModeSelect value={homeThemeMode} onChange={v => setSetting({ homeThemeMode: v })} />}
         />
 
         <div style={{ marginTop: 20 }}>
@@ -92,6 +87,12 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
               value={keepRunningInBackground}
               onChange={v => setSetting({ keepRunningInBackground: v })}
             />
+            <Row
+              label={t('Automatic updates')}
+              desc={t('Download and install new versions automatically in the background')}
+              value={autoUpdateEnabled}
+              onChange={v => setSetting({ autoUpdateEnabled: v })}
+            />
           </>
         )}
       </div>
@@ -100,6 +101,8 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
 
   return (
     <div>
+      {isDesktop && <div style={{ marginBottom: 20 }}><VersionSection /></div>}
+
       {/* Einzeloptionen ohne eigene Überkategorie — Kategorie-Titel lohnen sich
           erst ab 2+ zusammengehörigen Optionen (s. "Desktop" unten). Trotzdem
           sichtbar per marginTop voneinander getrennt statt kommentarlos
@@ -109,22 +112,6 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
         desc={t('Switches every label, button and message in the app')}
         control={<LanguageSelect value={language} onChange={lng => setSetting({ language: lng })} />}
       />
-      <div style={{ marginTop: 20 }}>
-        <Row
-          label={t('Animations')}
-          desc={t('Turns decorative transitions and effects on or off across the entire app')}
-          value={animations}
-          onChange={v => setSetting({ animations: v })}
-        />
-      </div>
-      <div style={{ marginTop: 20 }}>
-        <Row
-          label={t('Minimap')}
-          desc={t('Shows a live overview of the board in the bottom-left corner')}
-          value={showMinimap}
-          onChange={v => setSetting({ showMinimap: v })}
-        />
-      </div>
       <div style={{ marginTop: 20 }}>
         <Row
           label={t('Keyboard shortcut hints')}
@@ -148,6 +135,12 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
             desc={t('Keep mosaic running in the background after closing the window, so reminders can still arrive')}
             value={keepRunningInBackground}
             onChange={v => setSetting({ keepRunningInBackground: v })}
+          />
+          <Row
+            label={t('Automatic updates')}
+            desc={t('Download and install new versions automatically in the background')}
+            value={autoUpdateEnabled}
+            onChange={v => setSetting({ autoUpdateEnabled: v })}
           />
         </>
       )}
@@ -173,8 +166,153 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
           </button>
         }
       />
+    </div>
+  )
+}
 
-      <AddOnsPanel />
+type CheckStatus = 'idle' | 'checking' | 'not-available' | 'error'
+
+// Aktuelle Version + Update-Stand oben in Allgemein — `ready` kommt aus dem
+// globalen uiStore (s. ElectronBridge.tsx), `status` ist rein lokal: er
+// spiegelt nur einen manuellen Check über den Button unten, der ohnehin nur
+// Sinn ergibt, während dieses Panel offen ist.
+function VersionSection() {
+  const t = useT()
+  const ready = useUIStore(s => s.pendingUpdate)
+  const [status, setStatus] = useState<CheckStatus>('idle')
+
+  useEffect(() => {
+    if (!window.mosaicDesktop) return
+    return window.mosaicDesktop.onUpdateStatus(info => setStatus(info.status))
+  }, [])
+
+  function check() {
+    setStatus('checking')
+    window.mosaicDesktop?.checkForUpdates()
+  }
+
+  const checking = status === 'checking' && !ready
+  const releaseUrl = ready?.releaseUrl ?? 'https://github.com/Aetherion7/mosaic/releases'
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+      padding: '14px 16px', borderRadius: 12,
+      border: '1px solid var(--border)', background: 'var(--surface2)',
+    }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)' }}>
+          {t('Version')} {APP_VERSION}
+        </div>
+        {ready ? (
+          <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3 }}>
+            {t('Installer version')}: {ready.version} — {t('A new version is ready to install.')}
+          </div>
+        ) : checking ? (
+          <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 3 }}>{t('Checking for updates…')}</div>
+        ) : status === 'error' ? (
+          <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 3 }}>{t('Update check failed.')}</div>
+        ) : null}
+        <a href={releaseUrl} target="_blank" rel="noopener noreferrer"
+          style={{ fontSize: 11.5, color: 'var(--accent)', marginTop: 4, display: 'inline-block' }}>
+          {t('Read the changelog')}
+        </a>
+      </div>
+      <button
+        onClick={ready ? () => window.mosaicDesktop?.installUpdate() : check}
+        disabled={checking}
+        style={{
+          flexShrink: 0, fontSize: 12.5, fontWeight: 700, padding: '9px 16px', borderRadius: 999, border: 'none',
+          background: ready ? 'var(--accent)' : 'var(--surface3)',
+          color: ready ? 'white' : 'var(--text2)',
+          cursor: checking ? 'default' : 'pointer',
+          opacity: checking ? 0.6 : 1,
+        }}
+      >
+        {ready ? t('Restart to update') : checking ? t('Checking…') : t('Check for updates')}
+      </button>
+    </div>
+  )
+}
+
+// Ein Dropdown statt der früheren 3-Wege-Sliding-Tabs — gleiches Muster wie
+// LanguageSelect direkt darunter.
+function ThemeModeSelect({ value, onChange }: { value: ThemeMode; onChange: (m: ThemeMode) => void }) {
+  const t = useT()
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onDown(e: MouseEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [open])
+
+  const current = THEME_MODES.find(m => m.id === value) ?? THEME_MODES[0]
+
+  return (
+    <div ref={rootRef} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '6px 10px', borderRadius: 8,
+          border: `1.5px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
+          background: 'var(--surface2)', cursor: 'pointer',
+          fontSize: 12.5, fontWeight: 600, color: 'var(--text1)', whiteSpace: 'nowrap',
+          transition: 'border-color 0.12s',
+        }}
+      >
+        {t(current.label)}
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div role="listbox" style={{
+          position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 20,
+          minWidth: 130,
+          background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+          backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+          border: '1px solid var(--border)', borderRadius: 10,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.35)', overflow: 'hidden',
+        }}>
+          {THEME_MODES.map(mode => {
+            const active = mode.id === value
+            return (
+              <button
+                key={mode.id}
+                role="option"
+                aria-selected={active}
+                onClick={() => { onChange(mode.id); setOpen(false) }}
+                style={{
+                  display: 'flex', alignItems: 'center', width: '100%',
+                  padding: '9px 12px', border: 'none', cursor: 'pointer', textAlign: 'left',
+                  background: active ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'transparent',
+                }}
+                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface2)' }}
+                onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+              >
+                <span style={{ fontSize: 13, fontWeight: active ? 700 : 500, color: active ? 'var(--accent)' : 'var(--text1)' }}>
+                  {t(mode.label)}
+                </span>
+                {active && (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginLeft: 'auto' }}>
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

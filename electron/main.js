@@ -37,6 +37,10 @@ let isQuitting = false
 // Einstellungswert) — der Hauptprozess hat selbst keinen Zugriff auf den
 // zustand-Store, der im Renderer-localStorage liegt.
 let keepInBackground = false
+// Vom Renderer gespiegelt (s. ElectronBridge.tsx) — steuert nur den
+// AUTOMATISCHEN Check beim Start; ein manueller Check (Settings-Button,
+// Mac-Menü) funktioniert unabhängig davon immer.
+let autoUpdateEnabled = true
 // Verhindert doppelte autoUpdater-Listener, wenn checkForUpdates() mehrfach
 // aufgerufen wird (einmal beim Start, danach jederzeit über "Check for
 // Updates…" im Mac-Menü) — die Listener selbst sollen nur einmal angehängt
@@ -326,6 +330,9 @@ ipcMain.handle('desktop:set-launch-at-login', (_e, enabled) => {
 ipcMain.handle('desktop:set-keep-in-background', (_e, enabled) => {
   keepInBackground = !!enabled
 })
+ipcMain.handle('desktop:set-auto-update-enabled', (_e, enabled) => {
+  autoUpdateEnabled = !!enabled
+})
 ipcMain.handle('update:install', () => {
   // isQuitting muss hier NICHT gesetzt werden — quitAndInstall() beendet die
   // App direkt selbst und startet die neue Version, umgeht also ohnehin den
@@ -333,6 +340,7 @@ ipcMain.handle('update:install', () => {
   const { autoUpdater } = require('electron-updater')
   autoUpdater.quitAndInstall()
 })
+ipcMain.handle('update:check', () => checkForUpdates(true))
 
 // ── App-Menü ─────────────────────────────────────────────────────────────
 // mosaic hat seine eigene Oberfläche (TopBar, Einstellungen-Panel mit GitHub-
@@ -397,9 +405,22 @@ function notifyRendererOfUpdate(info) {
   })
 }
 
+// `manual`: true for an explicit user-triggered check (Settings button, Mac
+// menu) — always runs, regardless of the auto-update setting. A `false`
+// (startup) call is skipped entirely if the user turned auto-update off, so
+// disabling it actually stops mosaic from silently downloading updates
+// rather than just hiding the notification.
+function sendUpdateStatus(status) {
+  mainWindow?.webContents.send('update:status', { status })
+}
+
 function checkForUpdates(manual = false) {
   if (isDev) {
     if (manual) console.log('[mosaic] Auto-update is disabled in development.')
+    return
+  }
+  if (!manual && !autoUpdateEnabled) {
+    console.log('[mosaic] Skipping startup update check — auto-update is disabled.')
     return
   }
   const { autoUpdater } = require('electron-updater')
@@ -407,10 +428,16 @@ function checkForUpdates(manual = false) {
   if (!updateListenersAttached) {
     updateListenersAttached = true
     autoUpdater.on('update-downloaded', notifyRendererOfUpdate)
-    autoUpdater.on('error', err => console.error('[mosaic] Update error:', err))
+    autoUpdater.on('update-not-available', () => sendUpdateStatus('not-available'))
+    autoUpdater.on('error', err => {
+      console.error('[mosaic] Update error:', err)
+      sendUpdateStatus('error')
+    })
   }
+  if (manual) sendUpdateStatus('checking')
   autoUpdater.checkForUpdates().catch(err => {
     console.error('[mosaic] Update check failed:', err)
+    sendUpdateStatus('error')
   })
 }
 

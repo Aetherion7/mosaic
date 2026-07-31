@@ -229,6 +229,23 @@ function _migrateTextWidgetsToNote(board: Board): Board {
   return changed ? { ...board, widgets } : board
 }
 
+// Das frühere Plugin/Add-on-Widget (installierbare Bibliothek mit
+// pluginId/pluginName/pluginIcon/pluginDesc/embedUrl) wurde durch das
+// einfachere HTML-Widget ersetzt, das nur noch den rohen HTML-Quelltext
+// pro Widget-Instanz hält — keine getrennte Installations-Liste mehr.
+function _migratePluginWidgetsToHtml(board: Board): Board {
+  let changed = false
+  const widgets: Record<string, Widget> = { ...board.widgets }
+  for (const [wId, w] of Object.entries(widgets)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((w.type as any) === 'plugin') {
+      widgets[wId] = { ...w, type: 'html', data: { html: String(w.data?.html ?? '') } }
+      changed = true
+    }
+  }
+  return changed ? { ...board, widgets } : board
+}
+
 // ─── Compact layout helper ────────────────────────────────────────────────────
 // Removes empty column and row gaps between widgets while preserving the 2D
 // structure. Only remaps coordinates — colSpan/rowSpan stay unchanged.
@@ -608,7 +625,7 @@ export const useBoardStore = create<S>()(
     }),
     {
       name: 'planboard-v2',
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() => idbStorage),
       partialize: (s) => ({ boards: s.boards, currentBoardId: s.currentBoardId, trash: s.trash }),
       migrate: (persisted: unknown, fromVersion: number) => {
@@ -627,6 +644,14 @@ export const useBoardStore = create<S>()(
             newBoards[id] = _migrateTextWidgetsToNote(board)
           }
           const newTrash = s.trash?.map(t => ({ ...t, board: _migrateTextWidgetsToNote(t.board) }))
+          s = { ...s, boards: newBoards, ...(newTrash ? { trash: newTrash } : {}) }
+        }
+        if (fromVersion < 4 && s?.boards) {
+          const newBoards: Record<string, Board> = {}
+          for (const [id, board] of Object.entries(s.boards)) {
+            newBoards[id] = _migratePluginWidgetsToHtml(board)
+          }
+          const newTrash = s.trash?.map(t => ({ ...t, board: _migratePluginWidgetsToHtml(t.board) }))
           s = { ...s, boards: newBoards, ...(newTrash ? { trash: newTrash } : {}) }
         }
         return s

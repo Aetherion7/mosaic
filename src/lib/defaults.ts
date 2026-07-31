@@ -64,7 +64,7 @@ const DEFAULT_SPANS: Record<WidgetType, { colSpan: number; rowSpan: number }> = 
   clock:       { colSpan: 4, rowSpan: 2 },
   weather:     { colSpan: 4, rowSpan: 2 },
   map:         { colSpan: 6, rowSpan: 3 },
-  plugin:      { colSpan: 4, rowSpan: 2 },
+  html:        { colSpan: 4, rowSpan: 2 },
   reader:      { colSpan: 6, rowSpan: 4 },
   sleep:       { colSpan: 4, rowSpan: 2 },
   agenda:      { colSpan: 3, rowSpan: 2 },
@@ -186,8 +186,8 @@ export function defaultWidget(
       return { ...base, type, data: { manualCity: '', unit: 'celsius' } }
     case 'map':
       return { ...base, type, data: { centerLat: 51.505, centerLng: -0.09, zoom: 13, markers: [], routes: [] } }
-    case 'plugin':
-      return { ...base, type, data: { pluginId: '', pluginName: 'Plugin', pluginIcon: '🧩', pluginDesc: '' } }
+    case 'html':
+      return { ...base, type, data: { html: '' } }
     case 'reader':
       return { ...base, type, data: { highlights: {}, currentPage: 1 } }
     case 'sleep':

@@ -99,16 +99,6 @@ export const THEME_JSON_TEMPLATE = `{
   }
 }`
 
-export const PLUGIN_JSON_TEMPLATE = `{
-  "id":       "my-plugin",
-  "name":     "My Plugin",
-  "icon":     "🧩",
-  "desc":     "Short description",
-  "version":  "1.0.0",
-  "author":   "Your Name",
-  "embedUrl": "https://example.com/widget"
-}`
-
 export function downloadJson(filename: string, content: string) {
   const blob = new Blob([content], { type: 'application/json' })
   const url  = URL.createObjectURL(blob)
@@ -119,7 +109,7 @@ export function downloadJson(filename: string, content: string) {
   URL.revokeObjectURL(url)
 }
 
-// Karten-Button zum Öffnen der JSON-Formulare (Theme / Plugin)
+// Karten-Button zum Öffnen des JSON-Formulars (Theme)
 export function AddCardButton({ title, desc, icon, onClick }: { title: string; desc: string; icon: React.ReactNode; onClick: () => void }) {
   const [hover, setHover] = useState(false)
   return (

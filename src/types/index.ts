@@ -283,13 +283,8 @@ export interface DrawboardData {
   elements: DrawElement[]
 }
 
-export interface PluginWidgetData {
-  pluginId:   string
-  pluginName: string
-  pluginIcon: string
-  pluginDesc: string
-  embedUrl?:  string
-  html?:      string   // self-contained plugin page source — rendered via a Blob URL, no hosting needed
+export interface HtmlWidgetData {
+  html?: string   // user-pasted page source — rendered via a Blob URL, no hosting needed
 }
 
 // Specific data types exist for individual widget components to import and cast to.
@@ -300,7 +295,7 @@ export type WidgetData = Record<string, any>
 export type WidgetType =
   | 'task' | 'note' | 'timer'
   | 'water' | 'image' | 'calendar' | 'chart' | 'spreadsheet' | 'drawboard'
-  | 'clock' | 'weather' | 'map' | 'plugin' | 'reader'
+  | 'clock' | 'weather' | 'map' | 'html' | 'reader'
   | 'sleep' | 'agenda' | 'quicklinks'
 
 export interface Widget {

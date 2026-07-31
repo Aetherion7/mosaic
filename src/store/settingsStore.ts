@@ -3,17 +3,6 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { BoardBg, WidgetStyle, WidgetType } from '@/types'
 
-export interface InstalledPlugin {
-  id:       string
-  name:     string
-  icon:     string
-  desc:     string
-  version:  string
-  author?:  string
-  embedUrl?: string
-  html?:    string   // self-contained plugin page source — no hosting needed, rendered via a Blob URL
-}
-
 // Eigenes Theme des Nutzers — wie ThemePreset, aber mit freier ID.
 // Fehlende cssVars werden beim Anwenden vom Deep-Space-Default aufgefüllt.
 export interface CustomTheme {
@@ -72,7 +61,6 @@ export interface AppSettings {
   headerStyle:            'default' | 'island'
   programFont:            string   // Schrift der gesamten Oberfläche (Startseite, Einstellungen, Boards ohne eigene Board-Schrift)
   disabledWidgetTypes:    string[]
-  installedPlugins:       InstalledPlugin[]
   customThemes:           CustomTheme[]
   customTemplates:        CustomTemplate[]
   customFonts:            CustomFont[]
@@ -101,6 +89,7 @@ export interface AppSettings {
   launchAtLogin:           boolean
   keepRunningInBackground: boolean
   hasSeenStartupPrompt:    boolean
+  autoUpdateEnabled:       boolean   // aus = main.js prüft/lädt keine Updates automatisch (manuelles Prüfen bleibt möglich)
   // ── KI-Assistent (BYOK — Schlüssel bleibt lokal, s. KONZEPT.md §15) ──
   aiEnabled:              boolean   // aus = Button & Funktion komplett ausgeblendet
   aiProvider:             AiProvider
@@ -112,8 +101,6 @@ export interface AppSettings {
 interface SettingsStore extends AppSettings {
   setSetting:        (patch: Partial<AppSettings>) => void
   toggleWidgetType:  (type: string) => void
-  installPlugin:     (plugin: InstalledPlugin) => void
-  uninstallPlugin:   (id: string) => void
   addCustomTheme:    (theme: CustomTheme) => void
   removeCustomTheme: (id: string) => void
   addCustomTemplate:    (tpl: CustomTemplate) => void
@@ -133,7 +120,6 @@ export const useSettings = create<SettingsStore>()(
       headerStyle:            'default',
       programFont:            'inter',
       disabledWidgetTypes:    [],
-      installedPlugins:       [],
       customThemes:           [],
       customTemplates:        [],
       customFonts:            [],
@@ -145,7 +131,7 @@ export const useSettings = create<SettingsStore>()(
       statsDisabledTypes:     [],
       lastThemeId:            null,
       defaultThemeId:         'dark',
-      homeThemeMode:          'dark',
+      homeThemeMode:          'system',
       folders:                [],
       folderColors:           {},
       hasSeenTutorial:        false,
@@ -155,6 +141,7 @@ export const useSettings = create<SettingsStore>()(
       launchAtLogin:           false,
       keepRunningInBackground: false,
       hasSeenStartupPrompt:    false,
+      autoUpdateEnabled:       true,
       aiEnabled:              true,
       aiProvider:             '',
       aiApiKey:               '',
@@ -165,12 +152,6 @@ export const useSettings = create<SettingsStore>()(
         disabledWidgetTypes: s.disabledWidgetTypes.includes(type)
           ? s.disabledWidgetTypes.filter(t => t !== type)
           : [...s.disabledWidgetTypes, type],
-      })),
-      installPlugin:    (plugin) => set(s => ({
-        installedPlugins: [...s.installedPlugins.filter(p => p.id !== plugin.id), plugin],
-      })),
-      uninstallPlugin:  (id) => set(s => ({
-        installedPlugins: s.installedPlugins.filter(p => p.id !== id),
       })),
       addCustomTheme:   (theme) => set(s => ({
         customThemes: [...s.customThemes.filter(t => t.id !== theme.id), theme],

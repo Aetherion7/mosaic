@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useSettings } from '@/store/settingsStore'
-import type { CustomTheme, InstalledPlugin } from '@/store/settingsStore'
+import type { CustomTheme } from '@/store/settingsStore'
 import { importBlobs } from '@/lib/blobStore'
 import { buildFullBackupPayload, buildBoardBackupPayload, downloadJson, boardExportFilename, fullBackupFilename } from '@/lib/backup'
 import { useT } from '@/hooks/useT'
@@ -61,7 +61,7 @@ export default function DatenPanel() {
   const [importOk,     setImportOk]     = useState<string | null>(null)
   const [pendingImport, setPendingImport] = useState<{
     boards: Record<string, import('@/types').Board>
-    settings?: { customThemes?: CustomTheme[]; customTemplates?: unknown[]; installedPlugins?: InstalledPlugin[] }
+    settings?: { customThemes?: CustomTheme[]; customTemplates?: unknown[] }
     collisions: string[]
   } | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
@@ -70,7 +70,7 @@ export default function DatenPanel() {
   const widgetCount = Object.values(boards).reduce((n, b) => n + Object.keys(b.widgets).length, 0)
   const backup      = lastExportAt ? formatBackupAge(lastExportAt, t) : null
 
-  // Vollständiges Backup: Boards + eigene Themes/Vorlagen/Plugins + Binärdaten (Bilder, PDFs)
+  // Vollständiges Backup: Boards + eigene Themes/Vorlagen + Binärdaten (Bilder, PDFs)
   async function exportAll() {
     const s       = useSettings.getState()
     const trash   = useBoardStore.getState().trash
@@ -95,15 +95,14 @@ export default function DatenPanel() {
       && !Array.isArray((b as { widgets?: unknown }).widgets)
   }
 
-  // Eigene Themes/Vorlagen/Plugins aus einem Backup einspielen (per ID zusammenführen, nichts überschreiben)
+  // Eigene Themes/Vorlagen aus einem Backup einspielen (per ID zusammenführen, nichts überschreiben)
   function mergeImportedSettings(imp: NonNullable<NonNullable<typeof pendingImport>['settings']>) {
     const s = useSettings.getState()
     const mergeById = <T extends { id: string }>(cur: T[], add: unknown): T[] =>
       Array.isArray(add) ? [...cur, ...(add as T[]).filter(a => a && typeof a.id === 'string' && !cur.some(c => c.id === a.id))] : cur
     s.setSetting({
-      customThemes:     mergeById(s.customThemes,     imp.customThemes),
-      customTemplates:  mergeById(s.customTemplates,  imp.customTemplates),
-      installedPlugins: mergeById(s.installedPlugins, imp.installedPlugins),
+      customThemes:    mergeById(s.customThemes,    imp.customThemes),
+      customTemplates: mergeById(s.customTemplates, imp.customTemplates),
     })
   }
 

@@ -7,12 +7,12 @@ import { useSettings } from '@/store/settingsStore'
 import { useFocusTrap } from '@/hooks/useFocusTrap'
 import { useT } from '@/hooks/useT'
 import { defaultWidget, findNextPos, findPosNear } from '@/lib/defaults'
-import { INFINITE_COL_W, INFINITE_GRID_COLS, GRID_GAP, GRID_ROW_H } from './TileWrapper'
+import { INFINITE_COL_W, INFINITE_GRID_COLS, GRID_GAP } from './TileWrapper'
 import { getTheme } from '@/lib/themes'
 import type { WidgetType } from '@/types'
 import {
   IconTask, IconNote, IconTimer, IconWater, IconImage, IconCalendar, IconChart, IconTable, IconDraw, IconClock, IconWeather, IconMap, IconReader,
-  IconSleep, IconAgenda, IconLinks,
+  IconSleep, IconAgenda, IconLinks, IconHtml,
 } from '@/components/ui/Icons'
 
 // label/desc sind englische Quelltexte (Default-Sprache) — TileCard übersetzt sie selbst mit t()
@@ -39,6 +39,7 @@ export const TILES: { type: WidgetType; icon: React.ReactNode; label: string; de
   { type: 'sleep',       icon: <IconSleep />,      label: 'Sleep',      desc: 'Track daily sleep duration' },
   { type: 'agenda',      icon: <IconAgenda />,     label: 'Agenda',     desc: 'Upcoming events at a glance' },
   { type: 'quicklinks',  icon: <IconLinks />,      label: 'Quicklinks', desc: 'Quick access to websites' },
+  { type: 'html',        icon: <IconHtml />,       label: 'HTML',       desc: 'Paste your own HTML page — rendered live' },
 ]
 
 function TileCard({
@@ -124,7 +125,6 @@ export default function TilePicker() {
   const panel            = useUIStore(s => s.panel)
   const openPanel        = useUIStore(s => s.openPanel)
   const disabledTypes    = useSettings(s => s.disabledWidgetTypes)
-  const installedPlugins = useSettings(s => s.installedPlugins)
 
   const [hovered,     setHovered]     = useState<string | null>(null)
   const [search,      setSearch]      = useState('')
@@ -141,18 +141,7 @@ export default function TilePicker() {
   useEffect(() => { if (!isOpen) setSearch('') }, [isOpen])
   useFocusTrap(desktopRef, isOpen)
 
-  const pluginTiles = installedPlugins.map(p => ({
-    type: 'plugin' as WidgetType,
-    icon: <span style={{ fontSize: 28 }}>{p.icon}</span>,
-    label: p.name,
-    desc: p.desc,
-    pluginId: p.id,
-  }))
-
-  const allTiles = [
-    ...TILES.filter(tile => !disabledTypes.includes(tile.type)),
-    ...pluginTiles,
-  ]
+  const allTiles = TILES.filter(tile => !disabledTypes.includes(tile.type))
 
   const q = search.toLowerCase()
   const filteredTiles = q.trim()
@@ -163,7 +152,7 @@ export default function TilePicker() {
       )
     : allTiles
 
-  function add(type: WidgetType, pluginId?: string) {
+  function add(type: WidgetType) {
     const b = board ?? useBoardStore.getState().boards[useBoardStore.getState().currentBoardId]
     if (!b) return
     const theme = getTheme(b.themeId)
@@ -183,11 +172,7 @@ export default function TilePicker() {
       pos = findNextPos(b.widgets, type)
     }
     const w = defaultWidget(type, pos, theme.widgetStyle)
-    if (pluginId) {
-      const plugin = useSettings.getState().installedPlugins.find(p => p.id === pluginId)
-      if (plugin) w.data = { pluginId: plugin.id, pluginName: plugin.name, pluginIcon: plugin.icon, pluginDesc: plugin.desc, embedUrl: plugin.embedUrl, html: plugin.html }
-    }
-    pushRecentType(pluginId ? `plugin-${pluginId}` : type)
+    pushRecentType(type)
     addWidget(w)
     useUIStore.getState().setLastAddedWidget(w.id)
     openPanel(null)
@@ -248,7 +233,7 @@ export default function TilePicker() {
                   {/* Zuletzt benutzt */}
                   {!search && recentTypes.length > 0 && (() => {
                     const recentTiles = recentTypes
-                      .map(key => allTiles.find(t => (key.startsWith('plugin-') ? `plugin-${'pluginId' in t ? (t as {pluginId:string}).pluginId : ''}` : t.type) === key))
+                      .map(key => allTiles.find(t => t.type === key))
                       .filter(Boolean) as typeof allTiles
                     if (!recentTiles.length) return null
                     return (
@@ -257,12 +242,10 @@ export default function TilePicker() {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, overflow: 'hidden' }}>
                           <AnimatePresence>
                             {recentTiles.map((t, i) => {
-                              const pid = 'pluginId' in t ? (t as {pluginId:string}).pluginId : undefined
-                              const key = pid ? `plugin-${pid}` : t.type
-                              const hvr = `recent-${key}`
+                              const hvr = `recent-${t.type}`
                               return (
                                 <motion.div
-                                  key={`recent-${key}`}
+                                  key={`recent-${t.type}`}
                                   initial={{ x: -24, opacity: 0 }}
                                   animate={{ x: 0, opacity: 1 }}
                                   exit={{ x: 24, opacity: 0 }}
@@ -271,7 +254,7 @@ export default function TilePicker() {
                                 >
                                   <TileCard icon={t.icon} label={t.label} desc={t.desc}
                                     hovered={hovered === hvr} onHover={() => setHovered(hvr)} onLeave={() => setHovered(null)}
-                                    onClick={() => add(t.type, pid)} />
+                                    onClick={() => add(t.type)} />
                                 </motion.div>
                               )
                             })}
@@ -283,17 +266,12 @@ export default function TilePicker() {
                   })()}
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
-                    {filteredTiles.map(t => {
-                      const pid = 'pluginId' in t ? (t as { pluginId: string }).pluginId : undefined
-                      const key = pid ? `plugin-${pid}` : t.type
-                      const hvr = pid ? `plugin-${pid}` : t.type
-                      return (
-                        <TileCard key={key} icon={t.icon} label={t.label} desc={t.desc}
-                          id={!pid && t.type === 'task' ? 'tour-tile-task' : undefined}
-                          hovered={hovered === hvr} onHover={() => setHovered(hvr)} onLeave={() => setHovered(null)}
-                          onClick={() => add(t.type, pid)} />
-                      )
-                    })}
+                    {filteredTiles.map(t => (
+                      <TileCard key={t.type} icon={t.icon} label={t.label} desc={t.desc}
+                        id={t.type === 'task' ? 'tour-tile-task' : undefined}
+                        hovered={hovered === t.type} onHover={() => setHovered(t.type)} onLeave={() => setHovered(null)}
+                        onClick={() => add(t.type)} />
+                    ))}
                   </div>
                   {filteredTiles.length === 0 && <EmptySearch query={search} />}
                 </div>

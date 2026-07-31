@@ -2,7 +2,7 @@ import type { WidgetType } from '@/types'
 import {
   IconTask, IconNote, IconTimer, IconWater, IconImage,
   IconCalendar, IconChart, IconTable, IconDraw, IconClock, IconWeather, IconMap, IconReader,
-  IconSleep, IconAgenda, IconLinks,
+  IconSleep, IconAgenda, IconLinks, IconHtml,
 } from '@/components/ui/Icons'
 
 // Reihenfolge + Beschreibung der einzeln in der Einstellungs-Sidebar gelisteten
@@ -29,4 +29,5 @@ export const BUILT_IN_WIDGETS: { type: WidgetType; icon: React.ReactNode; desc: 
   { type: 'sleep',       icon: <IconSleep size={18} />,      desc: 'Track daily sleep duration' },
   { type: 'agenda',      icon: <IconAgenda size={18} />,     desc: 'Upcoming events at a glance' },
   { type: 'quicklinks',  icon: <IconLinks size={18} />,      desc: 'Quick access to websites' },
+  { type: 'html',        icon: <IconHtml size={18} />,       desc: 'Paste your own HTML page — rendered live' },
 ]

@@ -1,16 +1,21 @@
 'use client'
 import { useEffect } from 'react'
 import { useSettings } from '@/store/settingsStore'
+import { useUIStore } from '@/store/uiStore'
 
 declare global {
   interface Window {
     // Nur im Electron-Build vorhanden (s. electron/preload.js) — im Browser
     // schlicht undefined, jeder Aufruf unten also folgenlos.
     mosaicDesktop?: {
-      setLaunchAtLogin:    (enabled: boolean) => Promise<void>
-      setKeepInBackground: (enabled: boolean) => Promise<void>
+      setLaunchAtLogin:     (enabled: boolean) => Promise<void>
+      setKeepInBackground:  (enabled: boolean) => Promise<void>
+      setAutoUpdateEnabled: (enabled: boolean) => Promise<void>
       // s. UpdateAvailablePopup.tsx
       onUpdateAvailable: (callback: (info: { version: string; releaseNotes: string; releaseUrl: string }) => void) => () => void
+      // s. GeneralPanel.tsx — leichtgewichtige Zwischenstände (checking/not-available/error)
+      onUpdateStatus: (callback: (info: { status: 'checking' | 'not-available' | 'error' }) => void) => () => void
+      checkForUpdates: () => Promise<void>
       installUpdate: () => Promise<void>
     }
   }
@@ -25,6 +30,7 @@ declare global {
 export default function ElectronBridge() {
   const launchAtLogin           = useSettings(s => s.launchAtLogin)
   const keepRunningInBackground = useSettings(s => s.keepRunningInBackground)
+  const autoUpdateEnabled       = useSettings(s => s.autoUpdateEnabled)
 
   useEffect(() => {
     window.mosaicDesktop?.setLaunchAtLogin(launchAtLogin)
@@ -33,6 +39,24 @@ export default function ElectronBridge() {
   useEffect(() => {
     window.mosaicDesktop?.setKeepInBackground(keepRunningInBackground)
   }, [keepRunningInBackground])
+
+  useEffect(() => {
+    window.mosaicDesktop?.setAutoUpdateEnabled(autoUpdateEnabled)
+  }, [autoUpdateEnabled])
+
+  // Einziger onUpdateAvailable-Listener der ganzen App, hier statt in
+  // UpdateAvailablePopup.tsx/GeneralPanel.tsx: die dortigen Komponenten sind
+  // nur gemountet, während das jeweilige Popup/Settings-Panel offen ist — ein
+  // im Hintergrund fertig heruntergeladenes Update würde ihren lokalen State
+  // sonst für immer verpassen, wenn es feuert, während beide gerade nicht
+  // gemountet sind. In den globalen (nicht persistierten) UI-Store schreiben
+  // statt lokalem State macht es für beide sichtbar, unabhängig vom Mount-Zeitpunkt.
+  useEffect(() => {
+    if (!window.mosaicDesktop) return
+    return window.mosaicDesktop.onUpdateAvailable(info => {
+      useUIStore.getState().setPendingUpdate(info)
+    })
+  }, [])
 
   return null
 }
