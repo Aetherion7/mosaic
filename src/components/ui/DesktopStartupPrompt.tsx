@@ -70,6 +70,7 @@ export default function DesktopStartupPrompt() {
           desc={t('Keep mosaic running in the background after closing the window, so reminders can still arrive')}
           value={background}
           onChange={setBackground}
+          last
         />
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>

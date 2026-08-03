@@ -468,9 +468,9 @@ export default function MapWidget({ widget }: { widget: Widget }) {
               border: '1px solid var(--border)', borderRadius: 8,
               overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
             }}>
-              {searchResults.map(r => (
+              {searchResults.map((r, i) => (
                 <button key={r.place_id} onClick={() => selectSearchResult(r)}
-                  style={{ display: 'block', width: '100%', border: 'none', font: 'inherit', padding: '6px 10px', fontSize: 11, color: 'var(--text1)', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
+                  style={{ display: 'block', width: '100%', border: 'none', font: 'inherit', padding: '6px 10px', fontSize: 11, color: 'var(--text1)', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderBottom: i === searchResults.length - 1 ? 'none' : '1px solid var(--border)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface2)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   {r.display_name.split(',').slice(0, 3).join(', ')}

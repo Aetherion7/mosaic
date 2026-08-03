@@ -15,9 +15,12 @@ export function Toggle({ value, onChange, label }: { value: boolean; onChange: (
   )
 }
 
-export function Row({ label, desc, value, onChange }: { label: string; desc?: React.ReactNode; value: boolean; onChange: (v: boolean) => void }) {
+// `last`: unterdrückt den unteren Trennstrich — für das letzte Element einer
+// Liste/Sektion gesetzt, sonst hinge dort eine Linie vor leerem Raum (statt
+// zwischen zwei sichtbaren Zeilen zu trennen).
+export function Row({ label, desc, value, onChange, last }: { label: string; desc?: React.ReactNode; value: boolean; onChange: (v: boolean) => void; last?: boolean }) {
   return (
-    <div onClick={() => onChange(!value)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '10px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+    <div onClick={() => onChange(!value)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '10px 0', borderBottom: last ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}>
       <div>
         <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text1)' }}>{label}</div>
         {desc && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>{desc}</div>}
@@ -31,9 +34,9 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
   return <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 20, marginBottom: 8 }}>{children}</div>
 }
 
-export function KbdRow({ keys, action }: { keys: string[]; action: string }) {
+export function KbdRow({ keys, action, last }: { keys: string[]; action: string; last?: boolean }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 0', borderBottom: last ? 'none' : '1px solid var(--border)' }}>
       <span style={{ fontSize: 12, color: 'var(--text2)' }}>{action}</span>
       <div style={{ display: 'flex', gap: 4 }}>
         {keys.map((k, i) => (
@@ -44,11 +47,11 @@ export function KbdRow({ keys, action }: { keys: string[]; action: string }) {
   )
 }
 
-export function SettingItem({ label, desc, control }: { label: string; desc?: string; control: React.ReactNode }) {
+export function SettingItem({ label, desc, control, last }: { label: string; desc?: string; control: React.ReactNode; last?: boolean }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '12px 0', borderBottom: '1px solid var(--border)', gap: 16,
+      padding: '12px 0', borderBottom: last ? 'none' : '1px solid var(--border)', gap: 16,
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text1)' }}>{label}</div>

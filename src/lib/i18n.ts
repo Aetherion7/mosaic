@@ -57,6 +57,8 @@ export const de: Record<string, string> = {
   'A new version of mosaic is ready to install.': 'Eine neue Version von mosaic ist bereit zur Installation.',
   'View on GitHub': 'Auf GitHub ansehen',
   'Update now': 'Jetzt aktualisieren',
+  'mosaic is still running': 'mosaic läuft weiter',
+  'It keeps running in the background so reminders can still arrive. Reopen it from the tray icon anytime.': 'Läuft im Hintergrund weiter, damit Erinnerungen weiterhin ankommen. Über das Tray-Symbol jederzeit wieder zu öffnen.',
   'Automatic updates': 'Automatische Updates',
   'Download and install new versions automatically in the background': 'Lädt neue Versionen automatisch im Hintergrund herunter und installiert sie',
   'Installer version': 'Installer-Version',
@@ -320,6 +322,7 @@ export const de: Record<string, string> = {
   'Local data storage': 'Lokale Datenspeicherung',
   'Help': 'Hilfe',
   'starts on the board': 'startet auf dem Board',
+  'starts on the board overview': 'startet auf der Board-Übersicht',
   'Watch again': 'Erneut ansehen',
   'License': 'Lizenz',
   'mosaic is source-available under the PolyForm Noncommercial License 1.0.0: free to use and modify for personal, educational or nonprofit purposes — not for resale or commercial hosting.':

@@ -3,6 +3,16 @@ import { useT } from '@/hooks/useT'
 import { SectionTitle } from './shared'
 import { APP_VERSION } from '@/lib/version'
 
+const TECHNOLOGIES = [
+  ['Next.js 16',    'React framework'],
+  ['React 19',      'UI library'],
+  ['Zustand',       'State management'],
+  ['Framer Motion', 'Animations'],
+  ['Tiptap',        'Rich text editor'],
+  ['dnd-kit',       'Drag & drop'],
+  ['IndexedDB',     'Local data storage'],
+] as const
+
 // Externe Links öffnen in einem echten Tab/Fenster außerhalb der App —
 // im Electron-Build fängt main.js das über setWindowOpenHandler ab und
 // reicht es an den System-Browser weiter, statt es im App-Fenster zu laden.
@@ -103,18 +113,10 @@ export default function UeberPanel() {
       />
 
       <SectionTitle>{t('Technologies')}</SectionTitle>
-      {[
-        ['Next.js 16',      t('React framework')],
-        ['React 19',        t('UI library')],
-        ['Zustand',         t('State management')],
-        ['Framer Motion',   t('Animations')],
-        ['Tiptap',          t('Rich text editor')],
-        ['dnd-kit',         t('Drag & drop')],
-        ['IndexedDB',       t('Local data storage')],
-      ].map(([name, role]) => (
-        <div key={name} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--border)', fontSize: 12 }}>
+      {TECHNOLOGIES.map(([name, roleKey], i) => (
+        <div key={name} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: i === TECHNOLOGIES.length - 1 ? 'none' : '1px solid var(--border)', fontSize: 12 }}>
           <span style={{ fontWeight: 600, color: 'var(--text1)' }}>{name}</span>
-          <span style={{ color: 'var(--text3)' }}>{role}</span>
+          <span style={{ color: 'var(--text3)' }}>{t(roleKey)}</span>
         </div>
       ))}
 

@@ -95,6 +95,29 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
             />
           </>
         )}
+
+        <SectionTitle>{t('Help')}</SectionTitle>
+        <SettingItem
+          last
+          label={t('Intro tour')}
+          desc={t('starts on the board overview')}
+          control={
+            <button
+              onClick={() => { setSetting({ hasSeenHomeTutorial: false }); onClose() }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '7px 12px', borderRadius: 8, whiteSpace: 'nowrap',
+                border: '1px solid var(--border)', background: 'var(--surface2)',
+                color: 'var(--text1)', cursor: 'pointer', fontSize: 12, fontWeight: 600,
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              {t('Watch again')}
+            </button>
+          }
+        />
       </div>
     )
   }
@@ -147,6 +170,7 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
 
       <SectionTitle>{t('Help')}</SectionTitle>
       <SettingItem
+        last
         label={t('Intro tour')}
         desc={t('starts on the board')}
         control={

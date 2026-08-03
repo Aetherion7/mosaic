@@ -37,6 +37,9 @@ let isQuitting = false
 // Einstellungswert) — der Hauptprozess hat selbst keinen Zugriff auf den
 // zustand-Store, der im Renderer-localStorage liegt.
 let keepInBackground = false
+// Nur einmal je laufender Sitzung feuern (nicht bei jedem Schließen) — sonst
+// nervt dieselbe native Benachrichtigung bei jedem einzelnen Klick auf X.
+let notifiedBackgroundThisSession = false
 // Vom Renderer gespiegelt (s. ElectronBridge.tsx) — steuert nur den
 // AUTOMATISCHEN Check beim Start; ein manueller Check (Settings-Button,
 // Mac-Menü) funktioniert unabhängig davon immer.
@@ -229,6 +232,12 @@ async function createWindow() {
       e.preventDefault()
       mainWindow.hide()
       showTray()
+      if (!notifiedBackgroundThisSession) {
+        notifiedBackgroundThisSession = true
+        // Text kommt vom Renderer (übersetzt, s. ElectronBridge.tsx) — der
+        // Hauptprozess hat keinen Zugriff auf die i18n-Übersetzungen.
+        mainWindow.webContents.send('desktop:hidden-to-background')
+      }
     }
   })
 

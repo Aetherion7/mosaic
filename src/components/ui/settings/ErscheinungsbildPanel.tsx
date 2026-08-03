@@ -66,6 +66,7 @@ export default function ErscheinungsbildPanel() {
       />
       <div style={{ marginTop: 20 }}>
         <Row
+          last
           label={t('Minimap')}
           desc={t('Shows a live overview of the board in the bottom-left corner')}
           value={showMinimap}

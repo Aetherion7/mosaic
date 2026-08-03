@@ -447,6 +447,15 @@ const BTN: React.CSSProperties = {
   cursor: 'pointer', flexShrink: 0, padding: 0,
 }
 
+// Zoom-HUD-Buttons — kein eigener Rahmen (die HUD-Pille selbst hat schon
+// einen), gleiches Muster wie das Board-Zoom-HUD (InfiniteCanvas.tsx).
+const HUD_BTN: React.CSSProperties = {
+  width: 24, height: 24, borderRadius: 6, border: 'none',
+  background: 'transparent', color: 'var(--text2)',
+  cursor: 'pointer', fontSize: 15, display: 'flex',
+  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+}
+
 export default function DrawboardWidget({ widget }: { widget: Widget }) {
   const t = useT()
   const updateWidget = useBoardStore(s => s.updateWidget)
@@ -649,6 +658,25 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
     selIdRef.current = null; render(); save()
   }, [render, save])
 
+  // Für die +/- Zoom-Buttons im schwebenden HUD: dieselbe Zentrums-Zoom-
+  // Mathematik wie beim Ctrl+Wheel-Zoom (s. onWheel unten), nur um die Mitte
+  // des sichtbaren Canvas statt um die Mausposition (Buttons haben keine
+  // Mauskoordinate, an der gezoomt werden könnte).
+  const zoomBy = useCallback((factor: number) => {
+    const r = canvasRef.current?.getBoundingClientRect()
+    if (!r) return
+    const mx = r.width / 2, my = r.height / 2
+    const ns = Math.max(0.1, Math.min(10, scaleRef.current * factor))
+    panRef.current = { x: mx - (mx - panRef.current.x) * (ns / scaleRef.current), y: my - (my - panRef.current.y) * (ns / scaleRef.current) }
+    scaleRef.current = ns
+    setZoomPct(Math.round(ns * 100))
+    render(); renderCursor()
+  }, [render, renderCursor])
+
+  const resetZoom = useCallback(() => {
+    panRef.current = { x: 0, y: 0 }; scaleRef.current = 1; setZoomPct(100); render(); renderCursor()
+  }, [render, renderCursor])
+
   // ── Keyboard ─────────────────────────────────────────────────────────────
 
   // Deactivate widget focus when clicking outside
@@ -684,7 +712,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
         e.preventDefault(); e.stopPropagation(); redo()
       }
       if ((e.ctrlKey || e.metaKey) && e.key === '0') {
-        e.preventDefault(); panRef.current = { x: 0, y: 0 }; scaleRef.current = 1; setZoomPct(100); render()
+        e.preventDefault(); resetZoom()
       }
       // Ctrl+D: duplicate selected element
       if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
@@ -709,7 +737,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
       }
     }
     window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey)
-  }, [undo, redo, render, save])
+  }, [undo, redo, render, save, resetZoom])
 
   // ── Coords ───────────────────────────────────────────────────────────────
 
@@ -1131,12 +1159,6 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
         <button title={t('Undo (Ctrl+Z)')} onClick={undo} style={BTN}><IcoUndo /></button>
         <button title={t('Redo (Ctrl+Y)')} onClick={redo} style={BTN}><IcoRedo /></button>
 
-        {/* Zoom reset */}
-        <button title={t('Reset zoom (Ctrl+0)')} onClick={() => { panRef.current = { x:0,y:0 }; scaleRef.current = 1; setZoomPct(100); render(); renderCursor() }}
-          style={{ ...BTN, width: 'auto', padding: '0 6px', fontSize: 9, fontWeight: 700 }}>
-          {zoomPct}%
-        </button>
-
         {/* Export PNG */}
         <button title={t('Export as PNG')} onClick={exportPng} style={BTN}><IcoDownload /></button>
 
@@ -1161,6 +1183,32 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
           ref={cursorCanvasRef}
           style={{ display: 'block', position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
         />
+
+        {/* Zoom-HUD — schwebt über dem Canvas statt in der Werkzeugleiste
+            oben (die schon mit Werkzeugen/Farbe/Verlauf/Undo/Export voll ist),
+            gleiches Muster wie das Zoom-HUD des Boards (InfiniteCanvas.tsx). */}
+        {isEdit && (
+          <div
+            style={{
+              position: 'absolute', bottom: 8, right: 8, zIndex: 5,
+              display: 'flex', alignItems: 'center', gap: 2,
+              background: 'color-mix(in srgb, var(--surface) 88%, transparent)',
+              backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+              border: '1px solid var(--border)', borderRadius: 9,
+              boxShadow: '0 4px 14px rgba(0,0,0,0.22)',
+              padding: '3px 4px',
+            }}
+            onPointerDown={e => e.stopPropagation()}
+          >
+            <button title={t('Zoom out')} onClick={() => zoomBy(1 / 1.15)} style={HUD_BTN}>−</button>
+            <button title={t('Reset zoom (Ctrl+0)')} onClick={resetZoom}
+              style={{ ...HUD_BTN, width: 'auto', padding: '0 6px', fontSize: 10.5, fontWeight: 700 }}>
+              {zoomPct}%
+            </button>
+            <button title={t('Zoom in')} onClick={() => zoomBy(1.15)} style={HUD_BTN}>+</button>
+          </div>
+        )}
+
         {textPos && (
           <input
             autoFocus

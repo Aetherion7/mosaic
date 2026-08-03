@@ -28,6 +28,7 @@ export default function BoardsPanel() {
     <div>
       <SectionTitle>{t('New boards')}</SectionTitle>
       <SettingItem
+        last
         label={t('Default theme')}
         desc={t('Applied to every newly created board')}
         control={

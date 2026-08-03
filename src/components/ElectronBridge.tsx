@@ -2,6 +2,8 @@
 import { useEffect } from 'react'
 import { useSettings } from '@/store/settingsStore'
 import { useUIStore } from '@/store/uiStore'
+import { useT } from '@/hooks/useT'
+import { requestNotifyPermission, fireNotification } from '@/lib/notify'
 
 declare global {
   interface Window {
@@ -17,6 +19,9 @@ declare global {
       onUpdateStatus: (callback: (info: { status: 'checking' | 'not-available' | 'error' }) => void) => () => void
       checkForUpdates: () => Promise<void>
       installUpdate: () => Promise<void>
+      // s. main.js — feuert einmal je Sitzung, wenn das Fenster wegen
+      // Hintergrundbetrieb versteckt statt geschlossen wird
+      onHiddenToBackground: (callback: () => void) => () => void
     }
   }
 }
@@ -28,6 +33,7 @@ declare global {
 // beim Mounten, damit der Hauptprozess (der die persistierten Werte selbst
 // nicht kennt) den aktuellen Stand direkt beim Start bekommt.
 export default function ElectronBridge() {
+  const t = useT()
   const launchAtLogin           = useSettings(s => s.launchAtLogin)
   const keepRunningInBackground = useSettings(s => s.keepRunningInBackground)
   const autoUpdateEnabled       = useSettings(s => s.autoUpdateEnabled)
@@ -38,6 +44,11 @@ export default function ElectronBridge() {
 
   useEffect(() => {
     window.mosaicDesktop?.setKeepInBackground(keepRunningInBackground)
+    // Berechtigung schon hier anfragen (echte Nutzer-Geste: der Schalter
+    // wurde gerade aktiviert) statt erst im Moment der Benachrichtigung
+    // unten — dann ist das Fenster bereits versteckt, und ein Berechtigungs-
+    // Dialog braucht typischerweise ein sichtbares, fokussiertes Fenster.
+    if (keepRunningInBackground) requestNotifyPermission()
   }, [keepRunningInBackground])
 
   useEffect(() => {
@@ -57,6 +68,19 @@ export default function ElectronBridge() {
       useUIStore.getState().setPendingUpdate(info)
     })
   }, [])
+
+  // Einmal je Sitzung, wenn das Fenster wegen Hintergrundbetrieb versteckt
+  // statt geschlossen wird — sonst bleibt unklar, ob "Schließen" die App
+  // wirklich beendet hat oder nur das Fenster verschwunden ist.
+  useEffect(() => {
+    if (!window.mosaicDesktop) return
+    return window.mosaicDesktop.onHiddenToBackground(() => {
+      fireNotification(
+        t('mosaic is still running'),
+        t('It keeps running in the background so reminders can still arrive. Reopen it from the tray icon anytime.'),
+      )
+    })
+  }, [t])
 
   return null
 }

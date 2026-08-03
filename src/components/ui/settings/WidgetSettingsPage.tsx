@@ -72,6 +72,13 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
   const disabled = disabledWidgetTypes.includes(type)
   const label    = t(TYPE_LABELS[type] ?? type)
 
+  // Welche Zeile tatsächlich als letzte sichtbare vor leerem Raum steht,
+  // hängt vom Widget-Typ ab (nur manche zeigen die Statistik-Zeile oder
+  // einen typ-spezifischen Abschnitt darunter) — daher hier statt eines
+  // festen `last` bestimmt.
+  const hasStatsRow  = type === 'task' || type === 'water' || type === 'sleep'
+  const hasTypeBlock = type === 'water' || type === 'sleep' || type === 'calendar'
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '4px 0 18px' }}>
@@ -96,6 +103,7 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
         desc={t('Show this widget in the add-widget panel and keep existing instances active')}
         value={!disabled}
         onChange={() => toggleWidgetType(type)}
+        last={!hasStatsRow && !hasTypeBlock}
       />
 
       {(type === 'task' || type === 'water' || type === 'sleep') && (
@@ -108,6 +116,7 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
               ? statsDisabledTypes.filter(x => x !== type)
               : [...statsDisabledTypes, type],
           })}
+          last={!hasTypeBlock}
         />
       )}
 
@@ -119,9 +128,11 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
             desc={t('Notify you to drink water at least 3 times a day, until today\'s goal is reached')}
             value={waterRemindersEnabled}
             onChange={v => setSetting({ waterRemindersEnabled: v })}
+            last={!waterRemindersEnabled}
           />
           {waterRemindersEnabled && (
             <SettingItem
+              last
               label={t('Reminders per day')}
               control={
                 <select
@@ -145,9 +156,11 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
             desc={t('Notify you once in the evening if you haven\'t logged a bedtime yet')}
             value={sleepBedtimeReminderEnabled}
             onChange={v => setSetting({ sleepBedtimeReminderEnabled: v })}
+            last={!sleepBedtimeReminderEnabled}
           />
           {sleepBedtimeReminderEnabled && (
             <SettingItem
+              last
               label={t('Reminder time')}
               control={
                 <input

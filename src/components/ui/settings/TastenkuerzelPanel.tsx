@@ -100,7 +100,7 @@ function BoardShortcuts() {
       <KbdRow keys={['Ctrl', '0']} action={t('Reset zoom')} />
       <KbdRow keys={['Delete']} action={t('Delete selected element')} />
       <KbdRow keys={['Alt', t('Drag')]} action={t('Pan canvas')} />
-      <KbdRow keys={['Ctrl', t('Scroll')]} action={t('Zoom')} />
+      <KbdRow keys={['Ctrl', t('Scroll')]} action={t('Zoom')} last />
     </div>
   )
 }
@@ -152,7 +152,7 @@ function HomeShortcuts() {
           onReset={() => setSetting({ keyboardShortcutsHome: { ...shortcuts, [action]: DEFAULT_HOME_SHORTCUTS[action] } })}
         />
       ))}
-      <KbdRow keys={['Esc']} action={t('Close panel / selection')} />
+      <KbdRow keys={['Esc']} action={t('Close panel / selection')} last />
     </div>
   )
 }

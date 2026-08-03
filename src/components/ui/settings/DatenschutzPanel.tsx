@@ -14,6 +14,14 @@ const EXTERNAL_SERVICES: { widget: string; services: string }[] = [
   { widget: 'AI assistant',      services: 'Your chosen provider (e.g. Anthropic, OpenAI) — only if you enable and configure it' },
 ]
 
+const STORED_DATA_KEYS = [
+  ['Boards & widgets', 'IndexedDB', 'planboard-store'],
+  ['Files & images',   'IndexedDB', 'planboard-blobs'],
+  ['Settings (incl. your AI API key, if set)', 'localStorage', 'planboard-settings'],
+  ['Fonts',     'localStorage', 'planboard-settings'],
+  ['Google Font shortcuts (Note widget)', 'localStorage', 'planboard-text-google-fonts'],
+] as const
+
 export default function DatenschutzPanel() {
   const t = useT()
   const isDesktop = useIsDesktop()
@@ -45,23 +53,17 @@ export default function DatenschutzPanel() {
       </div>
 
       <SectionTitle>{t('External services contacted')}</SectionTitle>
-      {EXTERNAL_SERVICES.map(({ widget, services }) => (
-        <div key={widget} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: 12 }}>
+      {EXTERNAL_SERVICES.map(({ widget, services }, i) => (
+        <div key={widget} style={{ padding: '8px 0', borderBottom: i === EXTERNAL_SERVICES.length - 1 ? 'none' : '1px solid var(--border)', fontSize: 12 }}>
           <div style={{ color: 'var(--text1)', fontWeight: 500, marginBottom: 2 }}>{t(widget)}</div>
           <div style={{ color: 'var(--text3)', fontSize: 11, lineHeight: 1.5 }}>{services}</div>
         </div>
       ))}
 
       <SectionTitle>{t('Stored data')}</SectionTitle>
-      {[
-        [t('Boards & widgets'), 'IndexedDB', 'planboard-store'],
-        [t('Files & images'),   'IndexedDB', 'planboard-blobs'],
-        [t('Settings (incl. your AI API key, if set)'), 'localStorage', 'planboard-settings'],
-        [t('Fonts'),     'localStorage', 'planboard-settings'],
-        [t('Google Font shortcuts (Note widget)'), 'localStorage', 'planboard-text-google-fonts'],
-      ].map(([label, type, key]) => (
-        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: 12, gap: 8 }}>
-          <span style={{ color: 'var(--text1)', fontWeight: 500 }}>{label}</span>
+      {STORED_DATA_KEYS.map(([label, type, key], i) => (
+        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: i === STORED_DATA_KEYS.length - 1 ? 'none' : '1px solid var(--border)', fontSize: 12, gap: 8 }}>
+          <span style={{ color: 'var(--text1)', fontWeight: 500 }}>{t(label)}</span>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
             <span style={{ fontSize: 10, color: 'var(--text3)', background: 'var(--surface2)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)' }}>{type}</span>
             <span style={{ color: 'var(--text3)', fontFamily: 'monospace', fontSize: 11 }}>{key}</span>

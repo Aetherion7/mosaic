@@ -30,4 +30,12 @@ contextBridge.exposeInMainWorld('mosaicDesktop', {
   },
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
   installUpdate: () => ipcRenderer.invoke('update:install'),
+  // Feuert einmal je Sitzung, sobald das Fenster wegen Hintergrundbetrieb
+  // versteckt statt geschlossen wird (s. main.js) — der Renderer feuert
+  // daraufhin selbst eine übersetzte Web-Notification (ElectronBridge.tsx).
+  onHiddenToBackground: (callback) => {
+    const listener = () => callback()
+    ipcRenderer.on('desktop:hidden-to-background', listener)
+    return () => ipcRenderer.removeListener('desktop:hidden-to-background', listener)
+  },
 })

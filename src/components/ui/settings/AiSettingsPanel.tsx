@@ -53,6 +53,7 @@ export default function AiSettingsPanel() {
         })()}
         value={aiEnabled}
         onChange={v => setSetting({ aiEnabled: v })}
+        last
       />
 
       {/* Alles Weitere wird bei ausgeschaltetem Assistenten ausgegraut & gesperrt */}
@@ -64,6 +65,7 @@ export default function AiSettingsPanel() {
       }}>
         <SectionTitle>{t('Connection')}</SectionTitle>
         <SettingItem
+          last={!provider}
           label={t('Provider')}
           desc={provider ? t(provider.desc) : t('Choose which AI provider to use')}
           control={<ProviderSelect value={aiProvider} onChange={p => setSetting({ aiProvider: p })} />}
@@ -95,6 +97,7 @@ export default function AiSettingsPanel() {
               }
             />
             <SettingItem
+              last={aiProvider !== 'openai'}
               label={t('Model')}
               desc={`${t('Empty = default:')} ${DEFAULT_MODELS[provider.id]}`}
               control={
@@ -109,6 +112,7 @@ export default function AiSettingsPanel() {
             />
             {aiProvider === 'openai' && (
               <SettingItem
+                last
                 label={t('Base URL')}
                 desc={t('For alternative endpoints (Groq, Mistral, Ollama …). Empty = api.openai.com')}
                 control={
