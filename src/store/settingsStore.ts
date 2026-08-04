@@ -71,8 +71,10 @@ export interface AppSettings {
   // sollen nicht überraschend auftauchen, ohne dass man sie angefordert hat.
   waterRemindersEnabled:      boolean
   waterReminderCount:         number   // 3–6, s. WATER_REMINDER_HOURS
+  waterReminderMessage:       string   // leer = Standardtext (übersetzt)
   sleepBedtimeReminderEnabled: boolean
   sleepBedtimeReminderTime:    string  // HH:MM
+  sleepReminderMessage:        string  // leer = Standardtext (übersetzt)
   statsDisabledTypes:     string[]  // Widget-Typen, deren Statistik-Bereich ausgeblendet ist (task/water/sleep)
   lastThemeId:            string | null
   defaultThemeId:         string   // Theme für neu erstellte Boards
@@ -126,8 +128,10 @@ export const useSettings = create<SettingsStore>()(
       calendarFadePastEvents: false,
       waterRemindersEnabled:       false,
       waterReminderCount:          3,
+      waterReminderMessage:        '',
       sleepBedtimeReminderEnabled: false,
       sleepBedtimeReminderTime:    '22:00',
+      sleepReminderMessage:        '',
       statsDisabledTypes:     [],
       lastThemeId:            null,
       defaultThemeId:         'dark',

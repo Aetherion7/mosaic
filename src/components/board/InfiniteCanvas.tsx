@@ -339,6 +339,65 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
     applyView(init, 1)
   }, [applyView])
 
+  // Tastatur: Ctrl/Cmd/Super +/- zoomt (wie die HUD-Buttons), Pfeiltasten
+  // schieben die Ansicht — gehalten für flüssige, auch diagonale Bewegung
+  // (zwei Pfeiltasten gleichzeitig halten), über einen rAF-Loop statt eines
+  // Sprungs pro Tastendruck. Bewusst deaktiviert, sobald irgendein Element
+  // fokussiert ist (Tabelle/Reader haben eigene Pfeiltasten-Navigation über
+  // React-onKeyDown auf einem fokussierten Container, s. TableWidget.tsx/
+  // ReaderWidget.tsx) — sonst würde das Board gleichzeitig mitscrollen.
+  useEffect(() => {
+    const heldKeys = new Set<string>()
+    const PAN_SPEED = 14 // px pro Frame, Bildschirm-Pixel (wie beim Wheel-Pan)
+    let rafId = 0
+
+    function isTypingTarget(target: EventTarget | null) {
+      const el = target as HTMLElement | null
+      return !!el?.matches?.('input,textarea,[contenteditable="true"]')
+    }
+
+    function tick() {
+      if (heldKeys.size > 0) {
+        let dx = 0, dy = 0
+        if (heldKeys.has('ArrowLeft'))  dx += PAN_SPEED
+        if (heldKeys.has('ArrowRight')) dx -= PAN_SPEED
+        if (heldKeys.has('ArrowUp'))    dy += PAN_SPEED
+        if (heldKeys.has('ArrowDown'))  dy -= PAN_SPEED
+        if (dx || dy) applyView({ x: offsetRef.current.x + dx, y: offsetRef.current.y + dy }, zoomRef.current)
+      }
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (isTypingTarget(e.target)) return
+      if (document.activeElement && document.activeElement !== document.body) return
+      // Settings/Themes-Panel usw. fangen Fokus nicht immer selbst ab (kein
+      // autoFocus-Element) — ohne diesen Check würde das Board unsichtbar
+      // hinter einem offenen Panel weiterscrollen/zoomen.
+      const ui = useUIStore.getState()
+      if (ui.panel !== null || ui.settingsOpen) return
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === '+' || e.key === '=') { e.preventDefault(); zoomCenter(1.15) }
+        else if (e.key === '-')             { e.preventDefault(); zoomCenter(1 / 1.15) }
+        return
+      }
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault()
+        heldKeys.add(e.key)
+      }
+    }
+    function onKeyUp(e: KeyboardEvent) { heldKeys.delete(e.key) }
+
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+      cancelAnimationFrame(rafId)
+    }
+  }, [applyView, zoomCenter])
+
   const pct = Math.round(zoom * 100)
 
   return (

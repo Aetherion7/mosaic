@@ -190,7 +190,7 @@ export default function SettingsModal({ onClose, categories, initialCat }: { onC
               </span>
               <button onClick={onClose} title={t('Close')} style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>×</button>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 24px' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
               {renderPanel(active, onClose, !!categories)}
             </div>
           </div>

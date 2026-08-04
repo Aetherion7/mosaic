@@ -86,6 +86,9 @@ function BoardShortcuts() {
       <SectionTitle>{t('Board')}</SectionTitle>
       <KbdRow keys={['Ctrl', 'Z']} action={t('Undo (calendar, drawboard)')} />
       <KbdRow keys={['Ctrl', 'Y']} action={t('Redo (calendar, drawboard)')} />
+      <KbdRow keys={['Ctrl', '+']} action={t('Zoom in')} />
+      <KbdRow keys={['Ctrl', '-']} action={t('Zoom out')} />
+      <KbdRow keys={['↑', '↓', '←', '→']} action={t('Pan the board')} last />
 
       <SectionTitle>{t('Table widget')}</SectionTitle>
       <KbdRow keys={['Enter']} action={t('Edit cell / confirm')} />

@@ -398,13 +398,27 @@ export interface ResolvedTheme {
 
 // Nutzer-Theme → vollständiges Theme: fehlende cssVars kommen vom Default,
 // damit Teil-Definitionen ("nur Akzent + Hintergrund") funktionieren.
+//
+// bg/widgetStyle müssen hier ebenfalls VOLLSTÄNDIG aufgefüllt werden, nicht
+// nur mit einem Teilobjekt ersetzt werden — applyTheme() in boardStore.ts
+// mischt sie nur per Shallow-Merge in den bisherigen Board-Zustand
+// (`{...b.bg, ...theme.bg}`), genau wie bei den eingebauten Themes, deren
+// bg/widgetStyle immer komplett sind. Ein Custom-Theme, das nur "name" +
+// "cssVars" angibt (dokumentiertes Minimum), lieferte hier bisher gar kein
+// `widgetStyle` und nur eine einzelne Farbe für `bg` — der Merge ließ dann
+// Felder wie `type` (z. B. noch "image" vom vorherigen Theme) unverändert
+// stehen, wodurch Board-Hintergrund UND Widget-Stil beim Wechsel zu einem
+// Custom-Theme sichtbar beim vorherigen Theme hängen blieben, während ein
+// Wechsel zwischen zwei eingebauten Themes immer alles vollständig ersetzte.
 export function resolveCustomTheme(t: CustomTheme): ResolvedTheme {
   return {
     id:      t.id,
     name:    t.name,
     cssVars: { ...DEFAULT_THEME.cssVars, ...t.cssVars },
-    bg:      t.bg ?? { type: 'color', color: t.cssVars['--bg'] ?? DEFAULT_THEME.cssVars['--bg'] },
-    widgetStyle: t.widgetStyle,
+    bg:      t.bg
+      ? { ...DEFAULT_THEME.bg, ...t.bg }
+      : { ...DEFAULT_THEME.bg, type: 'color', color: t.cssVars['--bg'] ?? DEFAULT_THEME.cssVars['--bg'] },
+    widgetStyle: { ...DEFAULT_THEME.widgetStyle, ...t.widgetStyle },
   }
 }
 

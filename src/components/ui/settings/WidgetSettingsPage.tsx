@@ -65,8 +65,10 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
   const calendarFadePastEvents = useSettings(s => s.calendarFadePastEvents)
   const waterRemindersEnabled = useSettings(s => s.waterRemindersEnabled)
   const waterReminderCount = useSettings(s => s.waterReminderCount)
+  const waterReminderMessage = useSettings(s => s.waterReminderMessage)
   const sleepBedtimeReminderEnabled = useSettings(s => s.sleepBedtimeReminderEnabled)
   const sleepBedtimeReminderTime = useSettings(s => s.sleepBedtimeReminderTime)
+  const sleepReminderMessage = useSettings(s => s.sleepReminderMessage)
   const t = useT()
   const entry    = BUILT_IN_WIDGETS.find(w => w.type === type)
   const disabled = disabledWidgetTypes.includes(type)
@@ -131,19 +133,34 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
             last={!waterRemindersEnabled}
           />
           {waterRemindersEnabled && (
-            <SettingItem
-              last
-              label={t('Reminders per day')}
-              control={
-                <select
-                  value={waterReminderCount}
-                  onChange={e => setSetting({ waterReminderCount: Number(e.target.value) })}
-                  style={selStyle}
-                >
-                  {[3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-              }
-            />
+            <>
+              <SettingItem
+                label={t('Reminders per day')}
+                control={
+                  <select
+                    value={waterReminderCount}
+                    onChange={e => setSetting({ waterReminderCount: Number(e.target.value) })}
+                    style={selStyle}
+                  >
+                    {[3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                }
+              />
+              <SettingItem
+                last
+                label={t('Reminder message')}
+                desc={t('Leave empty to use the default message')}
+                control={
+                  <input
+                    type="text"
+                    value={waterReminderMessage}
+                    onChange={e => setSetting({ waterReminderMessage: e.target.value })}
+                    placeholder={t('Remember to stay hydrated.')}
+                    style={textInputStyle}
+                  />
+                }
+              />
+            </>
           )}
         </>
       )}
@@ -159,18 +176,33 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
             last={!sleepBedtimeReminderEnabled}
           />
           {sleepBedtimeReminderEnabled && (
-            <SettingItem
-              last
-              label={t('Reminder time')}
-              control={
-                <input
-                  type="time"
-                  value={sleepBedtimeReminderTime}
-                  onChange={e => setSetting({ sleepBedtimeReminderTime: e.target.value })}
-                  style={selStyle}
-                />
-              }
-            />
+            <>
+              <SettingItem
+                label={t('Reminder time')}
+                control={
+                  <input
+                    type="time"
+                    value={sleepBedtimeReminderTime}
+                    onChange={e => setSetting({ sleepBedtimeReminderTime: e.target.value })}
+                    style={selStyle}
+                  />
+                }
+              />
+              <SettingItem
+                last
+                label={t('Reminder message')}
+                desc={t('Leave empty to use the default message')}
+                control={
+                  <input
+                    type="text"
+                    value={sleepReminderMessage}
+                    onChange={e => setSetting({ sleepReminderMessage: e.target.value })}
+                    placeholder={t('It’s getting late — time to wind down for bed?')}
+                    style={textInputStyle}
+                  />
+                }
+              />
+            </>
           )}
         </>
       )}
@@ -199,4 +231,10 @@ const selStyle: React.CSSProperties = {
   fontSize: 12, background: 'var(--surface2)', color: 'var(--text1)',
   border: '1px solid var(--border)', borderRadius: 7,
   padding: '5px 8px', cursor: 'pointer', height: 28,
+}
+
+const textInputStyle: React.CSSProperties = {
+  fontSize: 12, background: 'var(--surface2)', color: 'var(--text1)',
+  border: '1px solid var(--border)', borderRadius: 7,
+  padding: '5px 8px', height: 28, width: 220, outline: 'none',
 }

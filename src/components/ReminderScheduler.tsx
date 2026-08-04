@@ -99,7 +99,7 @@ export default function ReminderScheduler() {
           for (const hour of hours) {
             const trigger = new Date(`${today}T${String(hour).padStart(2, '0')}:00:00`).getTime()
             if (trigger > lastTickRef.current && trigger <= now && trigger >= now - STALE_GRACE_MS) {
-              fireNotification(tRef.current('Drink water'), tRef.current('Remember to stay hydrated.'))
+              fireNotification(tRef.current('Drink water'), settings.waterReminderMessage || tRef.current('Remember to stay hydrated.'))
             }
           }
         }
@@ -122,7 +122,7 @@ export default function ReminderScheduler() {
             }
           }
           if (needsReminder) {
-            fireNotification(tRef.current('Time for bed'), tRef.current('It’s getting late — time to wind down for bed?'))
+            fireNotification(tRef.current('Time for bed'), settings.sleepReminderMessage || tRef.current('It’s getting late — time to wind down for bed?'))
           }
         }
       }

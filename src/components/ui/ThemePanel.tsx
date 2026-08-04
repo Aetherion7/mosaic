@@ -96,7 +96,7 @@ export default function ThemePanel() {
                 <div style={{ height: 12 }} />
                 <ThemeGroup
                   label={t('Custom')}
-                  icon={<IconSparkle />}
+                  icon={<IconPen />}
                   themes={customThemes.map(resolveCustomTheme)}
                   themeId={themeId}
                   hoveredTheme={hoveredTheme}
@@ -409,11 +409,11 @@ function IconSun() {
   )
 }
 
-function IconSparkle() {
+function IconPen() {
   return (
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/>
-      <path d="M19 15l.6 1.8 1.8.6-1.8.6L19 19.8l-.6-1.8-1.8-.6 1.8-.6z"/>
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>
+      <path d="M15 5l4 4"/>
     </svg>
   )
 }
