@@ -208,26 +208,31 @@ export default function TaskWidget({ widget, readOnly }: { widget: Widget; readO
                   onChange={e => updateHabit(h.id, { name: e.target.value })}
                   onBlur={() => setEditingId(null)}
                   onPointerDown={e => e.stopPropagation()}
-                  style={{ flex: 1, fontSize: 11, fontWeight: 600, color: 'var(--text1)', background: 'var(--surface)', borderRadius: 4, padding: '1px 4px', border: 'none', outline: 'none' }}
+                  style={{ flex: 1, minWidth: 0, fontSize: 11, fontWeight: 600, color: 'var(--text1)', background: 'var(--surface)', borderRadius: 4, padding: '1px 4px', border: 'none', outline: 'none' }}
                 />
               ) : (
-                <span onDoubleClick={() => mode === 'edit' && setEditingId(h.id)}
-                  style={{ flex: 1, fontSize: 11, fontWeight: 600, color: 'var(--text1)', cursor: mode === 'edit' ? 'text' : 'default', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {h.name}
-                </span>
+                // Eigener Flex-Container statt flex:1 direkt auf dem Namen: so
+                // sitzt der Bearbeiten-Stift IMMER direkt hinter dem (ggf. mit
+                // Ellipsis abgeschnittenen) Namensende, statt vom rechten Rand
+                // des ganzen Zeilen-Containers an den Namen herangezogen zu werden.
+                <div style={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1, minWidth: 0 }}>
+                  <span onDoubleClick={() => mode === 'edit' && setEditingId(h.id)}
+                    style={{ minWidth: 0, fontSize: 11, fontWeight: 600, color: 'var(--text1)', cursor: mode === 'edit' ? 'text' : 'default', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {h.name}
+                  </span>
+                  {mode === 'edit' && (
+                    <button onPointerDown={e => e.stopPropagation()} onClick={() => setEditingId(h.id)}
+                      title={`${t('Rename')} ${h.name}`}
+                      style={{ width: 15, height: 15, borderRadius: 4, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>
+                      </svg>
+                    </button>
+                  )}
+                </div>
               )}
 
               <span style={{ fontSize: 9, fontWeight: 700, color: h.color, flexShrink: 0 }}>{h.weekDays.length}/7</span>
-
-              {mode === 'edit' && editingId !== h.id && (
-                <button onPointerDown={e => e.stopPropagation()} onClick={() => setEditingId(h.id)}
-                  title={`${t('Rename')} ${h.name}`}
-                  style={{ width: 15, height: 15, borderRadius: 4, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>
-                  </svg>
-                </button>
-              )}
 
               {mode === 'edit' && (
                 <button onPointerDown={e => e.stopPropagation()} onClick={() => removeHabit(h.id)}

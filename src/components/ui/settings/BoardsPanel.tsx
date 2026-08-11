@@ -5,6 +5,7 @@ import type { CustomTemplate } from '@/store/settingsStore'
 import { useBoardStore } from '@/store/boardStore'
 import { THEMES, resolveCustomTheme } from '@/lib/themes'
 import { TYPE_ICONS, TYPE_LABELS } from '@/components/board/TileWrapper'
+import WidgetLayoutPreview from '@/components/ui/WidgetLayoutPreview'
 import { useT } from '@/hooks/useT'
 import { SectionTitle, SettingItem } from './shared'
 
@@ -214,14 +215,6 @@ function ThemeSelect({ options, value, onChange }: {
 function TemplateRow({ tpl, onRemove }: { tpl: CustomTemplate; onRemove: () => void }) {
   const t = useT()
   const [open, setOpen] = useState(false)
-  const hasWidgets = tpl.widgets.length > 0
-
-  const minCol = hasWidgets ? Math.min(...tpl.widgets.map(w => w.col)) : 1
-  const minRow = hasWidgets ? Math.min(...tpl.widgets.map(w => w.row)) : 1
-  const maxCol = hasWidgets ? Math.max(...tpl.widgets.map(w => w.col + w.colSpan - 1)) : 1
-  const maxRow = hasWidgets ? Math.max(...tpl.widgets.map(w => w.row + w.rowSpan - 1)) : 1
-  const spanCol = Math.max(1, maxCol - minCol + 1)
-  const spanRow = Math.max(1, maxRow - minRow + 1)
 
   return (
     <div style={{ borderRadius: 9, background: 'var(--surface2)', border: '1px solid var(--border)', overflow: 'hidden' }}>
@@ -244,27 +237,27 @@ function TemplateRow({ tpl, onRemove }: { tpl: CustomTemplate; onRemove: () => v
       </div>
 
       {open && (
-        <div style={{ display: 'flex', gap: 10, padding: '0 10px 10px', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', gap: 14, padding: '0 10px 10px', alignItems: 'flex-start' }}>
+          {/* Dieselbe Vorschau-Komponente wie die Board-Karten-Thumbnails auf
+              der Startseite (WidgetLayoutPreview) — identischer Randabstand,
+              Lücken zwischen den Kacheln und Skalierung, nur mit den
+              gespeicherten Vorlagen-Positionen statt einem echten Board. */}
           <div style={{
-            width: 84, height: 60, flexShrink: 0, position: 'relative',
-            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden',
+            width: 160, height: 110, flexShrink: 0, position: 'relative',
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden',
+          }}>
+            <WidgetLayoutPreview items={tpl.widgets} accent="var(--accent)" />
+          </div>
+          {/* Spaltenweise statt einer einzigen langen Liste: max. 5 Zeilen,
+              danach geht's in der nächsten Spalte weiter, damit die Vorschau
+              bei vielen Widgets nicht immer weiter nach unten wächst. */}
+          <div style={{
+            flex: 1, minWidth: 0, display: 'grid',
+            gridTemplateRows: 'repeat(5, auto)', gridAutoFlow: 'column', gridAutoColumns: 'minmax(0, max-content)',
+            columnGap: 18, rowGap: 4, alignContent: 'start',
           }}>
             {tpl.widgets.map((w, i) => (
-              <div key={i} style={{
-                position: 'absolute', boxSizing: 'border-box',
-                left:   `${((w.col - minCol) / spanCol) * 100}%`,
-                top:    `${((w.row - minRow) / spanRow) * 100}%`,
-                width:  `${(w.colSpan / spanCol) * 100}%`,
-                height: `${(w.rowSpan / spanRow) * 100}%`,
-                background: 'color-mix(in srgb, var(--accent) 35%, var(--surface2))',
-                border: '1px solid color-mix(in srgb, var(--accent) 55%, transparent)',
-                borderRadius: 2,
-              }} />
-            ))}
-          </div>
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {tpl.widgets.map((w, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text2)' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text2)', minWidth: 0 }}>
                 <span style={{ display: 'flex', color: 'var(--text3)', flexShrink: 0 }}>{TYPE_ICONS[w.type]}</span>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t(TYPE_LABELS[w.type] ?? w.type)}</span>
               </div>

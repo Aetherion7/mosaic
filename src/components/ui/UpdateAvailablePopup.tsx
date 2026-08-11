@@ -86,20 +86,20 @@ export default function UpdateAvailablePopup() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 2 }}>
           <button onClick={() => setDismissed(true)} style={{
-            fontSize: 12.5, fontWeight: 600, padding: '9px 16px', borderRadius: 9,
+            fontSize: 11.5, fontWeight: 600, padding: '9px 12px', borderRadius: 9, whiteSpace: 'nowrap', flexShrink: 0,
             border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer',
           }}>
             {t('Cancel')}
           </button>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 8, minWidth: 0 }}>
             <a href={info.releaseUrl} target="_blank" rel="noopener noreferrer" style={{
-              fontSize: 12.5, fontWeight: 600, padding: '9px 16px', borderRadius: 999,
+              fontSize: 11.5, fontWeight: 600, padding: '9px 14px', borderRadius: 999, whiteSpace: 'nowrap', flexShrink: 0,
               border: '1px solid var(--border)', color: 'var(--text2)', textDecoration: 'none',
             }}>
               {t('View on GitHub')}
             </a>
             <button onClick={installNow} style={{
-              fontSize: 13, fontWeight: 700, padding: '9px 22px', borderRadius: 999,
+              fontSize: 11.5, fontWeight: 700, padding: '9px 18px', borderRadius: 999, whiteSpace: 'nowrap', flexShrink: 0,
               border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer',
               boxShadow: '0 4px 18px color-mix(in srgb, var(--accent) 45%, transparent)',
             }}>

@@ -246,7 +246,7 @@ function VersionSection() {
         onClick={ready ? () => window.mosaicDesktop?.installUpdate() : check}
         disabled={checking}
         style={{
-          flexShrink: 0, fontSize: 12.5, fontWeight: 700, padding: '9px 16px', borderRadius: 999, border: 'none',
+          flexShrink: 0, fontSize: 12.5, fontWeight: 700, padding: '9px 16px', borderRadius: 999, border: 'none', whiteSpace: 'nowrap',
           background: ready ? 'var(--accent)' : 'var(--surface3)',
           color: ready ? 'white' : 'var(--text2)',
           cursor: checking ? 'default' : 'pointer',

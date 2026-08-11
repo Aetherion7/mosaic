@@ -17,6 +17,7 @@ import { collectBlobRefs, pruneBlobs } from '@/lib/blobStore'
 import { buildFullBackupPayload, buildBoardBackupPayload, downloadJson, boardExportFilename, fullBackupFilename } from '@/lib/backup'
 import SettingsModal from '@/components/ui/SettingsModal'
 import HomeTutorialTour from '@/components/ui/HomeTutorialTour'
+import WidgetLayoutPreview from '@/components/ui/WidgetLayoutPreview'
 import { TYPE_ICONS, TYPE_LABELS } from '@/components/board/TileWrapper'
 import { useT } from '@/hooks/useT'
 import type { Board, WidgetType } from '@/types'
@@ -41,74 +42,11 @@ const kbdBadgeStyle: React.CSSProperties = {
 
 function BoardMiniMap({ board }: { board: Board }) {
   const t = useT()
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [size, setSize] = useState({ w: 0, h: 0 })
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
-  const ws = Object.values(board.widgets)
+  const items = Object.values(board.widgets).map(w => ({
+    col: w.pos.col, row: w.pos.row, colSpan: w.pos.colSpan, rowSpan: w.pos.rowSpan,
+  }))
   const accent = getTheme(board.themeId).cssVars['--accent'] ?? '#7c6fe8'
-
-  if (ws.length === 0) {
-    return (
-      <div ref={containerRef} style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>{t('Empty board')}</span>
-      </div>
-    )
-  }
-  let minC = Infinity, minR = Infinity, maxC = 0, maxR = 0
-  for (const w of ws) {
-    minC = Math.min(minC, w.pos.col)
-    minR = Math.min(minR, w.pos.row)
-    maxC = Math.max(maxC, w.pos.col + w.pos.colSpan)
-    maxR = Math.max(maxR, w.pos.row + w.pos.rowSpan)
-  }
-  const cols = Math.max(1, maxC - minC)
-  const rows = Math.max(1, maxR - minR)
-
-  // Ein einziger, aus min(...) gebildeter Skalierungsfaktor statt cols/rows
-  // unabhängig voneinander auf 100% zu strecken — sonst verzerrt ein
-  // einzelnes weit entferntes Widget (großer cols- oder rows-Bereich) die
-  // Proportionen ALLER anderen Widgets, obwohl deren echtes Seitenverhältnis
-  // unverändert ist. Grid-Zelle hier als quadratisch angenommen (im
-  // Infinite-Modus exakt korrekt: Spalte und Zeile sind dort beide 112px);
-  // das Ergebnis wird per min()-Skalierung eingepasst und zentriert, statt
-  // verzerrend auf die zufällige Kachelform gestreckt.
-  const pad = 12
-  const availW = Math.max(0, size.w - pad * 2)
-  const availH = Math.max(0, size.h - pad * 2)
-  const scale  = availW > 0 && availH > 0 ? Math.min(availW / cols, availH / rows) : 0
-  const offX   = pad + (availW - cols * scale) / 2
-  const offY   = pad + (availH - rows * scale) / 2
-  // Ecken-Radius bewusst fix (nicht von scale abhängig) — er soll bei jedem
-  // Zoomlevel der Vorschau gleich aussehen. Vorher wirkte ein fixer Radius
-  // nur deshalb "runder", weil einzelne Kacheln durch den cols/rows-Bug oben
-  // auf einer Achse gestaucht wurden; das ist mit der einheitlichen
-  // scale-Berechnung bereits behoben.
-  const cellRadius = 3
-
-  return (
-    <div ref={containerRef} style={{ position: 'absolute', inset: 0 }}>
-      {scale > 0 && ws.map(w => (
-        <div key={w.id} style={{
-          position: 'absolute',
-          left:   offX + (w.pos.col - minC) * scale,
-          top:    offY + (w.pos.row - minR) * scale,
-          width:  Math.max(1, w.pos.colSpan * scale - 3),
-          height: Math.max(1, w.pos.rowSpan * scale - 3),
-          borderRadius: cellRadius,
-          // Akzentfarbe über dunkler Basis — bleibt auf jedem Board-Hintergrund sichtbar
-          background: `color-mix(in srgb, ${accent} 45%, rgba(12,12,22,0.55))`,
-          border: `1px solid color-mix(in srgb, ${accent} 65%, transparent)`,
-        }} />
-      ))}
-    </div>
-  )
+  return <WidgetLayoutPreview items={items} accent={accent} emptyLabel={t('Empty board')} />
 }
 
 // ── Board-Hintergrund für die Vorschau-Kachel ─────────────────────────────────
