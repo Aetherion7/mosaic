@@ -157,7 +157,7 @@ export default function ChartWidget({ widget }: { widget: Widget }) {
             {/* Animated dropdown */}
             <div style={{
               position: 'absolute', right: 0, top: 'calc(100% + 5px)',
-              background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+              background: 'var(--popover-bg)',
               backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
               border: '1px solid var(--border)',
               borderRadius: 10,

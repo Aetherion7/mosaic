@@ -143,7 +143,7 @@ export default function SettingsModal({ onClose, categories, initialCat }: { onC
           onClick={e => e.stopPropagation()}
           style={{
             width: 'min(960px, 92vw)', height: 'min(680px, 88vh)',
-            background: 'color-mix(in srgb, var(--surface) 75%, var(--bg))',
+            background: 'var(--popover-bg)',
             backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
             border: '1px solid var(--border)',
             borderRadius: 18, overflow: 'hidden', display: 'flex',

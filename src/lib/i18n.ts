@@ -584,6 +584,8 @@ export const de: Record<string, string> = {
   'Tiles': 'Kacheln',
   'Bars': 'Balken',
   'Trend': 'Verlauf',
+  'Task view': 'Ansicht',
+  'Drag to reorder': 'Ziehen zum Umsortieren',
   'Now': 'Jetzt',
 
   // ── NoteWidget ──

@@ -64,7 +64,7 @@ export default function UpdateAvailablePopup() {
       <div style={{
         position: 'relative', width: 460, maxWidth: 'calc(100vw - 24px)', maxHeight: 'calc(100vh - 48px)',
         display: 'flex', flexDirection: 'column',
-        background: 'color-mix(in srgb, var(--surface) 45%, var(--bg))',
+        background: 'var(--popover-bg)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
         border: '1px solid var(--border)', borderRadius: 18,
         padding: '22px 26px 20px',

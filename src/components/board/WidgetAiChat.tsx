@@ -85,7 +85,7 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
     <div style={{
       flex: 1, minWidth: 0, minHeight: 0,
       display: 'flex', flexDirection: 'column',
-      background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+      background: 'var(--popover-bg)',
       backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
       borderRadius: 13,
       padding: 14,

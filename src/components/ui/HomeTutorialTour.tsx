@@ -228,7 +228,7 @@ export default function HomeTutorialTour({
   const cardBaseStyle: React.CSSProperties = {
     width: CARD_W,
     maxWidth: 'calc(100vw - 24px)',
-    background: 'color-mix(in srgb, var(--surface) 45%, var(--bg))',
+    background: 'var(--popover-bg)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
     border: '1px solid var(--border)',

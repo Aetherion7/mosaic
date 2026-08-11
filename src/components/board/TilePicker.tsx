@@ -215,7 +215,7 @@ export default function TilePicker() {
                   width: 'min(960px, calc(100vw - 48px))',
                   height: 'min(640px, calc(100vh - 80px))',
                   display: 'flex', flexDirection: 'column',
-                  background: 'color-mix(in srgb, var(--surface) 75%, var(--bg))',
+                  background: 'var(--popover-bg)',
                   backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
                   border: '1px solid var(--border)',
                   borderRadius: 20,

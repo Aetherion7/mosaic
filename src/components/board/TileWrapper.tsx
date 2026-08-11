@@ -292,7 +292,7 @@ function TileWrapperInner({ widget, gridRef }: Props) {
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       style={{
         position: 'absolute', top: 34, right: 8, zIndex: 40, width: 228,
-        background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+        background: 'var(--popover-bg)',
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         border: '1px solid var(--border)', borderRadius: 12,
         boxShadow: '0 12px 40px color-mix(in srgb, var(--shadow-color, #000) 45%, transparent)',
@@ -801,7 +801,7 @@ function WidgetHeaderActions({
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 style={{
                   position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 40, minWidth: 176,
-                  background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+                  background: 'var(--popover-bg)',
                   backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
                   border: '1px solid var(--border)', borderRadius: 12,
                   boxShadow: '0 12px 40px color-mix(in srgb, var(--shadow-color, #000) 45%, transparent)',

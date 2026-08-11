@@ -1,6 +1,12 @@
 'use client'
 import { useState, useEffect } from 'react'
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
+} from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { ColorSwatch } from '@/components/ui/ColorSwatch'
+import { IconDrag } from '@/components/ui/Icons'
 import { useBoardStore } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { uid } from '@/lib/defaults'
@@ -11,6 +17,7 @@ import { useT } from '@/hooks/useT'
 import type { Widget, TaskData, HabitEntry } from '@/types'
 
 type ChartMode = 'kachel' | 'balken' | 'verlauf'
+type ViewMode  = 'weekly' | 'daily'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -77,6 +84,14 @@ function getTodayDayKey(): string {
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  )
+}
+
 function GridIcon() {
   return (
     <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor">
@@ -115,13 +130,29 @@ export default function TaskWidget({ widget, readOnly }: { widget: Widget; readO
   const d         = widget.data as TaskData
   const habits    = d.habits ?? []
   const statsOpen = d.statsOpen ?? false
+  const viewMode  = d.viewMode ?? 'weekly'
   const showStats = useSettings(st => !st.statsDisabledTypes.includes('task'))
 
-  const [editingId,  setEditingId]  = useState<string | null>(null)
-  const [chartMode,  setChartMode]  = useState<ChartMode>('kachel')
-  const [weekOffset, setWeekOffset] = useState(0)
+  const [editingId,    setEditingId]    = useState<string | null>(null)
+  const [chartMode,    setChartMode]    = useState<ChartMode>('kachel')
+  const [weekOffset,   setWeekOffset]   = useState(0)
+  const [viewMenuOpen, setViewMenuOpen] = useState(false)
 
   function patch(p: Record<string, unknown>) { updateTaskData(widget.id, p) }
+
+  // Reihenfolge per Drag & Drop (Griff-Icon, nur im Bearbeiten-Modus sichtbar
+  // — s. IconDrag-Button unten) — dieselbe Sensor-Distanz wie beim
+  // Board-eigenen Widget-Drag, damit ein normaler Klick nicht versehentlich
+  // schon als Drag zählt.
+  const dndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+  function handleDragEnd(e: DragEndEvent) {
+    const { active, over } = e
+    if (!over || active.id === over.id) return
+    const oldIndex = habits.findIndex(h => h.id === active.id)
+    const newIndex = habits.findIndex(h => h.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+    patch({ habits: arrayMove(habits, oldIndex, newIndex) })
+  }
 
   // Weekly reset — checked on mount and hourly, so a tab left open across the
   // Sunday→Monday boundary archives and resets without a reload.
@@ -151,6 +182,17 @@ export default function TaskWidget({ widget, readOnly }: { widget: Widget; readO
   const currentWeek = getWeekKey()
   const todayKey    = getTodayDayKey()
   const todayIdx    = DAY_KEYS.indexOf(todayKey)
+
+  // Datumsanzeige oben mittig im Widget — in der Wochenansicht die
+  // Spanne Tag.Monat–Tag.Monat, in der Tagesansicht nur das heutige Datum.
+  const weekMonday = getWeekMonday(currentWeek)
+  const weekSunday = new Date(weekMonday)
+  weekSunday.setDate(weekMonday.getDate() + 6)
+  const weekRangeShort = `${weekMonday.getDate()}.${weekMonday.getMonth() + 1}. – ${weekSunday.getDate()}.${weekSunday.getMonth() + 1}.`
+  const now = new Date()
+  const todayLabel = WEEK_DAYS.find(d => d.key === todayKey)?.label ?? ''
+  const todayShort = `${t(todayLabel)}, ${now.getDate()}.${now.getMonth() + 1}.`
+  const headerDateLabel = viewMode === 'daily' ? todayShort : weekRangeShort
 
   function isPastDay(key: string) { return DAY_KEYS.indexOf(key) < todayIdx }
 
@@ -187,86 +229,92 @@ export default function TaskWidget({ widget, readOnly }: { widget: Widget; readO
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
-      {/* ── Habit list ── */}
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 6px 4px' }}>
-        {habits.map(h => (
-          <div key={h.id} style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '5px 7px', borderRadius: 7, background: 'var(--surface2)', border: '1px solid var(--border)', flexShrink: 0 }}>
-            {/* Name row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {mode === 'edit' ? (
-                <div onPointerDown={e => e.stopPropagation()}>
-                  <ColorSwatch value={h.color} onChange={v => updateHabit(h.id, { color: v })}
-                    trigger={onClick => <div onClick={onClick} style={{ width: 10, height: 10, borderRadius: '50%', background: h.color, border: '1.5px solid rgba(255,255,255,0.15)', cursor: 'pointer', flexShrink: 0 }} />}
-                  />
-                </div>
-              ) : (
-                <div style={{ width: 7, height: 7, borderRadius: '50%', background: h.color, flexShrink: 0 }} />
-              )}
-
-              {editingId === h.id && mode === 'edit' ? (
-                <input autoFocus value={h.name} maxLength={60}
-                  onChange={e => updateHabit(h.id, { name: e.target.value })}
-                  onBlur={() => setEditingId(null)}
-                  onPointerDown={e => e.stopPropagation()}
-                  style={{ flex: 1, minWidth: 0, fontSize: 11, fontWeight: 600, color: 'var(--text1)', background: 'var(--surface)', borderRadius: 4, padding: '1px 4px', border: 'none', outline: 'none' }}
-                />
-              ) : (
-                // Eigener Flex-Container statt flex:1 direkt auf dem Namen: so
-                // sitzt der Bearbeiten-Stift IMMER direkt hinter dem (ggf. mit
-                // Ellipsis abgeschnittenen) Namensende, statt vom rechten Rand
-                // des ganzen Zeilen-Containers an den Namen herangezogen zu werden.
-                <div style={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1, minWidth: 0 }}>
-                  <span onDoubleClick={() => mode === 'edit' && setEditingId(h.id)}
-                    style={{ minWidth: 0, fontSize: 11, fontWeight: 600, color: 'var(--text1)', cursor: mode === 'edit' ? 'text' : 'default', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {h.name}
-                  </span>
-                  {mode === 'edit' && (
-                    <button onPointerDown={e => e.stopPropagation()} onClick={() => setEditingId(h.id)}
-                      title={`${t('Rename')} ${h.name}`}
-                      style={{ width: 15, height: 15, borderRadius: 4, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              )}
-
-              <span style={{ fontSize: 9, fontWeight: 700, color: h.color, flexShrink: 0 }}>{h.weekDays.length}/7</span>
-
-              {mode === 'edit' && (
-                <button onPointerDown={e => e.stopPropagation()} onClick={() => removeHabit(h.id)}
-                  title={`${t('Remove')} ${h.name}`}
-                  style={{ width: 15, height: 15, borderRadius: 4, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
-              )}
-            </div>
-
-            {/* Weekday buttons */}
-            <div style={{ display: 'flex', gap: 2 }}>
-              {WEEK_DAYS.map(({ key, label }) => {
-                const checked = h.weekDays.includes(key)
-                const past    = isPastDay(key)
-                return (
-                  <button key={key} onPointerDown={e => e.stopPropagation()} onClick={() => toggleDay(h.id, key)}
-                    disabled={readOnly || past}
+      {/* Ansichts-Umschalter: Wochenraster (Mo–So) vs. Checkpoint-Roadmap für heute
+          — gleiches Auswahlfeld-Muster wie im Kalender-Widget (Button + Chevron,
+          Dropdown mit Glass-Hintergrund), nur mit Woche/Tag statt Monat/Woche/Tag. */}
+      {habits.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', padding: '6px 6px 0', flexShrink: 0 }} onPointerDown={e => e.stopPropagation()}>
+          <div />
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text2)', textAlign: 'center', letterSpacing: 0.2 }}>
+            {headerDateLabel}
+          </span>
+          <div style={{ position: 'relative', flexShrink: 0, justifySelf: 'end' }}>
+            <button
+              onClick={() => setViewMenuOpen(o => !o)}
+              title={t('Task view')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                fontSize: 9, fontWeight: 600, padding: '4px 9px', borderRadius: 8,
+                border: '1px solid var(--border)', background: 'var(--surface2)',
+                color: 'var(--text2)', cursor: 'pointer',
+              }}
+            >
+              {viewMode === 'weekly' ? t('Week') : t('Day')}
+              <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: viewMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            {viewMenuOpen && (<>
+              <div style={{ position: 'fixed', inset: 0, zIndex: 140 }} onClick={() => setViewMenuOpen(false)} />
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 150,
+                display: 'flex', flexDirection: 'column', gap: 1, padding: 4, minWidth: 96,
+                background: 'var(--popover-bg)',
+                backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+                border: '1px solid var(--border)', borderRadius: 10,
+                boxShadow: '0 8px 28px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)',
+              }}>
+                {(['weekly', 'daily'] as const).map(v => (
+                  <button
+                    key={v}
+                    onClick={() => { patch({ viewMode: v }); setViewMenuOpen(false) }}
                     style={{
-                      flex: 1, height: 22, borderRadius: 4,
-                      border: `1.5px solid ${checked ? h.color : past ? 'transparent' : 'var(--border)'}`,
-                      background: checked ? `color-mix(in srgb, ${h.color} 13%, transparent)` : 'transparent',
-                      color: checked ? h.color : 'var(--text3)',
-                      fontSize: 8, fontWeight: 700,
-                      cursor: readOnly || past ? 'default' : 'pointer',
-                      opacity: past && !checked ? 0.28 : 1,
-                      transition: 'all 0.1s', padding: 0,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                    {t(label)}
+                      display: 'flex', alignItems: 'center',
+                      fontSize: 10, fontWeight: viewMode === v ? 700 : 500, padding: '5px 8px', borderRadius: 7,
+                      border: 'none', textAlign: 'left',
+                      background: viewMode === v ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'transparent',
+                      color: viewMode === v ? 'var(--accent)' : 'var(--text2)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {v === 'weekly' ? t('Week') : t('Day')}
                   </button>
-                )
-              })}
-            </div>
+                ))}
+              </div>
+            </>)}
           </div>
-        ))}
+        </div>
+      )}
+
+      {/* ── Habit list ── */}
+      <div style={{
+        flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column',
+        gap: viewMode === 'daily' ? 0 : 4,
+        padding: viewMode === 'daily' ? '14px 10px 4px' : '6px 6px 4px',
+      }}>
+        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={habits.map(h => h.id)} strategy={verticalListSortingStrategy}>
+            {habits.map((h, i) => (
+              <SortableHabitRow
+                key={h.id}
+                h={h}
+                index={i}
+                isLast={i === habits.length - 1}
+                viewMode={viewMode}
+                mode={mode}
+                readOnly={readOnly}
+                editingId={editingId}
+                setEditingId={setEditingId}
+                updateHabit={updateHabit}
+                removeHabit={removeHabit}
+                toggleDay={toggleDay}
+                isPastDay={isPastDay}
+                todayKey={todayKey}
+                t={t}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
 
         {mode === 'edit' && (
           <button onPointerDown={e => e.stopPropagation()} onClick={addHabit}
@@ -337,6 +385,215 @@ export default function TaskWidget({ widget, readOnly }: { widget: Widget; readO
           </>)}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Eine Aufgaben-/Gewohnheits-Zeile ──────────────────────────────────────────
+// Trägt die Drag&Drop-Sortierung (useSortable) UND rendert je nach Ansicht
+// entweder die Wochenraster-Karte (Mo–So-Kreise) oder einen Checkpoint der
+// Roadmap-Ansicht — beide teilen sich Griff, Namensfeld und Lösch-Button,
+// damit Bearbeiten/Umbenennen/Entfernen in beiden Ansichten gleich funktioniert.
+function SortableHabitRow({
+  h, index, isLast, viewMode, mode, readOnly, editingId, setEditingId,
+  updateHabit, removeHabit, toggleDay, isPastDay, todayKey, t,
+}: {
+  h: HabitEntry
+  index: number
+  isLast: boolean
+  viewMode: ViewMode
+  mode: 'edit' | 'view'
+  readOnly?: boolean
+  editingId: string | null
+  setEditingId: (id: string | null) => void
+  updateHabit: (id: string, changes: Partial<HabitEntry>) => void
+  removeHabit: (id: string) => void
+  toggleDay: (id: string, key: string) => void
+  isPastDay: (key: string) => boolean
+  todayKey: string
+  t: (s: string) => string
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: h.id, disabled: mode !== 'edit' })
+  const dragStyle: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition: transition ?? undefined,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1 : undefined,
+  }
+
+  // Wichtig: NICHT einfach onPointerDown={e => e.stopPropagation()} nach
+  // {...listeners} spreaden — das überschreibt (gleicher Prop-Name, späterer
+  // JSX-Wert gewinnt) dnd-kit's eigenen onPointerDown-Handler ersatzlos,
+  // wodurch der Drag nie startet. Stattdessen beides verketten: erst
+  // stopPropagation (verhindert, dass BoardGrid.tsx währenddessen eine
+  // Marquee-Auswahl beginnt), danach den ursprünglichen dnd-kit-Handler selbst aufrufen.
+  const dragHandle = mode === 'edit' && (
+    <button {...attributes} {...listeners}
+      onPointerDown={e => { e.stopPropagation(); listeners?.onPointerDown?.(e) }}
+      title={t('Drag to reorder')}
+      style={{ width: 14, height: 14, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'grab', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, touchAction: 'none' }}>
+      <IconDrag size={11} />
+    </button>
+  )
+
+  const nameField = editingId === h.id && mode === 'edit' ? (
+    <input autoFocus value={h.name} maxLength={60}
+      onChange={e => updateHabit(h.id, { name: e.target.value })}
+      onBlur={() => setEditingId(null)}
+      onPointerDown={e => e.stopPropagation()}
+      style={{ flex: 1, minWidth: 0, fontSize: 11, fontWeight: 600, color: 'var(--text1)', background: 'var(--surface)', borderRadius: 4, padding: '1px 4px', border: 'none', outline: 'none' }}
+    />
+  ) : (
+    // Eigener Flex-Container statt flex:1 direkt auf dem Namen: so sitzt der
+    // Bearbeiten-Stift IMMER direkt hinter dem (ggf. mit Ellipsis
+    // abgeschnittenen) Namensende, statt vom rechten Rand herangezogen zu werden.
+    <div style={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1, minWidth: 0 }}>
+      <span onDoubleClick={() => mode === 'edit' && setEditingId(h.id)}
+        style={{ minWidth: 0, fontSize: 11, fontWeight: 600, color: 'var(--text1)', cursor: mode === 'edit' ? 'text' : 'default', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {h.name}
+      </span>
+      {mode === 'edit' && (
+        <button onPointerDown={e => e.stopPropagation()} onClick={() => setEditingId(h.id)}
+          title={`${t('Rename')} ${h.name}`}
+          style={{ width: 15, height: 15, borderRadius: 4, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>
+          </svg>
+        </button>
+      )}
+    </div>
+  )
+
+  const removeBtn = mode === 'edit' && (
+    <button onPointerDown={e => e.stopPropagation()} onClick={() => removeHabit(h.id)}
+      title={`${t('Remove')} ${h.name}`}
+      style={{ width: 15, height: 15, borderRadius: 4, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
+  )
+
+  if (viewMode === 'daily') {
+    const doneToday = h.weekDays.includes(todayKey)
+    // Pathways/Duolingo-artige Checkpoint-Roadmap: größere, zentrierte Kreise,
+    // die abwechselnd links/rechts der Mitte versetzt sind (Zickzack) statt in
+    // einer geraden Spalte. Amplitude/Zeilenhöhe sind feste Konstanten, damit
+    // sich Länge/Winkel der Verbindungslinie zum nächsten Checkpoint rein
+    // rechnerisch (ohne Messen) bestimmen lassen.
+    const CIRCLE     = 56
+    const AMP        = 64
+    const ROW_H       = 100
+    const LINE_THICK = 3
+    const offset     = index % 2 === 0 ? -AMP : AMP
+    const nextOffset = -offset
+    // Linie verläuft Mittelpunkt-zu-Mittelpunkt (nicht Tangente-zu-Tangente) —
+    // die Kreise selbst (zIndex 1, höher als die Linie) überdecken dadurch das
+    // jeweils innere Stück, sodass der Pfad optisch durchgehend IN die Kreise
+    // hineinläuft statt sichtbar davor zu enden.
+    const dx = nextOffset - offset
+    const dy = ROW_H
+    const pathLen   = Math.hypot(dx, dy)
+    const pathAngle = Math.atan2(dy, dx) * 180 / Math.PI
+
+    return (
+      // flexShrink: 0 ist hier Pflicht — ohne das quetscht der scrollende
+      // Flex-Container (der bei vielen Aufgaben höher wird als sichtbar) die
+      // fest gesetzte `height` jeder Zeile zusammen, wodurch die absolut
+      // positionierten Kreise übereinander stapeln statt sauber untereinander
+      // zu stehen (das exakte Problem aus dem Screenshot der Rückmeldung).
+      <div ref={setNodeRef} style={{ ...dragStyle, position: 'relative', flexShrink: 0, height: isLast ? CIRCLE + 36 : ROW_H }}>
+        {/* Pfad zum nächsten Checkpoint. Beim Ziehen (isDragging) ausgeblendet,
+            damit die Drag-Vorschau nur den Kreis zeigt, keine mitwandernde
+            angeschnittene Linie. */}
+        {!isLast && !isDragging && (
+          <div style={{
+            position: 'absolute', left: `calc(50% + ${offset}px)`, top: CIRCLE / 2 - LINE_THICK / 2, width: pathLen, height: LINE_THICK,
+            transformOrigin: '0 50%', transform: `rotate(${pathAngle}deg)`,
+            background: `color-mix(in srgb, ${h.color} 35%, var(--border))`, borderRadius: 2,
+          }} />
+        )}
+        <button onClick={() => toggleDay(h.id, todayKey)} disabled={readOnly}
+          title={h.name}
+          style={{
+            position: 'absolute', left: `calc(50% + ${offset}px)`, top: 0, transform: 'translateX(-50%)',
+            width: CIRCLE, height: CIRCLE, borderRadius: '50%', zIndex: 1, padding: 0,
+            border: `2.5px solid ${h.color}`,
+            // Nicht einfach var(--surface2) — im Crystal-Glass-Theme ist das nur
+            // 10% deckend, wodurch der Verbindungslinien-Treffpunkt mitten durch
+            // den (dann fast unsichtbaren) Kreis hindurchscheint. var(--bg) ist
+            // in jedem Theme deckend, daher hier stark gewichtet.
+            background: doneToday ? h.color : 'color-mix(in srgb, var(--surface2) 20%, var(--bg) 80%)',
+            boxShadow: doneToday ? `0 0 0 4px color-mix(in srgb, ${h.color} 16%, transparent)` : 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: readOnly ? 'default' : 'pointer', transition: 'all 0.15s',
+          }}>
+          {doneToday && <CheckIcon />}
+        </button>
+        {/* Name/Steuerung sitzt neben (nicht unter) dem Kreis — auf der Seite,
+            zu der der Kreis NICHT ausgelenkt ist, damit der freie Platz der
+            Zickzack-Auslegung genutzt wird statt der Text mittig unter dem
+            Kreis abgeschnitten zu werden. */}
+        <div style={{
+          position: 'absolute', top: CIRCLE / 2, transform: 'translateY(-50%)',
+          display: 'flex', alignItems: 'center', justifyContent: offset < 0 ? 'flex-start' : 'flex-end',
+          gap: 3, maxWidth: 130,
+          ...(offset < 0
+            ? { left: `calc(50% + ${offset}px + ${CIRCLE / 2 + 8}px)` }
+            : { right: `calc(50% - ${offset}px + ${CIRCLE / 2 + 8}px)` }),
+        }}>
+          {dragHandle}
+          {nameField}
+          {removeBtn}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div ref={setNodeRef} style={{ ...dragStyle, display: 'flex', flexDirection: 'column', gap: 4, padding: '5px 7px', borderRadius: 7, background: 'var(--surface2)', border: '1px solid var(--border)', flexShrink: 0 }}>
+      {/* Name row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {dragHandle}
+        {mode === 'edit' ? (
+          <div onPointerDown={e => e.stopPropagation()}>
+            <ColorSwatch value={h.color} onChange={v => updateHabit(h.id, { color: v })}
+              trigger={onClick => <div onClick={onClick} style={{ width: 10, height: 10, borderRadius: '50%', background: h.color, border: '1.5px solid rgba(255,255,255,0.15)', cursor: 'pointer', flexShrink: 0 }} />}
+            />
+          </div>
+        ) : (
+          <div style={{ width: 7, height: 7, borderRadius: '50%', background: h.color, flexShrink: 0 }} />
+        )}
+
+        {nameField}
+
+        <span style={{ fontSize: 9, fontWeight: 700, color: h.color, flexShrink: 0 }}>{h.weekDays.length}/7</span>
+
+        {removeBtn}
+      </div>
+
+      {/* Weekday circles — über die volle Kartenbreite verteilt (space-between)
+          statt mittig geklumpt, damit an den Seiten kein Leerraum bleibt. */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+        {WEEK_DAYS.map(({ key, label }) => {
+          const checked = h.weekDays.includes(key)
+          const past    = isPastDay(key)
+          return (
+            <button key={key} onPointerDown={e => e.stopPropagation()} onClick={() => toggleDay(h.id, key)}
+              disabled={readOnly || past}
+              title={t(label)}
+              style={{
+                width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                border: `1.5px solid ${checked ? h.color : past ? 'transparent' : 'var(--border)'}`,
+                background: checked ? `color-mix(in srgb, ${h.color} 18%, transparent)` : 'transparent',
+                color: checked ? h.color : 'var(--text3)',
+                fontSize: 8, fontWeight: 700,
+                cursor: readOnly || past ? 'default' : 'pointer',
+                opacity: past && !checked ? 0.28 : 1,
+                transition: 'all 0.1s', padding: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+              {t(label)}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

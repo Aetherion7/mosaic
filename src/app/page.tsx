@@ -298,7 +298,7 @@ function FolderSection({
               <div role="menu" style={{
                 position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 150,
                 minWidth: 200, overflow: 'hidden', padding: '10px 0 4px',
-                background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+                background: 'var(--popover-bg)',
                 backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
                 border: '1px solid var(--border)',
                 borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
@@ -667,12 +667,15 @@ export default function HomePage() {
     Object.entries(theme.cssVars).forEach(([k, v]) => root.style.setProperty(k, v))
   }, [uiMode])
 
-  // Speicher-Statistik
-  const [storagePct, setStoragePct] = useState<number | null>(null)
+  // Speicher-Statistik — zeigt wie Einstellungen → Daten (DatenPanel.tsx)
+  // nur die tatsächlich belegte Größe in MB, kein Vergleich gegen die
+  // Storage-Quota mehr (die ist dort wie hier eine für Nutzer:innen
+  // bedeutungslose große Zahl, s. Kommentar dort).
+  const [storageMB, setStorageMB] = useState<string | null>(null)
   useEffect(() => {
     if (!navigator.storage?.estimate) return
-    navigator.storage.estimate().then(({ usage, quota }) => {
-      if (usage != null && quota) setStoragePct(Math.round(usage / quota * 100))
+    navigator.storage.estimate().then(({ usage }) => {
+      if (usage != null) setStorageMB((usage / 1024 / 1024).toFixed(1))
     })
   }, [])
 
@@ -1007,7 +1010,7 @@ export default function HomePage() {
               <div style={{
                 position: 'absolute', left: 0, top: 'calc(100% + 6px)', zIndex: 100,
                 minWidth: 200, maxWidth: 280, padding: '8px 0',
-                background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+                background: 'var(--popover-bg)',
                 backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
                 border: '1px solid var(--border)',
                 borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
@@ -1040,7 +1043,7 @@ export default function HomePage() {
               <div style={{
                 position: 'absolute', left: 0, top: 'calc(100% + 6px)', zIndex: 100,
                 minWidth: 190, padding: '8px 0',
-                background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+                background: 'var(--popover-bg)',
                 backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
                 border: '1px solid var(--border)',
                 borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
@@ -1062,11 +1065,10 @@ export default function HomePage() {
               </div>
             )}
           </div>
-          {storagePct != null && (
+          {storageMB != null && (
             <div ref={storageRef} style={{ position: 'relative' }}>
               <StatChip
-                label={`${t('Storage')} ${storagePct} %`}
-                warn={storagePct > 80}
+                label={`${t('Storage')} ${storageMB} MB`}
                 onClick={() => setStorageOpen(o => !o)}
                 title={t('Show largest boards')}
               />
@@ -1074,7 +1076,7 @@ export default function HomePage() {
                 <div style={{
                   position: 'absolute', left: 0, top: 'calc(100% + 6px)', zIndex: 100,
                   minWidth: 210, padding: '8px 0',
-                  background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+                  background: 'var(--popover-bg)',
                   backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
                   border: '1px solid var(--border)',
                   borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
@@ -1169,7 +1171,7 @@ export default function HomePage() {
               <div style={{
                 position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 100,
                 minWidth: 176, overflow: 'hidden',
-                background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+                background: 'var(--popover-bg)',
                 backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
                 border: '1px solid var(--border)',
                 borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
@@ -1240,7 +1242,7 @@ export default function HomePage() {
                   role="dialog" aria-modal="true" aria-label={t('New folder')}
                   style={{
                     width: 'min(420px, 92vw)', padding: '26px 28px',
-                    background: 'color-mix(in srgb, var(--surface) 75%, var(--bg))',
+                    background: 'var(--popover-bg)',
                     backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
                     border: '1px solid var(--border)',
                     borderRadius: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
@@ -1497,7 +1499,7 @@ export default function HomePage() {
               style={{
                 width: '100%', maxWidth: 560, maxHeight: '78vh',
                 display: 'flex', flexDirection: 'column',
-                background: 'color-mix(in srgb, var(--surface) 88%, var(--bg))',
+                background: 'var(--popover-bg)',
                 backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
                 border: '1px solid var(--border)', borderRadius: 18,
                 boxShadow: '0 24px 70px rgba(0,0,0,0.55)', overflow: 'hidden',
@@ -1729,7 +1731,7 @@ export default function HomePage() {
               onClick={e => e.stopPropagation()}
               style={{
                 width: 'min(420px, 92vw)', padding: '26px 28px',
-                background: 'color-mix(in srgb, var(--surface) 75%, var(--bg))',
+                background: 'var(--popover-bg)',
                 backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
                 border: '1px solid var(--border)',
                 borderRadius: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.5)',

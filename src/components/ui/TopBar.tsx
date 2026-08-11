@@ -147,7 +147,7 @@ export default function TopBar() {
   const islandPill: React.CSSProperties = isIsland ? {
     // Mit --bg gemischt statt transparent: bleibt auch über weißem Inhalt
     // (PDF, Zeichenfläche) in jedem Theme deckend & lesbar
-    background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+    background: 'var(--popover-bg)',
     backdropFilter: 'blur(16px)',
     WebkitBackdropFilter: 'blur(16px)',
     border: '1px solid var(--border)',
@@ -169,7 +169,7 @@ export default function TopBar() {
       display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center',
       columnGap: 0,
       padding: isIsland ? '6px 16px' : '0 16px',
-      background: isIsland ? 'transparent' : 'color-mix(in srgb, var(--surface) 60%, var(--bg))',
+      background: isIsland ? 'transparent' : 'var(--popover-bg)',
       backdropFilter: isIsland ? 'none' : 'blur(16px)',
       borderBottom: isIsland ? 'none' : '1px solid var(--border)',
     }}>
@@ -258,7 +258,7 @@ export default function TopBar() {
         <div style={{
           display: 'flex', alignItems: 'center',
           ...(isIsland ? {
-            background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+            background: 'var(--popover-bg)',
             backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
             border: '1px solid var(--border)', borderRadius: 999,
             padding: '4px 8px', boxShadow: '0 2px 12px rgba(0,0,0,0.15)',

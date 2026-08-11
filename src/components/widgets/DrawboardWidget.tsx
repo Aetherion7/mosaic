@@ -982,7 +982,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
   // every render (remount instead of update); since there's no separate
   // component here at all, that concern doesn't apply.
   const penPanel = (
-    <div style={{ background: 'color-mix(in srgb, var(--surface) 40%, var(--bg))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid var(--border)', borderRadius: 10, padding: 10, width: 220, boxShadow: '0 6px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', gap: 10 }}
+    <div style={{ background: 'var(--popover-bg)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid var(--border)', borderRadius: 10, padding: 10, width: 220, boxShadow: '0 6px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', gap: 10 }}
       onPointerDown={e => e.stopPropagation()}>
 
       {/* ── Brush type selector ── */}
@@ -1023,7 +1023,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
   )
 
   const formatPanel = (
-    <div style={{ background: 'color-mix(in srgb, var(--surface) 40%, var(--bg))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid var(--border)', borderRadius: 10, padding: 10, width: 200, boxShadow: '0 6px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', gap: 8 }}
+    <div style={{ background: 'var(--popover-bg)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid var(--border)', borderRadius: 10, padding: 10, width: 200, boxShadow: '0 6px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', gap: 8 }}
       onPointerDown={e => e.stopPropagation()}>
       <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Shapes')}</div>
       <div style={{ display: 'flex', gap: 5 }}>
@@ -1120,7 +1120,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
           <button title={t('Color')} onClick={() => { setShowColors(s => !s); setShowFormat(false); setShowPenOpts(false) }}
             style={{ ...BTN, background: color, border: showColors ? '2px solid var(--accent)' : '2px solid rgba(0,0,0,0.4)' }} />
           <PortalPopover open={showColors} anchorRef={colorGroupRef} onClose={() => setShowColors(false)}>
-            <div style={{ background: 'color-mix(in srgb, var(--surface) 40%, var(--bg))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid var(--border)', borderRadius: 8, padding: 6, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}
+            <div style={{ background: 'var(--popover-bg)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid var(--border)', borderRadius: 8, padding: 6, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}
               onPointerDown={e => e.stopPropagation()}>
               {COLORS.map(c => (
                 <button key={c} onClick={() => { setColor(c); setShowColors(false) }}

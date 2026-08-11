@@ -243,7 +243,7 @@ function DonateOverlay({ onClose }: { onClose: () => void }) {
         transition={{ type: 'spring', stiffness: 340, damping: 30 }}
         style={{
           position: 'relative', width: 640, maxWidth: 'calc(100vw - 24px)',
-          background: 'color-mix(in srgb, var(--surface) 45%, var(--bg))',
+          background: 'var(--popover-bg)',
           backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
           border: '1px solid var(--border)', borderRadius: 20,
           padding: '26px 30px 24px',
@@ -610,7 +610,7 @@ export default function TutorialTour() {
     width: CARD_W,
     maxWidth: 'calc(100vw - 24px)',
     // Mit --bg gemischt + Blur: bleibt in jedem Theme deckend (Glass-Fix)
-    background: 'color-mix(in srgb, var(--surface) 45%, var(--bg))',
+    background: 'var(--popover-bg)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
     border: '1px solid var(--border)',

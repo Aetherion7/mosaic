@@ -440,7 +440,7 @@ function FontSelect({ builtins, custom, value, onChange, onDeleteCustom, onAddCu
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 20,
           minWidth: 200, maxHeight: 280, overflowY: 'auto',
-          background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+          background: 'var(--popover-bg)',
           backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
           border: '1px solid var(--border)', borderRadius: 10,
           boxShadow: '0 8px 24px rgba(0,0,0,0.35)',

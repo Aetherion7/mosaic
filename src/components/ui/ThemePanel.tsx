@@ -48,7 +48,7 @@ export default function ThemePanel() {
     reader.readAsDataURL(file)
   }
 
-  const panelBg = 'color-mix(in srgb, var(--surface) 75%, var(--bg))'
+  const panelBg = 'var(--popover-bg)'
   const panelStyle: React.CSSProperties = {
     position: 'fixed', top: 60, right: 16, zIndex: 900,
     width: 320,

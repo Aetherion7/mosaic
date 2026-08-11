@@ -41,6 +41,7 @@ export interface HabitEntry {
 export interface TaskData {
   habits?:    HabitEntry[]
   statsOpen?: boolean   // Wochenstatistik auf-/eingeklappt
+  viewMode?:  'weekly' | 'daily'   // Mo–So-Liste vs. Checkpoint-Roadmap für heute
 }
 
 // Font/color/shadow/stroke fields are optional — pre-existing notes on

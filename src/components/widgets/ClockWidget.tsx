@@ -366,7 +366,7 @@ export default function ClockWidget({ widget }: { widget: Widget }) {
               <div style={{
                 position: 'absolute', bottom: 'calc(100% + 4px)', left: 0, zIndex: 50,
                 display: 'flex', flexDirection: 'column', gap: 1, padding: 4, minWidth: 118,
-                background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+                background: 'var(--popover-bg)',
                 backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
                 border: '1px solid var(--border)', borderRadius: 10,
                 boxShadow: '0 8px 28px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)',

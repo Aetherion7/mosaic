@@ -94,7 +94,7 @@ export default function WidgetStylePanel() {
     transition: { type: 'spring' as const, stiffness: 380, damping: 32 },
   }
 
-  const panelBg = 'color-mix(in srgb, var(--surface) 75%, var(--bg))'
+  const panelBg = 'var(--popover-bg)'
   const panelStyle: React.CSSProperties = {
     position: 'fixed', top: pos.top, left: pos.left, zIndex: 900,
     width: PANEL_W,

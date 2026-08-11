@@ -46,7 +46,7 @@ export default function DesktopStartupPrompt() {
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(4,4,10,0.72)', backdropFilter: 'blur(1.5px)', WebkitBackdropFilter: 'blur(1.5px)' }} />
       <div style={{
         position: 'relative', width: 440, maxWidth: 'calc(100vw - 24px)',
-        background: 'color-mix(in srgb, var(--surface) 45%, var(--bg))',
+        background: 'var(--popover-bg)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
         border: '1px solid var(--border)', borderRadius: 18,
         padding: '22px 26px 20px',

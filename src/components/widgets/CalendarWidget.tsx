@@ -946,7 +946,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
               <div style={{
                 position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 150,
                 display: 'flex', flexDirection: 'column', gap: 1, padding: 4, minWidth: 96,
-                background: 'color-mix(in srgb, var(--surface) 55%, var(--bg))',
+                background: 'var(--popover-bg)',
                 backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
                 border: '1px solid var(--border)', borderRadius: 10,
                 boxShadow: '0 8px 28px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)',
@@ -1459,7 +1459,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
           onMouseDown={e => { if (e.target === e.currentTarget) closePopup() }}
         >
           <div
-            style={{ background: 'color-mix(in srgb, var(--surface) 75%, var(--bg))', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)', borderRadius: 14, border: '1px solid var(--border)', width: '100%', maxWidth: 300, maxHeight: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 0, boxShadow: '0 12px 40px rgba(0,0,0,0.6)', overflow: 'hidden' }}
+            style={{ background: 'var(--popover-bg)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)', borderRadius: 14, border: '1px solid var(--border)', width: '100%', maxWidth: 300, maxHeight: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 0, boxShadow: '0 12px 40px rgba(0,0,0,0.6)', overflow: 'hidden' }}
             onMouseDown={e => e.stopPropagation()}
           >
             {/* Header */}
