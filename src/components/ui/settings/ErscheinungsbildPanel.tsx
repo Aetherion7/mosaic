@@ -118,6 +118,11 @@ function CustomThemesSection() {
   const [jsonInput, setJsonInput] = useState('')
   const [error,     setError]     = useState<string | null>(null)
   const [preview,   setPreview]   = useState<CustomTheme | null>(null)
+  // Gesetzt, während ein bereits vorhandenes Theme bearbeitet wird (statt ein
+  // neues hinzuzufügen) — addCustomTheme() ersetzt intern per ID, das Formular
+  // muss also nur mit derselben ID erneut absenden, damit "Speichern" statt
+  // eines Duplikats das bestehende Theme aktualisiert.
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   function handleChange(val: string) {
     setJsonInput(val)
@@ -150,7 +155,23 @@ function CustomThemesSection() {
   function install() {
     if (!preview) return
     addCustomTheme(preview)
-    setJsonInput(''); setPreview(null); setShowForm(false)
+    setJsonInput(''); setPreview(null); setShowForm(false); setEditingId(null)
+  }
+
+  function startEdit(theme: CustomTheme) {
+    setEditingId(theme.id)
+    handleChange(JSON.stringify({
+      id:      theme.id.replace(/^custom_/, ''),
+      name:    theme.name,
+      cssVars: theme.cssVars,
+      ...(theme.bg          ? { bg: theme.bg }                   : {}),
+      ...(theme.widgetStyle ? { widgetStyle: theme.widgetStyle } : {}),
+    }, null, 2))
+    setShowForm(true)
+  }
+
+  function closeForm() {
+    setShowForm(false); setJsonInput(''); setError(null); setPreview(null); setEditingId(null)
   }
 
   return (
@@ -169,6 +190,12 @@ function CustomThemesSection() {
               ))}
             </div>
             <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ct.name}</span>
+            <button onClick={() => startEdit(ct)} title={t('Edit theme')}
+              style={{ width: 20, height: 20, borderRadius: 6, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>
+              </svg>
+            </button>
             <button onClick={() => removeCustomTheme(ct.id)} title={t('Remove theme')}
               style={{ width: 20, height: 20, borderRadius: 6, border: 'none', background: 'none', color: 'var(--text3)', fontSize: 13, lineHeight: 1, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
           </div>
@@ -196,12 +223,12 @@ function CustomThemesSection() {
               </svg>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text1)' }}>{t('Add theme from JSON')}</div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text1)' }}>{editingId ? t('Edit theme') : t('Add theme from JSON')}</div>
               <div style={{ fontSize: 10, color: 'var(--text3)', lineHeight: 1.4 }}>
                 {t('Only "name" + "cssVars" are required — the rest falls back to Deep Space. Optional: "bg", "widgetStyle".')}
               </div>
             </div>
-            <button onClick={() => { setShowForm(false); setJsonInput(''); setError(null); setPreview(null) }} title={t('Close')}
+            <button onClick={closeForm} title={t('Close')}
               style={{ width: 22, height: 22, borderRadius: 6, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
             </button>
@@ -233,13 +260,13 @@ function CustomThemesSection() {
             </div>
           )}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button onClick={() => { setShowForm(false); setJsonInput(''); setError(null); setPreview(null) }}
+            <button onClick={closeForm}
               style={{ fontSize: 11, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
               {t('Cancel')}
             </button>
             <button onClick={install} disabled={!preview}
               style={{ fontSize: 11, fontWeight: 700, padding: '6px 14px', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'white', cursor: preview ? 'pointer' : 'default', opacity: preview ? 1 : 0.4 }}>
-              {t('Add theme')}
+              {editingId ? t('Save changes') : t('Add theme')}
             </button>
           </div>
         </div>

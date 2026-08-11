@@ -77,6 +77,8 @@ export const de: Record<string, string> = {
   'cssVars is empty': 'cssVars ist leer',
   'Invalid JSON': 'Ungültiges JSON',
   'Remove theme': 'Theme entfernen',
+  'Edit theme': 'Theme bearbeiten',
+  'Save changes': 'Änderungen speichern',
   'No custom themes yet — they appear in the theme panel under "Custom" after adding one.': 'Noch keine eigenen Themes — erscheinen nach dem Hinzufügen im Theme-Panel unter „Eigene“.',
   'Add theme from JSON': 'Theme aus JSON hinzufügen',
   'Only "name" + "cssVars" are required — the rest falls back to Deep Space. Optional: "bg", "widgetStyle".': 'Nur „name“ + „cssVars“ sind Pflicht — Rest füllt Deep Space auf. Optional: „bg“, „widgetStyle“.',

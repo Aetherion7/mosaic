@@ -1,8 +1,10 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useSettings } from '@/store/settingsStore'
+import type { CustomTemplate } from '@/store/settingsStore'
 import { useBoardStore } from '@/store/boardStore'
 import { THEMES, resolveCustomTheme } from '@/lib/themes'
+import { TYPE_ICONS, TYPE_LABELS } from '@/components/board/TileWrapper'
 import { useT } from '@/hooks/useT'
 import { SectionTitle, SettingItem } from './shared'
 
@@ -48,15 +50,7 @@ export default function BoardsPanel() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {customTemplates.map(tpl => (
-            <div key={tpl.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 9, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                <path d="M3 3h7v7H3zM14 3h7v11h-7zM3 14h7v7H3zM14 18h7v3h-7z"/>
-              </svg>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.name}</span>
-              <span style={{ fontSize: 10, color: 'var(--text3)', flexShrink: 0 }}>{tpl.widgets.length} {tpl.widgets.length !== 1 ? t('Widgets') : t('Widget')}</span>
-              <button onClick={() => removeCustomTemplate(tpl.id)} title={t('Remove template')}
-                style={{ width: 20, height: 20, borderRadius: 6, border: 'none', background: 'none', color: 'var(--text3)', fontSize: 13, lineHeight: 1, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
-            </div>
+            <TemplateRow key={tpl.id} tpl={tpl} onRemove={() => removeCustomTemplate(tpl.id)} />
           ))}
         </div>
       )}
@@ -207,6 +201,75 @@ function ThemeSelect({ options, value, onChange }: {
               </button>
             )
           })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Auf-/zuklappbare Zeile für eine eigene Board-Vorlage: links eine
+// maßstäbliche Mini-Vorschau des Layouts (Rechtecke nach col/row/colSpan/
+// rowSpan normiert auf die tatsächliche Ausdehnung der Vorlage), rechts die
+// Liste aller enthaltenen Widgets mit Icon.
+function TemplateRow({ tpl, onRemove }: { tpl: CustomTemplate; onRemove: () => void }) {
+  const t = useT()
+  const [open, setOpen] = useState(false)
+  const hasWidgets = tpl.widgets.length > 0
+
+  const minCol = hasWidgets ? Math.min(...tpl.widgets.map(w => w.col)) : 1
+  const minRow = hasWidgets ? Math.min(...tpl.widgets.map(w => w.row)) : 1
+  const maxCol = hasWidgets ? Math.max(...tpl.widgets.map(w => w.col + w.colSpan - 1)) : 1
+  const maxRow = hasWidgets ? Math.max(...tpl.widgets.map(w => w.row + w.rowSpan - 1)) : 1
+  const spanCol = Math.max(1, maxCol - minCol + 1)
+  const spanRow = Math.max(1, maxRow - minRow + 1)
+
+  return (
+    <div style={{ borderRadius: 9, background: 'var(--surface2)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+      <div
+        onClick={() => setOpen(o => !o)}
+        role="button" tabIndex={0}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', cursor: 'pointer' }}
+      >
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+          style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+          <path d="M3 3h7v7H3zM14 3h7v11h-7zM3 14h7v7H3zM14 18h7v3h-7z"/>
+        </svg>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.name}</span>
+        <span style={{ fontSize: 10, color: 'var(--text3)', flexShrink: 0 }}>{tpl.widgets.length} {tpl.widgets.length !== 1 ? t('Widgets') : t('Widget')}</span>
+        <button onClick={e => { e.stopPropagation(); onRemove() }} title={t('Remove template')}
+          style={{ width: 20, height: 20, borderRadius: 6, border: 'none', background: 'none', color: 'var(--text3)', fontSize: 13, lineHeight: 1, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
+      </div>
+
+      {open && (
+        <div style={{ display: 'flex', gap: 10, padding: '0 10px 10px', alignItems: 'flex-start' }}>
+          <div style={{
+            width: 84, height: 60, flexShrink: 0, position: 'relative',
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden',
+          }}>
+            {tpl.widgets.map((w, i) => (
+              <div key={i} style={{
+                position: 'absolute', boxSizing: 'border-box',
+                left:   `${((w.col - minCol) / spanCol) * 100}%`,
+                top:    `${((w.row - minRow) / spanRow) * 100}%`,
+                width:  `${(w.colSpan / spanCol) * 100}%`,
+                height: `${(w.rowSpan / spanRow) * 100}%`,
+                background: 'color-mix(in srgb, var(--accent) 35%, var(--surface2))',
+                border: '1px solid color-mix(in srgb, var(--accent) 55%, transparent)',
+                borderRadius: 2,
+              }} />
+            ))}
+          </div>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {tpl.widgets.map((w, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text2)' }}>
+                <span style={{ display: 'flex', color: 'var(--text3)', flexShrink: 0 }}>{TYPE_ICONS[w.type]}</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t(TYPE_LABELS[w.type] ?? w.type)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

@@ -190,7 +190,11 @@ export default function SettingsModal({ onClose, categories, initialCat }: { onC
               </span>
               <button onClick={onClose} title={t('Close')} style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>×</button>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+            {/* General bekommt oben denselben Abstand wie an den anderen drei
+                Seiten (die Versions-Karte braucht dort mehr Luft als der
+                schmale 8px-Abstand, den jede andere Kategorie behält) — nur
+                dort, nicht global. */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: active === 'general' ? '24px' : '8px 24px 24px' }}>
               {renderPanel(active, onClose, !!categories)}
             </div>
           </div>
