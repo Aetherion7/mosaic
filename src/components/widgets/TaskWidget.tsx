@@ -16,8 +16,9 @@ import { useSettings } from '@/store/settingsStore'
 import { useT } from '@/hooks/useT'
 import type { Widget, TaskData, HabitEntry } from '@/types'
 
-type ChartMode = 'kachel' | 'balken' | 'verlauf'
-type ViewMode  = 'weekly' | 'daily'
+type ChartMode     = 'kachel' | 'balken' | 'verlauf'
+type ViewMode      = 'weekly' | 'daily'
+type RoadmapLayout = 'zigzag' | 'linear'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -92,6 +93,22 @@ function CheckIcon() {
   )
 }
 
+// Roadmap-Layout-Umschalter: Zickzack- vs. gerader Pfad
+function ZigzagLayoutIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3,1 9,4 3,7 9,10"/>
+    </svg>
+  )
+}
+function LinearLayoutIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+      <line x1="6" y1="1" x2="6" y2="11"/>
+    </svg>
+  )
+}
+
 function GridIcon() {
   return (
     <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor">
@@ -130,7 +147,8 @@ export default function TaskWidget({ widget, readOnly }: { widget: Widget; readO
   const d         = widget.data as TaskData
   const habits    = d.habits ?? []
   const statsOpen = d.statsOpen ?? false
-  const viewMode  = d.viewMode ?? 'weekly'
+  const viewMode      = d.viewMode ?? 'weekly'
+  const roadmapLayout = d.roadmapLayout ?? 'zigzag'
   const showStats = useSettings(st => !st.statsDisabledTypes.includes('task'))
 
   const [editingId,    setEditingId]    = useState<string | null>(null)
@@ -226,19 +244,48 @@ export default function TaskWidget({ widget, readOnly }: { widget: Widget; readO
   const HISTORY    = 8
   const historyWks = Array.from({ length: HISTORY }, (_, i) => getWeekKeyOffset(-(HISTORY - 1 - i)))
 
+  // Kopfzeile schwebt frei über der scrollenden Liste (wie TopBar.tsx im
+  // "island"-Modus) statt als eigene Zeile Platz wegzunehmen — dazwischen
+  // bleibt der Widget-Hintergrund sichtbar, beim Scrollen laufen die
+  // Aufgaben-Einträge sichtbar unter den frei stehenden Buttons hindurch.
+  const contentTopPad = habits.length > 0 ? 40 : (viewMode === 'daily' ? 14 : 6)
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
 
       {/* Ansichts-Umschalter: Wochenraster (Mo–So) vs. Checkpoint-Roadmap für heute
           — gleiches Auswahlfeld-Muster wie im Kalender-Widget (Button + Chevron,
-          Dropdown mit Glass-Hintergrund), nur mit Woche/Tag statt Monat/Woche/Tag. */}
+          Dropdown mit Glass-Hintergrund), nur mit Woche/Tag statt Monat/Woche/Tag.
+          pointerEvents: 'none' auf dem Container, 'auto' auf jedem Button —
+          der leere Zwischenraum lässt Klicks/Scroll zur Liste durch, nur die
+          Buttons selbst sind klickbar. */}
       {habits.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', padding: '6px 6px 0', flexShrink: 0 }} onPointerDown={e => e.stopPropagation()}>
-          <div />
-          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text2)', textAlign: 'center', letterSpacing: 0.2 }}>
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 5,
+          display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center',
+          padding: '6px 6px 0', flexShrink: 0, pointerEvents: 'none',
+        }} onPointerDown={e => e.stopPropagation()}>
+          {viewMode === 'daily' ? (
+            <button
+              onClick={() => patch({ roadmapLayout: roadmapLayout === 'zigzag' ? 'linear' : 'zigzag' })}
+              title={roadmapLayout === 'zigzag' ? t('Switch to linear layout') : t('Switch to zigzag layout')}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', justifySelf: 'start',
+                width: 26, height: 26, borderRadius: 8,
+                border: '1px solid var(--border)', background: 'var(--surface2)',
+                color: 'var(--text2)', cursor: 'pointer', flexShrink: 0, pointerEvents: 'auto',
+              }}
+            >
+              {roadmapLayout === 'zigzag' ? <ZigzagLayoutIcon /> : <LinearLayoutIcon />}
+            </button>
+          ) : <div />}
+          <span style={{
+            fontSize: 10, fontWeight: 700, color: 'var(--text2)', textAlign: 'center', letterSpacing: 0.2,
+            padding: '4px 9px', borderRadius: 8, background: 'var(--surface2)', justifySelf: 'center', pointerEvents: 'auto',
+          }}>
             {headerDateLabel}
           </span>
-          <div style={{ position: 'relative', flexShrink: 0, justifySelf: 'end' }}>
+          <div style={{ position: 'relative', flexShrink: 0, justifySelf: 'end', pointerEvents: 'auto' }}>
             <button
               onClick={() => setViewMenuOpen(o => !o)}
               title={t('Task view')}
@@ -290,7 +337,7 @@ export default function TaskWidget({ widget, readOnly }: { widget: Widget; readO
       <div style={{
         flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column',
         gap: viewMode === 'daily' ? 0 : 4,
-        padding: viewMode === 'daily' ? '14px 10px 4px' : '6px 6px 4px',
+        padding: `${contentTopPad}px ${viewMode === 'daily' ? 10 : 6}px 4px`,
       }}>
         <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={habits.map(h => h.id)} strategy={verticalListSortingStrategy}>
@@ -300,7 +347,9 @@ export default function TaskWidget({ widget, readOnly }: { widget: Widget; readO
                 h={h}
                 index={i}
                 isLast={i === habits.length - 1}
+                nextHabit={habits[i + 1]}
                 viewMode={viewMode}
+                roadmapLayout={roadmapLayout}
                 mode={mode}
                 readOnly={readOnly}
                 editingId={editingId}
@@ -395,13 +444,15 @@ export default function TaskWidget({ widget, readOnly }: { widget: Widget; readO
 // Roadmap-Ansicht — beide teilen sich Griff, Namensfeld und Lösch-Button,
 // damit Bearbeiten/Umbenennen/Entfernen in beiden Ansichten gleich funktioniert.
 function SortableHabitRow({
-  h, index, isLast, viewMode, mode, readOnly, editingId, setEditingId,
+  h, index, isLast, nextHabit, viewMode, roadmapLayout, mode, readOnly, editingId, setEditingId,
   updateHabit, removeHabit, toggleDay, isPastDay, todayKey, t,
 }: {
   h: HabitEntry
   index: number
   isLast: boolean
+  nextHabit?: HabitEntry
   viewMode: ViewMode
+  roadmapLayout: RoadmapLayout
   mode: 'edit' | 'view'
   readOnly?: boolean
   editingId: string | null
@@ -470,19 +521,41 @@ function SortableHabitRow({
       style={{ width: 15, height: 15, borderRadius: 4, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
   )
 
+  // Farbpunkt — in beiden Ansichten identisch, damit die Farbe auch in der
+  // Tagesansicht (nicht nur der Wochenansicht) änderbar ist.
+  const colorDot = mode === 'edit' ? (
+    <div onPointerDown={e => e.stopPropagation()}>
+      <ColorSwatch value={h.color} onChange={v => updateHabit(h.id, { color: v })}
+        trigger={onClick => <div onClick={onClick} style={{ width: 10, height: 10, borderRadius: '50%', background: h.color, border: '1.5px solid rgba(255,255,255,0.15)', cursor: 'pointer', flexShrink: 0 }} />}
+      />
+    </div>
+  ) : (
+    <div style={{ width: 7, height: 7, borderRadius: '50%', background: h.color, flexShrink: 0 }} />
+  )
+
   if (viewMode === 'daily') {
-    const doneToday = h.weekDays.includes(todayKey)
+    const doneToday     = h.weekDays.includes(todayKey)
+    const nextDoneToday = nextHabit?.weekDays.includes(todayKey) ?? false
+    // Verbindung bleibt gedämpft/"transparent", solange nicht BEIDE
+    // verknüpften Checkpoints abgehakt sind — erst dann wird sie vollfarbig
+    // (Verlauf von der aktuellen zur nächsten Habit-Farbe).
+    const bothDone = doneToday && nextDoneToday
     // Pathways/Duolingo-artige Checkpoint-Roadmap: größere, zentrierte Kreise,
-    // die abwechselnd links/rechts der Mitte versetzt sind (Zickzack) statt in
-    // einer geraden Spalte. Amplitude/Zeilenhöhe sind feste Konstanten, damit
-    // sich Länge/Winkel der Verbindungslinie zum nächsten Checkpoint rein
-    // rechnerisch (ohne Messen) bestimmen lassen.
+    // die im Zickzack-Layout abwechselnd links/rechts der Mitte versetzt sind;
+    // im linearen Layout bleiben sie mittig (offset 0 für alle). Amplitude/
+    // Zeilenhöhe sind feste Konstanten, damit sich Länge/Winkel der
+    // Verbindungslinie zum nächsten Checkpoint rein rechnerisch (ohne
+    // Messen) bestimmen lassen.
     const CIRCLE     = 56
     const AMP        = 64
     const ROW_H       = 100
     const LINE_THICK = 3
-    const offset     = index % 2 === 0 ? -AMP : AMP
-    const nextOffset = -offset
+    // Lineares Layout: Kreise linksbündig statt zentriert, Pfad läuft gerade
+    // nach unten (Zickzack-Auslenkung bleibt bei 0/0 → dx=0 → senkrechte Linie).
+    const LINEAR_X   = CIRCLE / 2 + 6
+    const offset     = roadmapLayout === 'zigzag' ? (index % 2 === 0 ? -AMP : AMP) : 0
+    const nextOffset = roadmapLayout === 'zigzag' ? -offset : 0
+    const anchorX    = roadmapLayout === 'zigzag' ? `calc(50% + ${offset}px)` : `${LINEAR_X}px`
     // Linie verläuft Mittelpunkt-zu-Mittelpunkt (nicht Tangente-zu-Tangente) —
     // die Kreise selbst (zIndex 1, höher als die Linie) überdecken dadurch das
     // jeweils innere Stück, sodass der Pfad optisch durchgehend IN die Kreise
@@ -491,6 +564,13 @@ function SortableHabitRow({
     const dy = ROW_H
     const pathLen   = Math.hypot(dx, dy)
     const pathAngle = Math.atan2(dy, dx) * 180 / Math.PI
+    // Label sitzt im Zickzack auf der Seite, zu der der Kreis NICHT ausgelenkt
+    // ist (nutzt den freien Platz); im linearen Layout sitzt der Kreis links,
+    // der Text also immer rechts davon.
+    const labelOnRight = roadmapLayout === 'linear' ? true : offset < 0
+    const labelPos: React.CSSProperties = labelOnRight
+      ? { left: `calc(${anchorX} + ${CIRCLE / 2 + 8}px)`, justifyContent: 'flex-start' }
+      : { right: `calc(100% - ${anchorX} + ${CIRCLE / 2 + 8}px)`, justifyContent: 'flex-end' }
 
     return (
       // flexShrink: 0 ist hier Pflicht — ohne das quetscht der scrollende
@@ -504,15 +584,18 @@ function SortableHabitRow({
             angeschnittene Linie. */}
         {!isLast && !isDragging && (
           <div style={{
-            position: 'absolute', left: `calc(50% + ${offset}px)`, top: CIRCLE / 2 - LINE_THICK / 2, width: pathLen, height: LINE_THICK,
+            position: 'absolute', left: anchorX, top: CIRCLE / 2 - LINE_THICK / 2, width: pathLen, height: LINE_THICK,
             transformOrigin: '0 50%', transform: `rotate(${pathAngle}deg)`,
-            background: `color-mix(in srgb, ${h.color} 35%, var(--border))`, borderRadius: 2,
+            background: bothDone
+              ? `linear-gradient(90deg, ${h.color}, ${nextHabit?.color ?? h.color})`
+              : `color-mix(in srgb, ${h.color} 35%, var(--border))`,
+            borderRadius: 2, transition: 'background 0.2s',
           }} />
         )}
         <button onClick={() => toggleDay(h.id, todayKey)} disabled={readOnly}
           title={h.name}
           style={{
-            position: 'absolute', left: `calc(50% + ${offset}px)`, top: 0, transform: 'translateX(-50%)',
+            position: 'absolute', left: anchorX, top: 0, transform: 'translateX(-50%)',
             width: CIRCLE, height: CIRCLE, borderRadius: '50%', zIndex: 1, padding: 0,
             border: `2.5px solid ${h.color}`,
             // Nicht einfach var(--surface2) — im Crystal-Glass-Theme ist das nur
@@ -532,13 +615,12 @@ function SortableHabitRow({
             Kreis abgeschnitten zu werden. */}
         <div style={{
           position: 'absolute', top: CIRCLE / 2, transform: 'translateY(-50%)',
-          display: 'flex', alignItems: 'center', justifyContent: offset < 0 ? 'flex-start' : 'flex-end',
-          gap: 3, maxWidth: 130,
-          ...(offset < 0
-            ? { left: `calc(50% + ${offset}px + ${CIRCLE / 2 + 8}px)` }
-            : { right: `calc(50% - ${offset}px + ${CIRCLE / 2 + 8}px)` }),
+          display: 'flex', alignItems: 'center',
+          gap: 3, maxWidth: 140,
+          ...labelPos,
         }}>
           {dragHandle}
+          {colorDot}
           {nameField}
           {removeBtn}
         </div>
@@ -551,15 +633,7 @@ function SortableHabitRow({
       {/* Name row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         {dragHandle}
-        {mode === 'edit' ? (
-          <div onPointerDown={e => e.stopPropagation()}>
-            <ColorSwatch value={h.color} onChange={v => updateHabit(h.id, { color: v })}
-              trigger={onClick => <div onClick={onClick} style={{ width: 10, height: 10, borderRadius: '50%', background: h.color, border: '1.5px solid rgba(255,255,255,0.15)', cursor: 'pointer', flexShrink: 0 }} />}
-            />
-          </div>
-        ) : (
-          <div style={{ width: 7, height: 7, borderRadius: '50%', background: h.color, flexShrink: 0 }} />
-        )}
+        {colorDot}
 
         {nameField}
 

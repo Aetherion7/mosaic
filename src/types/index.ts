@@ -42,6 +42,8 @@ export interface TaskData {
   habits?:    HabitEntry[]
   statsOpen?: boolean   // Wochenstatistik auf-/eingeklappt
   viewMode?:  'weekly' | 'daily'   // Mo–So-Liste vs. Checkpoint-Roadmap für heute
+  // Tagesansicht: Zickzack-Pfad (Pathways-artig) vs. gerade Spalte nach unten
+  roadmapLayout?: 'zigzag' | 'linear'
 }
 
 // Font/color/shadow/stroke fields are optional — pre-existing notes on

@@ -586,6 +586,8 @@ export const de: Record<string, string> = {
   'Trend': 'Verlauf',
   'Task view': 'Ansicht',
   'Drag to reorder': 'Ziehen zum Umsortieren',
+  'Switch to linear layout': 'Zu linearer Ansicht wechseln',
+  'Switch to zigzag layout': 'Zu Zickzack-Ansicht wechseln',
   'Now': 'Jetzt',
 
   // ── NoteWidget ──

@@ -80,7 +80,11 @@ export const useUIStore = create<UIState>()((set, get) => ({
   setMode:             (mode)  => set({ mode, panel: null, focusedId: null }),
   setFocusedWidget:    (id)    => set({ focusedId: id }),
   selectWidget:        (id)    => set({ selectedId: id }),
-  openPanel:           (panel) => set({ panel }),
+  // focusedId mit zurücksetzen: der Fokus-Modus (FocusOverlay.tsx) deckt per
+  // hohem z-index die ganze Seite ab, ein währenddessen geöffnetes Panel (z. B.
+  // "a" fürs Widget-Hinzufügen-Panel) läge sonst unsichtbar dahinter statt
+  // sichtbar zu sein.
+  openPanel:           (panel) => set({ panel, focusedId: null }),
   setSettingsOpen:     (v)     => set({ settingsOpen: v }),
   toggleMode:          ()      => set(s => ({ mode: s.mode === 'edit' ? 'view' : 'edit', panel: null, multiSelectedIds: [], pendingBulkDelete: false, focusedId: null })),
   setLastAddedWidget:  (id)    => set({ lastAddedWidgetId: id }),
