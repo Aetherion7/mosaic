@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter, Roboto, Poppins, Space_Grotesk, Merriweather, Lora, Fira_Code } from 'next/font/google'
+import localFont from 'next/font/local'
 import MotionProvider from '@/components/MotionProvider'
 import CustomFontLoader from '@/components/CustomFontLoader'
 import StorageErrorBanner from '@/components/ui/StorageErrorBanner'
@@ -11,15 +11,48 @@ import GlobalContextMenu from '@/components/ui/GlobalContextMenu'
 import './globals.css'
 
 // Alle wählbaren Programm-/Board-Schriften (Einstellungen → Erscheinungsbild,
-// s. src/lib/fonts.ts) — next/font/google hostet sie selbst mit, keine
-// Laufzeit-Requests an Google (passend zum local-first-Ansatz).
-const inter         = Inter        ({ subsets: ['latin'], variable: '--font-inter' })
-const roboto        = Roboto       ({ subsets: ['latin'], weight: ['400', '500', '700'], variable: '--font-roboto' })
-const poppins       = Poppins      ({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font-poppins' })
-const spaceGrotesk   = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk' })
-const merriweather   = Merriweather ({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-merriweather' })
-const lora           = Lora         ({ subsets: ['latin'], variable: '--font-lora' })
-const firaCode       = Fira_Code    ({ subsets: ['latin'], variable: '--font-fira-code' })
+// s. src/lib/fonts.ts) — Dateien liegen selbst im Repo (src/fonts/google/),
+// statt sie über next/font/google bei jedem Build von Google herunterzuladen.
+// next/font/google lädt zur BUILD-Zeit von fonts.gstatic.com, was in CI
+// wiederholt an Netzwerk-/Rate-Limit-Problemen dort gescheitert ist (s.
+// Commit-Historie) — next/font/local braucht dagegen gar keine
+// Netzwerkverbindung mehr, passend zum ohnehin lokalen Anspruch der App.
+// Die meisten dieser Familien sind variable Fonts (eine Datei deckt den
+// ganzen Gewichtsbereich ab); nur Poppins hat auf Google Fonts keine
+// Variable-Version und braucht darum vier einzelne statische Dateien.
+const inter = localFont({
+  src: '../fonts/google/inter-variable.woff2',
+  variable: '--font-inter', display: 'swap',
+})
+const roboto = localFont({
+  src: '../fonts/google/roboto-variable.woff2',
+  variable: '--font-roboto', display: 'swap',
+})
+const poppins = localFont({
+  src: [
+    { path: '../fonts/google/poppins-400.woff2', weight: '400', style: 'normal' },
+    { path: '../fonts/google/poppins-500.woff2', weight: '500', style: 'normal' },
+    { path: '../fonts/google/poppins-600.woff2', weight: '600', style: 'normal' },
+    { path: '../fonts/google/poppins-700.woff2', weight: '700', style: 'normal' },
+  ],
+  variable: '--font-poppins', display: 'swap',
+})
+const spaceGrotesk = localFont({
+  src: '../fonts/google/spacegrotesk-variable.woff2',
+  variable: '--font-space-grotesk', display: 'swap',
+})
+const merriweather = localFont({
+  src: '../fonts/google/merriweather-variable.woff2',
+  variable: '--font-merriweather', display: 'swap',
+})
+const lora = localFont({
+  src: '../fonts/google/lora-variable.woff2',
+  variable: '--font-lora', display: 'swap',
+})
+const firaCode = localFont({
+  src: '../fonts/google/firacode-variable.woff2',
+  variable: '--font-fira-code', display: 'swap',
+})
 
 const fontVariables = `${inter.variable} ${roboto.variable} ${poppins.variable} ${spaceGrotesk.variable} ${merriweather.variable} ${lora.variable} ${firaCode.variable}`
 

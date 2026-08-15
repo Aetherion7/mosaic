@@ -1,7 +1,8 @@
 // Auswählbare Schriften für Programm- und Board-Schrift (Einstellungen →
-// Erscheinungsbild). Jede Google-Schrift wird über next/font/google in
-// layout.tsx selbst gehostet (kein Laufzeit-Request) und über eine CSS-
-// Variable referenziert; „System" braucht keine Variable.
+// Erscheinungsbild). Jede Google-Schrift wird über next/font/local in
+// layout.tsx aus den lokal im Repo liegenden Dateien (src/fonts/google/)
+// selbst gehostet (kein Laufzeit- UND kein Build-Request an Google) und
+// über eine CSS-Variable referenziert; „System" braucht keine Variable.
 export interface FontOption {
   id:    string
   label: string
