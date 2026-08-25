@@ -204,6 +204,19 @@ export function IconPin({ size = 8 }: P) {
     </svg>
   )
 }
+// Thumbtack — distinct from IconPin's map/location-pin teardrop shape above,
+// which CalendarWidget/WeatherWidget already use for a "pinned city"/location
+// meaning. Used for "pin widget to desktop" (TileWrapper.tsx), where a
+// map-pin glyph would read as a location action instead.
+export function IconPinToDesktop({ size = 11 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="17" x2="12" y2="22"/>
+      <path d="M5 17h14l-2-2.5V9a5 5 0 0 0-10 0v5.5z"/>
+    </svg>
+  )
+}
 export function IconEdit({ size = 10 }: P) {
   return (
     <svg width={size} height={size} viewBox="0 0 12 12" fill="none"

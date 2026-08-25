@@ -27,8 +27,17 @@ const DEV_URL = process.env.MOSAIC_DEV_URL || 'http://localhost:3001'
 // um einen Waisenprozess aus einer FRÜHEREN, abgestürzten/gekillten Sitzung
 // überhaupt wiederzufinden. s. reapStaleServerProcess().
 const SERVER_PID_FILE = path.join(app.getPath('userData'), 'server.pid')
+// Liste gepinnter Desktop-Widgets ({boardId, widgetId, bounds}[]) — überlebt
+// App-Neustarts unabhängig davon, ob/wann der Renderer seinen boardStore aus
+// IndexedDB fertig hydriert hat, deshalb eine eigene Datei statt etwas, das
+// erst per IPC vom Renderer abgefragt werden müsste. s. loadPinnedWidgets/
+// savePinnedWidgets weiter unten.
+const PINNED_WIDGETS_FILE = path.join(app.getPath('userData'), 'pinned-widgets.json')
 
 let mainWindow = null
+// Ein Fenster pro angepinntem Widget, Schlüssel `${boardId}:${widgetId}` —
+// s. createWidgetWindow().
+const widgetWindows = new Map()
 let serverProcess = null
 let serverPort = null
 let tray = null
@@ -61,7 +70,11 @@ if (!gotLock) {
   app.quit()
 }
 app.on('second-instance', () => {
-  if (!mainWindow) return
+  // mainWindow kann inzwischen null sein, obwohl die App noch läuft — z. B.
+  // wenn nur noch angepinnte Desktop-Widgets offen sind (window-all-closed
+  // hält den Prozess dann am Leben, s. Kommentar dort). Ohne diesen Zweig
+  // täte ein erneuter App-Start in genau diesem Zustand gar nichts.
+  if (!mainWindow) { createWindow(); return }
   if (mainWindow.isMinimized()) mainWindow.restore()
   if (!mainWindow.isVisible()) { mainWindow.show(); hideTray() }
   mainWindow.focus()
@@ -197,6 +210,16 @@ async function startStandaloneServer() {
   return url
 }
 
+// Server-URL zwischengespeichert statt jedes Mal neu aufgelöst — sowohl
+// createWindow() als auch createWidgetWindow() (Desktop-Widget-Fenster,
+// s. u.) laden gegen denselben schon laufenden Server/Port, statt einen
+// zweiten zu starten oder den Port per IPC an den Renderer durchzureichen.
+let cachedServerUrl = null
+async function resolveServerUrl() {
+  if (!cachedServerUrl) cachedServerUrl = isDev ? DEV_URL : await startStandaloneServer()
+  return cachedServerUrl
+}
+
 // ── Fenster ───────────────────────────────────────────────────────────────
 async function createWindow() {
   mainWindow = new BrowserWindow({
@@ -248,10 +271,126 @@ async function createWindow() {
     return { action: 'deny' }
   })
 
-  const url = isDev ? DEV_URL : await startStandaloneServer()
+  const url = await resolveServerUrl()
   await mainWindow.loadURL(url)
 
-  mainWindow.on('closed', () => { mainWindow = null })
+  mainWindow.on('closed', () => {
+    mainWindow = null
+    // Pinned widget windows keep the whole app alive even with mainWindow
+    // gone (window-all-closed only fires once ALL windows are closed) — show
+    // the tray so there's still a way back to the dashboard, regardless of
+    // the separate keepInBackground setting (that one only controls whether
+    // closing the main window hides-instead-of-closes IT specifically).
+    if (widgetWindows.size > 0) showTray()
+  })
+}
+
+// ── Desktop-Widgets ("Pin to desktop") ──────────────────────────────────────
+// Ein Widget frei schwebend auf dem echten Desktop, unabhängig vom
+// Hauptfenster — Rainmeter/Übersicht-artig. v1: echtes "sitzt HINTER anderen
+// Fenstern auf dem Desktop" nur auf macOS (setAlwaysOnTop(..., 'desktop') ist
+// dort in Electron eingebaut, keine neue Abhängigkeit nötig); Windows/Linux
+// bekommen vorerst ein normales Immer-im-Vordergrund-Fenster. Absichtlich in
+// einer eigenen, klar austauschbaren Funktion isoliert, damit ein Windows-
+// Progman/WorkerW-Trick bzw. ein Linux-X11-Hint später reinpasst, ohne
+// createWidgetWindow() selbst anzufassen.
+function applyDesktopWidgetPlacement(win) {
+  if (process.platform === 'darwin') {
+    win.setAlwaysOnTop(true, 'desktop')
+    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  } else {
+    win.setAlwaysOnTop(true, 'floating')
+  }
+}
+
+function loadPinnedWidgets() {
+  try {
+    return JSON.parse(fs.readFileSync(PINNED_WIDGETS_FILE, 'utf8'))
+  } catch {
+    return []
+  }
+}
+
+function savePinnedWidgets(list) {
+  try { fs.writeFileSync(PINNED_WIDGETS_FILE, JSON.stringify(list), 'utf8') } catch { /* nicht kritisch */ }
+}
+
+// Jedes offene Fenster (Haupt- + alle Widget-Fenster) über eine geänderte
+// Pin-Liste informieren, damit TileWrapper.tsx's "Pin to desktop"-Button
+// überall sofort den richtigen aktiv/inaktiv-Zustand zeigt, nicht nur im
+// Fenster, von dem die Änderung ausging.
+function broadcastPinnedWidgets() {
+  const list = loadPinnedWidgets().map(({ boardId, widgetId }) => ({ boardId, widgetId }))
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send('widget:pinned-changed', list)
+  }
+}
+
+async function createWidgetWindow(boardId, widgetId, bounds) {
+  const key = `${boardId}:${widgetId}`
+  const existing = widgetWindows.get(key)
+  if (existing) { existing.focus(); return }
+
+  const win = new BrowserWindow({
+    width: bounds?.width ?? 320,
+    height: bounds?.height ?? 240,
+    x: bounds?.x,
+    y: bounds?.y,
+    minWidth: 120,
+    minHeight: 90,
+    frame: false,
+    transparent: true,
+    hasShadow: false,
+    resizable: true,
+    skipTaskbar: true,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      backgroundThrottling: false,
+    },
+  })
+  // Registered immediately (synchronously, right after the window itself is
+  // created) rather than after the `await`s below — a real race otherwise:
+  // `new BrowserWindow()` is synchronous, so two pin calls for the same
+  // widget arriving close together (confirmed live: a flaky repeated click
+  // during testing fired this function 3x for one widget before the first
+  // call had reached this point) would both see the Map empty and each
+  // create their own real OS window before either finished loading.
+  widgetWindows.set(key, win)
+  applyDesktopWidgetPlacement(win)
+  win.once('ready-to-show', () => win.show())
+
+  const url = await resolveServerUrl()
+  await win.loadURL(`${url}/widget/${boardId}/${widgetId}`)
+
+  win.on('closed', () => {
+    widgetWindows.delete(key)
+    // Das eigene Schließen des Fensters (per Unpin-Button in der Titelzeile
+    // ODER per OS-Fenstersteuerung) IST das Unpinnen — es gibt bewusst keinen
+    // dritten Zustand "geschlossen, aber noch angepinnt, erscheint beim
+    // nächsten Start wieder". Einfacher; ein reines "Verstecken ohne Unpin"
+    // wäre eine denkbare spätere Ergänzung, nicht Teil von v1.
+    const stillPinned = loadPinnedWidgets().some(w => w.boardId === boardId && w.widgetId === widgetId)
+    if (stillPinned) {
+      savePinnedWidgets(loadPinnedWidgets().filter(w => !(w.boardId === boardId && w.widgetId === widgetId)))
+      broadcastPinnedWidgets()
+    }
+  })
+
+  let boundsSaveTimer = null
+  const saveBounds = () => {
+    if (boundsSaveTimer) clearTimeout(boundsSaveTimer)
+    boundsSaveTimer = setTimeout(() => {
+      const list = loadPinnedWidgets()
+      const entry = list.find(w => w.boardId === boardId && w.widgetId === widgetId)
+      if (entry) { entry.bounds = win.getBounds(); savePinnedWidgets(list) }
+    }, 400)
+  }
+  win.on('moved', saveBounds)
+  win.on('resized', saveBounds)
 }
 
 // ── Hintergrundbetrieb: Tray-Icon ───────────────────────────────────────────
@@ -350,6 +489,24 @@ ipcMain.handle('update:install', () => {
   autoUpdater.quitAndInstall()
 })
 ipcMain.handle('update:check', () => checkForUpdates(true))
+
+ipcMain.handle('widget:pin', async (_e, { boardId, widgetId, bounds }) => {
+  const list = loadPinnedWidgets()
+  if (!list.some(w => w.boardId === boardId && w.widgetId === widgetId)) {
+    list.push({ boardId, widgetId, bounds: bounds ?? null })
+    savePinnedWidgets(list)
+  }
+  await createWidgetWindow(boardId, widgetId, bounds)
+  broadcastPinnedWidgets()
+})
+ipcMain.handle('widget:unpin', (_e, { boardId, widgetId }) => {
+  const key = `${boardId}:${widgetId}`
+  // Schließt das Fenster — dessen eigener 'closed'-Handler (s.
+  // createWidgetWindow) räumt die Pin-Liste auf und broadcastet erneut, also
+  // hier nicht doppelt tun.
+  widgetWindows.get(key)?.close()
+})
+ipcMain.handle('widget:list-pinned', () => loadPinnedWidgets().map(({ boardId, widgetId }) => ({ boardId, widgetId })))
 
 // ── App-Menü ─────────────────────────────────────────────────────────────
 // mosaic hat seine eigene Oberfläche (TopBar, Einstellungen-Panel mit GitHub-
@@ -466,13 +623,30 @@ app.whenReady().then(async () => {
   }
   checkForUpdates(false)
 
+  // Zuvor angepinnte Desktop-Widgets wiederherstellen, unabhängig davon, ob/
+  // wann der Renderer seinen boardStore aus IndexedDB fertig hydriert hat —
+  // die Pin-Liste kommt aus der eigenen Datei (s. loadPinnedWidgets), nicht
+  // aus dem Renderer-Store.
+  for (const { boardId, widgetId, bounds } of loadPinnedWidgets()) {
+    createWidgetWindow(boardId, widgetId, bounds).catch(err =>
+      console.error(`[mosaic] Failed to reopen pinned widget ${boardId}:${widgetId}:`, err))
+  }
+
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-    else if (mainWindow && !mainWindow.isVisible()) { mainWindow.show(); hideTray() }
+    // Bewusst NICHT mehr an BrowserWindow.getAllWindows().length === 0
+    // geprüft: das ist bereits falsch, sobald irgendein Widget-Fenster
+    // offen ist, auch wenn mainWindow null ist — der Klick aufs Dock-Icon
+    // täte dann nichts, obwohl kein Hauptfenster sichtbar ist.
+    if (!mainWindow) createWindow()
+    else if (!mainWindow.isVisible()) { mainWindow.show(); hideTray() }
   })
 })
 
 app.on('window-all-closed', () => {
+  // Feuert von Electron aus nur, wenn WIRKLICH jedes Fenster zu ist (Haupt-
+  // UND alle Widget-Fenster) — genau das gewünschte Verhalten (Rainmeter-
+  // artige Widgets überleben unabhängig vom Hauptfenster), daher hier kein
+  // zusätzlicher Widget-Fenster-Check nötig.
   if (process.platform !== 'darwin') app.quit()
 })
 

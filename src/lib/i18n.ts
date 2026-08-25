@@ -588,6 +588,8 @@ export const de: Record<string, string> = {
   'Drag to reorder': 'Ziehen zum Umsortieren',
   'Switch to linear layout': 'Zu linearer Ansicht wechseln',
   'Switch to zigzag layout': 'Zu Zickzack-Ansicht wechseln',
+  'Pin to desktop': 'Auf Desktop anheften',
+  'Unpin from desktop': 'Vom Desktop lösen',
   'Now': 'Jetzt',
 
   // ── NoteWidget ──

@@ -22,6 +22,14 @@ declare global {
       // s. main.js — feuert einmal je Sitzung, wenn das Fenster wegen
       // Hintergrundbetrieb versteckt statt geschlossen wird
       onHiddenToBackground: (callback: () => void) => () => void
+      // Widget-Desktop-Pins (s. TileWrapper.tsx-Toolbar + main.js
+      // createWidgetWindow) — bounds ist optional, vom Aufrufer in
+      // Board-Grid-Pixeln berechnet, main.js übernimmt es 1:1 als
+      // BrowserWindow-Startgröße.
+      pinWidgetToDesktop:     (boardId: string, widgetId: string, bounds?: { width: number; height: number }) => Promise<void>
+      unpinWidgetFromDesktop: (boardId: string, widgetId: string) => Promise<void>
+      getPinnedWidgets:       () => Promise<{ boardId: string; widgetId: string }[]>
+      onPinnedWidgetsChanged: (callback: (list: { boardId: string; widgetId: string }[]) => void) => () => void
     }
   }
 }

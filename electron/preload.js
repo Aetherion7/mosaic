@@ -38,4 +38,16 @@ contextBridge.exposeInMainWorld('mosaicDesktop', {
     ipcRenderer.on('desktop:hidden-to-background', listener)
     return () => ipcRenderer.removeListener('desktop:hidden-to-background', listener)
   },
+  // "Pin to desktop" (s. TileWrapper.tsx-Toolbar + main.js createWidgetWindow) —
+  // öffnet/schließt ein eigenes kleines Fenster für genau ein Widget.
+  pinWidgetToDesktop:     (boardId, widgetId, bounds) => ipcRenderer.invoke('widget:pin', { boardId, widgetId, bounds }),
+  unpinWidgetFromDesktop: (boardId, widgetId) => ipcRenderer.invoke('widget:unpin', { boardId, widgetId }),
+  getPinnedWidgets:       () => ipcRenderer.invoke('widget:list-pinned'),
+  // Feuert in JEDEM offenen Fenster (Haupt- + alle Widget-Fenster), sobald
+  // sich die Pin-Liste irgendwo ändert — s. main.js broadcastPinnedWidgets.
+  onPinnedWidgetsChanged: (callback) => {
+    const listener = (_event, list) => callback(list)
+    ipcRenderer.on('widget:pinned-changed', listener)
+    return () => ipcRenderer.removeListener('widget:pinned-changed', listener)
+  },
 })

@@ -44,6 +44,13 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Standalone desktop-widget window (src/app/widget/[boardId]/[widgetId]/
+   page.tsx) runs inside a transparent, frameless Electron BrowserWindow —
+   the widget's own buildStyle() background/border/radius is what gives it a
+   visible shape, so the page background itself must stay transparent to let
+   the real desktop show through around it. */
+body.widget-window { background: transparent; }
+
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }

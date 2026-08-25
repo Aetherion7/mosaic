@@ -128,7 +128,7 @@ function snap(s: S, kind?: string): Pick<S, '_history' | '_future'> {
   const b = cur(s)
   if (!b) return { _history: s._history, _future: s._future }
   const entry: HistoryEntry = {
-    boardId: s.currentBoardId,
+    boardId: resolveBoardId(s),
     widgets: { ...b.widgets },
     bg:      { ...b.bg },
     themeId: b.themeId,
@@ -152,15 +152,30 @@ function applyThemeCss(id: string) {
   Object.entries(theme.cssVars).forEach(([k, v]) => root.style.setProperty(k, v))
 }
 
+// Per-process override for "which board am I actually looking at" — set once
+// by a standalone widget window (src/app/widget/[boardId]/[widgetId]/page.tsx)
+// so a pinned desktop widget reads/writes ITS board instead of whatever
+// s.currentBoardId happens to be. Deliberately a plain module variable, never
+// persisted (not part of partialize below): each Electron BrowserWindow is
+// its own renderer process with its own JS heap, so this never leaks into or
+// affects the main window's process. Do NOT fold this into s.currentBoardId
+// itself — doing so would persist it into the shared IndexedDB blob and flip
+// the main window's current board out from under the user the next time it
+// reloads/restarts.
+let activeBoardOverride: string | null = null
+export function setActiveBoardOverride(id: string) { activeBoardOverride = id }
+function resolveBoardId(s: BoardState): string { return activeBoardOverride ?? s.currentBoardId }
+
 function cur(s: BoardState): Board | undefined {
-  return s.boards[s.currentBoardId]
+  return s.boards[resolveBoardId(s)]
 }
 
 function patchCur(s: BoardState, update: (b: Board) => Partial<Board>): Partial<BoardState> {
   const b = cur(s)
   if (!b) return {}
+  const id = resolveBoardId(s)
   return {
-    boards: { ...s.boards, [s.currentBoardId]: { ...b, ...update(b), lastEdited: Date.now() } },
+    boards: { ...s.boards, [id]: { ...b, ...update(b), lastEdited: Date.now() } },
   }
 }
 
@@ -413,9 +428,10 @@ export const useBoardStore = create<S>()(
         const b = cur(s)
         const w = b?.widgets[id]
         if (!b || !w) return s
+        const boardId = resolveBoardId(s)
         // bewusst OHNE lastEdited-Bump: bloßes Lesen (Seitenwechsel im Reader)
         // soll das Board nicht als "bearbeitet" markieren
-        return { boards: { ...s.boards, [s.currentBoardId]: { ...b, widgets: { ...b.widgets, [id]: { ...w, ...patch } } } } }
+        return { boards: { ...s.boards, [boardId]: { ...b, widgets: { ...b.widgets, [id]: { ...w, ...patch } } } } }
       }),
 
       moveWidget: (id, pos) => set(s => ({ ...snap(s), ...patchWidget(s, id, w => ({ ...w, pos })) })),
@@ -660,6 +676,72 @@ export const useBoardStore = create<S>()(
   )
 )
 
+// ─── Cross-window data sync ─────────────────────────────────────────────────
+// boardStore has no built-in multi-window awareness: each Electron
+// BrowserWindow (or browser tab) runs its own separate in-memory copy of this
+// store. Without this, an edit made in a pinned desktop-widget window (see
+// src/app/widget/[boardId]/[widgetId]/page.tsx) would never appear in the
+// main app window, and vice versa, until a manual reload. Not
+// Electron-specific — this also fixes the same staleness across two browser
+// tabs of the web app, so it runs unconditionally rather than being gated
+// behind window.mosaicDesktop.
+//
+// Deliberately simple for a single-user local-first app — no CRDT/OT. On
+// every local `boards` change, broadcast a "something changed" ping
+// (debounced, since widgets like Note/Task fire set() per keystroke); on
+// receipt, re-read the persisted blob from IndexedDB (the source of truth)
+// and merge it in PER BOARD using the already-present Board.lastEdited
+// timestamp as a free logical clock — never a flat replace, so a board
+// actively being typed into locally is never clobbered by a remote window's
+// stale snapshot of it. Known, accepted v1 gap: lastEdited is per-board, not
+// per-widget, so two DIFFERENT widgets on the SAME board edited from two
+// windows within the same ~300ms debounce window can still lose one edit —
+// real per-field merging is out of scope here. currentBoardId/trash/
+// _history/_future are deliberately excluded from the merge: which board is
+// "current" and the undo/redo stack are legitimately per-window state, same
+// reasoning as uiStore not syncing at all.
+if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+  const WINDOW_ID = crypto.randomUUID()
+  const channel = new BroadcastChannel('planboard-sync')
+  let applyingRemote = false
+  let broadcastTimer: ReturnType<typeof setTimeout> | null = null
+
+  useBoardStore.subscribe((state, prevState) => {
+    if (applyingRemote || state.boards === prevState.boards) return
+    if (broadcastTimer) clearTimeout(broadcastTimer)
+    broadcastTimer = setTimeout(() => channel.postMessage({ sourceId: WINDOW_ID }), 300)
+  })
+
+  channel.addEventListener('message', async (e: MessageEvent<{ sourceId: string }>) => {
+    if (e.data?.sourceId === WINDOW_ID) return
+    const raw = await idbStorage.getItem('planboard-v2')
+    if (!raw) return
+    let incoming: Record<string, Board>
+    try {
+      // Persisted shape is zustand's own wrapper — {state: {...}, version} —
+      // NOT the partialized object directly (verified against the actual
+      // IndexedDB record, not assumed from zustand's source).
+      incoming = (JSON.parse(raw).state?.boards ?? {}) as Record<string, Board>
+    } catch {
+      return
+    }
+    applyingRemote = true
+    useBoardStore.setState(s => {
+      const merged = { ...s.boards }
+      for (const [id, board] of Object.entries(incoming)) {
+        if (!merged[id] || board.lastEdited >= merged[id].lastEdited) merged[id] = board
+      }
+      return { boards: merged }
+    })
+    applyingRemote = false
+  })
+}
+
 // Convenience selector
-export const selectBoard = (s: S) => s.boards[s.currentBoardId] as Board | undefined
+// resolveBoardId (not a bare s.currentBoardId read) — AgendaWidget, NoteWidget,
+// ReaderWidget, and CalendarWidget all import this selector directly, so a
+// pinned widget window rendering any of them would otherwise silently read
+// the WRONG board's data (its own process's s.currentBoardId, not the board
+// the pinned widget actually belongs to).
+export const selectBoard = (s: S) => s.boards[resolveBoardId(s)] as Board | undefined
 export const selectDefaultStyle = () => DEFAULT_STYLE

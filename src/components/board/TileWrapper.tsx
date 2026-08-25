@@ -28,7 +28,7 @@ const ReaderWidget = dynamic(() => import('@/components/widgets/ReaderWidget'), 
 import {
   IconTask, IconNote, IconTimer, IconWater, IconImage, IconCalendar, IconChart, IconTable, IconDraw, IconClock, IconWeather, IconMap, IconReader,
   IconSleep, IconAgenda, IconLinks, IconHtml,
-  IconDrag, IconDuplicate, IconSliders, IconX, IconExpand,
+  IconDrag, IconDuplicate, IconSliders, IconX, IconExpand, IconPinToDesktop,
 } from '@/components/ui/Icons'
 import WidgetErrorBoundary from './WidgetErrorBoundary'
 import { getTheme } from '@/lib/themes'
@@ -412,11 +412,50 @@ function TileWrapperInner({ widget, gridRef }: Props) {
     selectWidget(null)
   }
 
+  // "Pin to desktop" (Electron only — window.mosaicDesktop is undefined in
+  // the browser build) — kept in sync across windows the same way
+  // ElectronBridge.tsx already syncs update-availability: a getter on mount
+  // plus a subscribe-to-changes listener, since another window (or the
+  // widget's own close button) can also toggle this pin.
+  const [isPinned, setIsPinned] = useState(false)
+  useEffect(() => {
+    if (!window.mosaicDesktop) return
+    const check = (list: { boardId: string; widgetId: string }[]) =>
+      setIsPinned(list.some(p => p.boardId === currentBoardId && p.widgetId === widget.id))
+    window.mosaicDesktop.getPinnedWidgets().then(check)
+    return window.mosaicDesktop.onPinnedWidgetsChanged(check)
+  }, [currentBoardId, widget.id])
+
+  function handleTogglePin() {
+    if (!window.mosaicDesktop) return
+    if (isPinned) {
+      window.mosaicDesktop.unpinWidgetFromDesktop(currentBoardId, widget.id)
+      return
+    }
+    // Rough initial window size from the widget's board-grid footprint —
+    // INFINITE_COL_W stands in for grid mode's column width too (which
+    // varies with the live container's rendered width) since this is only
+    // a starting size the user can freely resize afterward, not something
+    // that needs to match the board pixel-for-pixel.
+    const bounds = {
+      width:  Math.max(240, widget.pos.colSpan * (INFINITE_COL_W + GRID_GAP)),
+      height: Math.max(160, widget.pos.rowSpan * (GRID_ROW_H + GRID_GAP)) + 30,
+    }
+    window.mosaicDesktop.pinWidgetToDesktop(currentBoardId, widget.id, bounds)
+  }
+
   // Gemeinsame Aktions-Liste für Desktop-/Mobil-Header — einmal berechnet,
   // dreifach verwendet (normale Reihe, unsichtbarer Mess-Klon, Kebab-Dropdown)
   const headerActions: HeaderAction[] = [
     ...(aiEnabled ? [{ key: 'ai', title: t('Edit with AI'), onClick: toggleAiChat, active: aiChatOpen || widgetAiRunning, icon: <IconSparkleTile spinning={widgetAiRunning} /> }] : []),
     { key: 'focus', title: t('Focus mode'), onClick: () => setFocusedWidget(widget.id), icon: <IconExpand /> },
+    // typeof window check required (not just relying on the hook state)
+    // because Next.js still SSR-renders 'use client' components for the
+    // initial HTML — a bare window.mosaicDesktop read here would crash SSR.
+    ...(typeof window !== 'undefined' && window.mosaicDesktop ? [{
+      key: 'pin', title: isPinned ? t('Unpin from desktop') : t('Pin to desktop'),
+      active: isPinned, onClick: handleTogglePin, icon: <IconPinToDesktop />,
+    }] : []),
     {
       key: 'lock', title: isLocked ? t('Unlock') : t('Lock'), onClick: () => setWidgetLocked(widget.id, !isLocked),
       icon: isLocked
