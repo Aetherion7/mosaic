@@ -21,6 +21,15 @@ const os = require('os')
 const { fork } = require('child_process')
 const http = require('http')
 
+// Muss vor app.whenReady() gesetzt werden: viele Linux-Compositor (X11 ohne
+// echtes Alpha-Visual) rendern ein `transparent: true`-BrowserWindow sonst
+// als undurchsichtiges Rechteck statt echter Transparenz — genau der
+// eckige Hintergrundrand, der bei den angepinnten Desktop-Widgets auftrat.
+// macOS/Windows brauchen das nicht, deshalb nur unter Linux gesetzt.
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('enable-transparent-visuals')
+}
+
 const isDev = !app.isPackaged
 const DEV_URL = process.env.MOSAIC_DEV_URL || 'http://localhost:3001'
 // Überlebt den Prozess selbst (anders als die Modul-Variablen unten) — nötig,
@@ -340,6 +349,7 @@ async function createWidgetWindow(boardId, widgetId, bounds) {
     minHeight: 90,
     frame: false,
     transparent: true,
+    backgroundColor: '#00000000', // explizit voll-transparent statt Electron-Default
     hasShadow: false,
     resizable: true,
     skipTaskbar: true,

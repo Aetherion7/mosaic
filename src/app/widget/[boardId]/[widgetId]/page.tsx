@@ -37,8 +37,12 @@ export default function WidgetPage({ params }: { params: Promise<{ boardId: stri
   }, [boardId])
 
   useEffect(() => {
+    document.documentElement.classList.add('widget-window')
     document.body.classList.add('widget-window')
-    return () => document.body.classList.remove('widget-window')
+    return () => {
+      document.documentElement.classList.remove('widget-window')
+      document.body.classList.remove('widget-window')
+    }
   }, [])
 
   const board  = useBoardStore(s => s.boards[boardId])
@@ -80,6 +84,19 @@ export default function WidgetPage({ params }: { params: Promise<{ boardId: stri
 
   if (!hydrated || !board || !widget) return null
 
+  // backdrop-filter can only blur content Chromium itself is compositing —
+  // on the board that's the canvas behind the tile, but a desktop-pinned
+  // window has nothing in the page behind it (the real desktop/other apps
+  // live outside Chromium's paint context and can't be blurred by CSS on any
+  // platform). Electron exposes native blur-behind on macOS (setVibrancy)
+  // and Windows 11 (setBackgroundMaterial), but there's no equivalent on
+  // Linux for any desktop environment. Left as-is, a blur style with its
+  // usual low opacity just looks like a hole with nothing in it — floor the
+  // opacity here so the widget still reads as a card instead of vanishing.
+  const effectiveStyle = widget.style.blur
+    ? { ...widget.style, opacity: Math.max(widget.style.opacity, 0.85) }
+    : widget.style
+
   return (
     <div
       style={{
@@ -90,7 +107,7 @@ export default function WidgetPage({ params }: { params: Promise<{ boardId: stri
         // Fenster hinweg (bewusst, wie uiStore) — eine Sprachänderung im
         // Hauptfenster übernimmt sich hier erst beim nächsten Öffnen.
         fontFamily: board.fontFamily ? getFontStack(board.fontFamily, customFonts) : 'var(--font-app)',
-        ...buildStyle(widget.style, false),
+        ...buildStyle(effectiveStyle, false),
       }}
     >
       <div
