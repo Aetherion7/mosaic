@@ -86,6 +86,33 @@ header nav a:hover { color: var(--text1); background: var(--surface2); }
 .btn-outline { background: var(--surface2); border-color: var(--border); color: var(--text1); }
 .btn-outline:hover { background: var(--surface3); }
 
+/* ── Side dot nav ───────────────────────────────────────────────────────── */
+/* One dot per top-level section; active state driven by an IntersectionObserver
+   below, not scroll math, so it stays correct regardless of section height. */
+.dotnav {
+  position: fixed; right: 22px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; align-items: flex-end; gap: 13px; z-index: 40;
+}
+.dotnav a { position: relative; display: flex; align-items: center; padding: 3px; text-decoration: none; }
+.dotnav .dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--border);
+  transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.dotnav a:hover .dot { background: color-mix(in srgb, var(--accent) 55%, var(--border)); transform: scale(1.25); }
+.dotnav a.active .dot {
+  background: var(--accent); transform: scale(1.4);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.dotnav .dot-label {
+  position: absolute; right: 100%; top: 50%; margin-right: 12px; transform: translateY(-50%) translateX(6px);
+  font-size: 11.5px; font-weight: 600; color: var(--text1); white-space: nowrap;
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 5px 11px; border-radius: 7px; box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  opacity: 0; pointer-events: none; transition: opacity .15s ease, transform .15s ease;
+}
+.dotnav a:hover .dot-label, .dotnav a:focus-visible .dot-label { opacity: 1; transform: translateY(-50%) translateX(0); }
+@media (max-width: 1320px) { .dotnav { display: none; } }
+
 /* ── Hero ───────────────────────────────────────────────────────────────── */
 .hero { padding: 96px 0 64px; text-align: center; }
 .pill svg { flex-shrink: 0; }
@@ -127,14 +154,26 @@ h2 { font-family: 'Guavine', serif; font-size: clamp(30px, 4vw, 42px); font-weig
 .card h3 { font-size: 15.5px; font-weight: 700; margin-bottom: 7px; }
 .card p { font-size: 13.5px; color: var(--text2); line-height: 1.6; }
 
-/* Extras grid — same card language, no icon box, accent left-border instead */
+/* Extras grid — icon-led cards, same visual language as the feature grid
+   above but denser; fluid columns instead of a fixed 3-up so an odd card
+   count never leaves a lone orphan in the last row. */
+.grid-extras { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 14px; }
 .extra-card {
-  background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent);
-  border-radius: var(--radius); padding: 20px 22px; transition: border-color .15s;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 22px;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
-.extra-card:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); border-left-color: var(--accent); }
-.extra-card h3 { font-size: 14.5px; font-weight: 700; margin-bottom: 6px; }
-.extra-card p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.extra-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  box-shadow: 0 14px 32px color-mix(in srgb, var(--accent) 9%, transparent);
+}
+.extra-card .ic {
+  width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); margin-bottom: 14px;
+}
+.extra-card h3 { font-size: 14.5px; font-weight: 700; margin-bottom: 7px; letter-spacing: -.01em; }
+.extra-card p { font-size: 13px; color: var(--text2); line-height: 1.65; }
 
 /* Widget tag cloud */
 .tagcloud { display: flex; flex-wrap: wrap; gap: 9px; }
@@ -191,11 +230,44 @@ h2 { font-family: 'Guavine', serif; font-size: clamp(30px, 4vw, 42px); font-weig
 .dl-card .plat-ic img { display: block; margin: 0 auto; }
 .dl-card .plat-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
 .dl-card .plat-sub { font-size: 12px; color: var(--text3); }
-.note-box {
-  background: color-mix(in srgb, var(--amber) 8%, var(--surface)); border: 1px solid color-mix(in srgb, var(--amber) 25%, transparent);
-  border-radius: 12px; padding: 14px 18px; font-size: 13px; color: var(--text2); line-height: 1.6;
+/* Install notes — collapsible per-platform panels instead of one long
+   paragraph, so a Windows user isn't reading past macOS/Linux specifics
+   (and vice versa) to find the one line that applies to them. */
+.install-notes {
+  background: color-mix(in srgb, var(--amber) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--amber) 22%, transparent);
+  border-radius: 12px; overflow: hidden;
 }
-.note-box strong { color: var(--text1); }
+.install-notes-head {
+  display: flex; align-items: center; gap: 9px;
+  padding: 13px 18px; font-size: 12.5px; font-weight: 700; color: var(--amber);
+  border-bottom: 1px solid color-mix(in srgb, var(--amber) 20%, var(--border));
+  letter-spacing: .01em;
+}
+.install-notes-head svg { flex-shrink: 0; }
+.install-notes summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px; font-size: 13.5px; font-weight: 700; color: var(--text1);
+}
+.install-notes summary::-webkit-details-marker { display: none; }
+.install-notes summary .plat-ic-sm { display: flex; align-items: center; flex-shrink: 0; color: var(--text2); }
+.install-notes summary .chev { display: flex; margin-left: auto; color: var(--text3); transition: transform .18s ease; flex-shrink: 0; }
+.install-notes details[open] summary .chev { transform: rotate(90deg); }
+.install-notes summary:hover { background: color-mix(in srgb, var(--amber) 5%, transparent); }
+.install-body { padding: 0 18px 18px 46px; font-size: 13px; color: var(--text2); line-height: 1.65; }
+.install-body p { margin-bottom: 10px; }
+.install-body p:last-child { margin-bottom: 0; }
+.distro-label {
+  display: block; font-size: 11px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .04em; margin: 14px 0 7px;
+}
+.distro-label:first-of-type { margin-top: 4px; }
+.codeblock {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 11px 13px; font-size: 12px; line-height: 1.55; overflow-x: auto;
+  white-space: pre; color: var(--accent2); margin-bottom: 10px;
+}
 
 /* Privacy */
 .priv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -218,6 +290,23 @@ h2 { font-family: 'Guavine', serif; font-size: clamp(30px, 4vw, 42px); font-weig
 .support-card h3 { font-size: 14.5px; margin-bottom: 5px; }
 .support-card p { font-size: 12px; color: var(--text3); }
 
+/* Ambient wide light, sitting behind the section's content — a slow,
+   non-interactive breathing animation, not tied to the cursor. */
+#support { position: relative; overflow: hidden; }
+#support .wrap { position: relative; z-index: 1; }
+.support-glow {
+  position: absolute; left: 50%; top: 50%; width: 920px; height: 340px;
+  transform: translate(-50%, -50%) scale(1);
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--accent) 45%, transparent) 0%, transparent 72%);
+  filter: blur(50px);
+  pointer-events: none; z-index: 0;
+  animation: supportGlowBreathe 9s ease-in-out infinite;
+}
+@keyframes supportGlowBreathe {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: .5; }
+  50%      { transform: translate(-50%, -50%) scale(1.12); opacity: .85; }
+}
+
 /* License strip */
 .license-strip {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
@@ -234,7 +323,7 @@ footer .flinks a { font-size: 12.5px; color: var(--text2); text-decoration: none
 footer .flinks a:hover { color: var(--text1); }
 
 @media (max-width: 860px) {
-  .grid, .showcase-row, .priv-grid, .downloads { grid-template-columns: 1fr; }
+  .grid, .grid-extras, .showcase-row, .priv-grid, .downloads { grid-template-columns: 1fr; }
   .showcase-hero img { height: 260px; }
   header nav a:not(.btn) { display: none; }
   .hero { padding: 64px 0 40px; }
@@ -259,8 +348,20 @@ footer .flinks a:hover { color: var(--text1); }
   </div>
 </header>
 
+<nav class="dotnav" aria-label="Page sections">
+  <a href="#hero"><span class="dot"></span><span class="dot-label">Home</span></a>
+  <a href="#features"><span class="dot"></span><span class="dot-label">Features</span></a>
+  <a href="#widgets"><span class="dot"></span><span class="dot-label">Widgets</span></a>
+  <a href="#extras"><span class="dot"></span><span class="dot-label">Details</span></a>
+  <a href="#screenshots"><span class="dot"></span><span class="dot-label">Screenshots</span></a>
+  <a href="#download"><span class="dot"></span><span class="dot-label">Download</span></a>
+  <a href="#privacy"><span class="dot"></span><span class="dot-label">Privacy</span></a>
+  <a href="#support"><span class="dot"></span><span class="dot-label">Support</span></a>
+  <a href="#license"><span class="dot"></span><span class="dot-label">License</span></a>
+</nav>
+
 <main>
-  <section class="hero">
+  <section class="hero" id="hero">
     <div class="wrap">
       <span class="pill"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="6.5" rx="1.3"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg> Local-first · no account · no server</span>
       <h1>A personal dashboard<br>you actually <em>own</em>.</h1>
@@ -364,58 +465,75 @@ footer .flinks a:hover { color: var(--text1); }
       <p class="section-sub">
         A few things that only show up once you're actually using it.
       </p>
-      <div class="grid">
+      <div class="grid-extras">
         <div class="extra-card">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5l3-3"/><path d="M9 4.5l1-1a2.5 2.5 0 0 1 3.5 3.5l-1 1"/><path d="M7 11.5l-1 1a2.5 2.5 0 0 1-3.5-3.5l1-1"/></svg></div>
           <h3>Reader ↔ Note highlight linking</h3>
           <p>Highlight text in the PDF/EPUB reader, link it into any Note widget as a colored
           reference — click it later and the reader jumps straight back to that page or location.</p>
         </div>
         <div class="extra-card">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1.3" y="5.3" width="5" height="5" rx="1"/><rect x="9.7" y="5.3" width="5" height="5" rx="1"/><path d="M6.8 7.8h2.4M8 6.6l1.2 1.2-1.2 1.2"/></svg></div>
           <h3>Move or copy a widget to another board</h3>
           <p>Every widget's toolbar can send it to a different board instantly — pick from a
           searchable list, size and style intact. No dragging across two windows.</p>
         </div>
         <div class="extra-card">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14.2s5-4.6 5-8.2a5 5 0 0 0-10 0c0 3.6 5 8.2 5 8.2z"/><circle cx="8" cy="6" r="1.7"/></svg></div>
           <h3>Map markers and hand-drawn routes</h3>
           <p>Drop colored, labeled pins anywhere, or click out a route point by point with live
           running distance. Routes are your own waypoints, not an auto-routed path.</p>
         </div>
         <div class="extra-card">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2l1.2 3.3L12.5 6.5l-3.3 1.2L8 11l-1.2-3.3L3.5 6.5l3.3-1.2z"/></svg></div>
           <h3>Per-widget AI chat, hard-scoped</h3>
           <p>Pin a mini AI chat to a single widget and it is <em>enforced in code</em> to only
           touch that widget's id — not a prompt suggestion, a hard rule the assistant can't break.</p>
         </div>
         <div class="extra-card">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg></div>
           <h3>Focus mode is a real 1:1 mirror</h3>
           <p>Double-click any widget and it's the exact same component, scaled up — not a preview.
           Check off a task or drag a calendar event full-screen, fully interactive.</p>
         </div>
         <div class="extra-card">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.8" cy="6.8" r="4.5"/><line x1="10.1" y1="10.1" x2="14" y2="14"/></svg></div>
           <h3>A minimap that zooms with you</h3>
           <p>Instead of a static fit-to-bounds overview, the live minimap scales in lockstep with
           your actual board zoom — like radar, not a thumbnail.</p>
         </div>
         <div class="extra-card">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="13" height="13" rx="1.3"/><line x1="1.5" y1="6" x2="14.5" y2="6"/><line x1="6" y1="6" x2="6" y2="14.5"/><path d="M8.7 9.7l2.6 2.6M11.3 9.7l-2.6 2.6"/></svg></div>
           <h3>Real spreadsheet formulas, safely evaluated</h3>
           <p><code class="mono">=SUM()</code>, <code class="mono">IF</code>,
           <code class="mono">COUNTIF</code> and 40+ more, backed by a hand-written parser — no
           <code class="mono">eval</code>, safe to open boards you didn't build yourself.</p>
         </div>
         <div class="extra-card">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.3 2.3c-1.5 0-2 1-2 2v1.8c0 .9-.4 1.2-1.1 1.4v.4c.7.2 1.1.5 1.1 1.4V11c0 1 .5 2 2 2M9.7 2.3c1.5 0 2 1 2 2v1.8c0 .9.4 1.2 1.1 1.4v.4c-.7.2-1.1.5-1.1 1.4V11c0 1-.5 2-2 2"/></svg></div>
           <h3>Themes as editable JSON, migrated smartly</h3>
           <p>Write your own theme as JSON with live validation. Switching themes only replaces
           widget styles that matched the old theme's defaults — your manual tweaks stay put.</p>
         </div>
         <div class="extra-card">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 9.3c0-1.2.8-1.8.8-3.3a2.7 2.7 0 0 1 5.4 0c0 1.5.8 2.1.8 3.3z"/><line x1="3.8" y1="9.3" x2="12.2" y2="9.3"/><path d="M6.8 11.7a1.2 1.2 0 0 0 2.4 0"/></svg></div>
           <h3>Reminders that check your actual progress</h3>
           <p>Water reminders stop once you've hit today's goal; the sleep reminder only fires if
           you haven't logged a bedtime yet. Runs in the background, any board.</p>
         </div>
         <div class="extra-card">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5.5,4 2,8 5.5,12"/><polyline points="10.5,4 14,8 10.5,12"/></svg></div>
           <h3>An HTML widget that needs no hosting</h3>
           <p>Paste or upload a self-contained <code class="mono">.html</code> file and it renders
           live in a sandboxed iframe — no URL, no server, no install step. Flip to a code view
           anytime to see or edit the source, or hit reload to restart it.</p>
+        </div>
+        <div class="extra-card">
+          <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></div>
+          <h3>Pin a widget to your real desktop</h3>
+          <p>Detach any widget into its own small, always-on-top window right on your desktop —
+          a task list or clock outside the app entirely. Still fully live: check something off
+          there and the board updates instantly, not a static snapshot.</p>
         </div>
       </div>
     </div>
@@ -468,18 +586,81 @@ footer .flinks a:hover { color: var(--text1); }
           <div class="plat-sub"><span id="dl-linux-sub">.AppImage</span> — <a id="dl-deb" href="https://github.com/Aetherion7/mosaic/releases/latest" style="position:relative;z-index:1;color:var(--accent2)">.deb instead</a></div>
         </div>
       </div>
-      <div class="note-box">
-        <strong>Unsigned builds:</strong> Windows SmartScreen will warn about an "unknown publisher"
-        on first launch — click "More info" → "Run anyway". On macOS you'll likely see
-        <strong>"'mosaic' is damaged and can't be opened. You should move it to the Trash"</strong> —
-        the download isn't actually broken, that's just Gatekeeper's generic message for any app
-        without a paid Developer ID signature, and right-click → "Open" no longer clears it on
-        current macOS. Fix it by moving <code class="mono">mosaic.app</code> to
-        <code class="mono">/Applications</code>, then running
-        <code class="mono">xattr -cr /Applications/mosaic.app</code> in Terminal. Prefer no install
-        at all? Clone the
-        <a href="https://github.com/Aetherion7/mosaic" style="color:var(--accent)">repository</a>
-        and run <code class="mono">npm install &amp;&amp; npm run dev</code> — mosaic works entirely in the browser.
+      <div class="install-notes">
+        <div class="install-notes-head">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.3"/><line x1="8" y1="7.3" x2="8" y2="11.2"/><circle cx="8" cy="5.3" r="0.9" fill="currentColor" stroke="none"/></svg>
+          Important information for downloads
+        </div>
+        <details>
+          <summary>
+            <span class="plat-ic-sm"><svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6.3" height="6.3"/><rect x="8.3" y="1" width="6.3" height="6.3"/><rect x="1" y="8.3" width="6.3" height="6.3"/><rect x="8.3" y="8.3" width="6.3" height="6.3"/></svg></span>
+            Windows — "unknown publisher" warning
+            <span class="chev"><svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,3 11,8 5,13"/></svg></span>
+          </summary>
+          <div class="install-body">
+            <p>SmartScreen will warn about an unsigned build the first time you launch it — that's
+            expected, not a broken download.</p>
+            <p>Click <strong>"More info"</strong> → <strong>"Run anyway"</strong>. It won't ask again after that.</p>
+          </div>
+        </details>
+        <details>
+          <summary>
+            <span class="plat-ic-sm"><img src="icons/apple.png" alt="" width="14" height="16"></span>
+            macOS — "mosaic is damaged" message
+            <span class="chev"><svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,3 11,8 5,13"/></svg></span>
+          </summary>
+          <div class="install-body">
+            <p>You'll likely see <strong>"'mosaic' is damaged and can't be opened. You should move
+            it to the Trash."</strong> That's just Gatekeeper's generic message for any app without
+            a paid Developer ID signature — the download isn't actually broken, and right-click →
+            "Open" no longer clears it on current macOS.</p>
+            <p>Fix it: move <code class="mono">mosaic.app</code> to <code class="mono">/Applications</code>,
+            then run this once in Terminal:</p>
+            <pre class="codeblock">xattr -cr /Applications/mosaic.app</pre>
+          </div>
+        </details>
+        <details>
+          <summary>
+            <span class="plat-ic-sm"><img src="icons/linux.png" alt="" width="14" height="16"></span>
+            Linux — terminal install, no version to edit
+            <span class="chev"><svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,3 11,8 5,13"/></svg></span>
+          </summary>
+          <div class="install-body">
+            <p>Only <code class="mono">.deb</code> and <code class="mono">.AppImage</code> are
+            published. Each command looks up the current release itself via the GitHub API — works
+            the same in bash, zsh, and fish.</p>
+
+            <span class="distro-label">Debian-based — Debian, Ubuntu, Mint, Pop!_OS, elementary OS</span>
+            <pre class="codeblock">curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep browser_download_url | grep '\.deb"' | cut -d '"' -f4 \
+  | xargs -I{} sh -c 'wget "$1" &amp;&amp; sudo apt install "./$(basename "$1")"' _ {}</pre>
+
+            <span class="distro-label">Arch-based — Arch, Manjaro, EndeavourOS, CachyOS</span>
+            <pre class="codeblock">sudo pacman -S --needed fuse2
+curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep browser_download_url | grep '\.AppImage"' | cut -d '"' -f4 \
+  | xargs -I{} sh -c 'wget "$1" &amp;&amp; chmod +x "$(basename "$1")" &amp;&amp; "./$(basename "$1")"' _ {}</pre>
+
+            <span class="distro-label">Fedora-based — Fedora, Nobara, RHEL</span>
+            <pre class="codeblock">sudo dnf install -y fuse
+curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep browser_download_url | grep '\.AppImage"' | cut -d '"' -f4 \
+  | xargs -I{} sh -c 'wget "$1" &amp;&amp; chmod +x "$(basename "$1")" &amp;&amp; "./$(basename "$1")"' _ {}</pre>
+
+            <p>Any other distro (openSUSE, NixOS, ...): install a <code class="mono">fuse2</code> /
+            <code class="mono">libfuse2</code> compat package if it's missing, then run the same
+            <code class="mono">.AppImage</code> command above.</p>
+          </div>
+        </details>
+        <details>
+          <summary>
+            <span class="plat-ic-sm"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="5.5,4 2,8 5.5,12"/><polyline points="10.5,4 14,8 10.5,12"/></svg></span>
+            Prefer no install at all?
+            <span class="chev"><svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,3 11,8 5,13"/></svg></span>
+          </summary>
+          <div class="install-body">
+            <p>Clone the <a href="https://github.com/Aetherion7/mosaic" style="color:var(--accent)">repository</a>
+            and run this — mosaic works entirely in the browser, nothing to package or sign:</p>
+            <pre class="codeblock">npm install &amp;&amp; npm run dev</pre>
+          </div>
+        </details>
       </div>
     </div>
   </section>
@@ -514,6 +695,7 @@ footer .flinks a:hover { color: var(--text1); }
   </section>
 
   <section id="support">
+    <div class="support-glow"></div>
     <div class="wrap" style="text-align:center">
       <div class="eyebrow">Support</div>
       <h2>Free to use. Free to stay that way.</h2>
@@ -553,7 +735,7 @@ footer .flinks a:hover { color: var(--text1); }
 
 <footer>
   <div class="wrap">
-    <span class="fmeta">© 2026 mosaic contributors · built with Next.js, React &amp; Electron</span>
+    <span class="fmeta">© 2026 Aetherion7 · built with Next.js, React &amp; Electron</span>
     <div class="flinks">
       <a href="https://github.com/Aetherion7/mosaic">GitHub</a>
       <a href="https://github.com/Aetherion7/mosaic/issues">Issues</a>
@@ -635,6 +817,38 @@ document.querySelectorAll('.showcase .shot img, .hero-shot img').forEach(functio
       });
     })
     .catch(function () { /* keep static releases/latest fallback links */ });
+})();
+</script>
+
+<script>
+// Side dot nav: click scrolls to the matching section; the active dot is
+// driven by an IntersectionObserver watching a thin band around the
+// viewport's vertical center, so it stays correct regardless of how tall
+// each section is instead of relying on manual scroll-position math.
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('.dotnav a'));
+  var sections = links.map(function (a) {
+    return document.getElementById(a.getAttribute('href').slice(1));
+  });
+  if (!sections.length || sections.indexOf(null) !== -1) return;
+
+  links.forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      var target = document.getElementById(a.getAttribute('href').slice(1));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  if (!('IntersectionObserver' in window)) return;
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      var idx = sections.indexOf(entry.target);
+      if (idx === -1) return;
+      links[idx].classList.toggle('active', entry.isIntersecting);
+    });
+  }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+  sections.forEach(function (s) { observer.observe(s); });
 })();
 </script>
 

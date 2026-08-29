@@ -566,21 +566,44 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
               Tiptap mark via Color/TextStyle), not the whole note. Multiple
               differently-colored spans can coexist in the same note. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <ColorSwatch
-              value={activeColor?.startsWith('#') ? activeColor : '#000000'}
-              onChange={v => editor?.chain().focus().setColor(v).run()}
-              trigger={(onClick) => (
-                <div onClick={onClick} title={t('Text color')} style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  justifyContent: 'center', gap: 1,
-                  padding: '3px 5px', borderRadius: 5,
-                  minWidth: 22, height: 22, cursor: 'pointer',
-                }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1, color: activeColor ?? 'var(--text2)' }}>A</span>
-                  <div style={{ width: 13, height: 3, background: activeColor ?? 'var(--text2)', borderRadius: 1 }} />
-                </div>
-              )}
-            />
+            {/* Split button: the "A" itself re-applies whatever color is
+                already shown (the mark at the cursor / current selection) to
+                the selection in one click — previously this always opened
+                the picker instead, even when the shown color was exactly
+                what the user wanted to (re)apply. The small caret is the
+                only way left to open the full picker for a NEW color. */}
+            <div style={{ display: 'flex', alignItems: 'stretch', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+              <button
+                onClick={() => { if (activeColor) editor?.chain().focus().setColor(activeColor).run() }}
+                title={t('Apply text color')}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
+                  padding: '3px 6px', minWidth: 22, height: 22, border: 'none', background: 'transparent', cursor: 'pointer',
+                }}
+              >
+                <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1, color: activeColor ?? 'var(--text2)' }}>A</span>
+                <div style={{ width: 13, height: 3, background: activeColor ?? 'var(--text2)', borderRadius: 1 }} />
+              </button>
+              <ColorSwatch
+                value={activeColor?.startsWith('#') ? activeColor : '#000000'}
+                onChange={v => editor?.chain().focus().setColor(v).run()}
+                trigger={(onClick) => (
+                  <button
+                    onClick={onClick}
+                    title={t('Choose text color')}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 14, height: 22, border: 'none', borderLeft: '1px solid var(--border)',
+                      background: 'transparent', color: 'var(--text3)', cursor: 'pointer', padding: 0,
+                    }}
+                  >
+                    <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                )}
+              />
+            </div>
 
             {palette.map((c: string) => (
               <button
