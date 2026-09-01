@@ -516,9 +516,15 @@ function CityInput({ value, onChange, onSearch, compact }: {
   const t = useT()
   const canSearch = value.trim().length > 0
   return (
-    // Single field: pin + input + integrated submit arrow
+    // Single field: pin + input + integrated submit arrow. The compact
+    // (edit-mode footer) variant spans the full widget width on purpose —
+    // only the centered geo-blocked/error variant gets a cap, otherwise it
+    // stretches to the widget's full width by default (flex:1 with no
+    // sibling to bound it against in that centered column layout).
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0,
+      display: 'flex', alignItems: 'center', gap: 6,
+      flex: compact ? 1 : '0 1 auto', minWidth: 0,
+      width: compact ? undefined : '100%', maxWidth: compact ? undefined : 200,
       padding: compact ? '3px 3px 3px 9px' : '5px 5px 5px 10px',
       background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 7,
     }}>

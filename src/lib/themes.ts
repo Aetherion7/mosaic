@@ -248,6 +248,31 @@ export const THEMES: ThemePreset[] = [
     bg: { type: 'color', color: '#080808', pattern: 'grid', patternColor: '#ffffff', patternOpacity: 0.03 },
     widgetStyle: { bgColor: '#111111', borderColor: '#2e2e2e', borderWidth: 1, borderRadius: 8, shadow: 'md', blur: 0, opacity: 1, gradient: null, gradientDir: 'to-br', glowColor: null, glowSize: 0 },
   },
+  {
+    // Strictly grayscale — unlike Carbon (near-monochrome but with an orange
+    // accent), accent/accent2 here are pure light/mid grays, so emphasis
+    // comes from brightness contrast alone, not hue.
+    id: 'noir-dark', name: 'Dark Noir',
+    cssVars: {
+      '--bg':       '#0a0a0a',
+      '--surface':  '#141414',
+      '--surface2': '#1c1c1c',
+      '--surface3': '#262626',
+      '--border':   '#343434',
+      '--accent':   '#f2f2f2',
+      '--accent2':  '#9c9c9c',
+      '--text1':    '#f5f5f5',
+      '--text2':    '#a3a3a3',
+      '--text3':    '#707070',
+      '--danger':   '#f87171',
+      '--success':  '#4ade80',
+      '--amber':    '#fbbf24',
+      '--shadow-color': '#000000',
+      '--popover-bg':   'var(--surface)',
+    },
+    bg: { type: 'color', color: '#0a0a0a', pattern: 'dots', patternColor: '#ffffff', patternOpacity: 0.05 },
+    widgetStyle: { bgColor: '#141414', borderColor: '#343434', borderWidth: 1, borderRadius: 10, shadow: 'md', blur: 0, opacity: 1, gradient: null, gradientDir: 'to-br', glowColor: null, glowSize: 0 },
+  },
   // ── Light themes ──────────────────────────────────────────────────────────
   {
     id: 'light', name: 'Soft Light',
@@ -403,9 +428,33 @@ export const THEMES: ThemePreset[] = [
     bg: { type: 'gradient', gradient: ['#faf8f0', '#f0ead8'], gradientDir: 'to-br', pattern: 'none' },
     widgetStyle: { bgColor: '#ffffff', borderColor: '#ddd4b0', borderWidth: 1, borderRadius: 12, shadow: 'sm', blur: 0, opacity: 1, gradient: null, gradientDir: 'to-br', glowColor: null, glowSize: 0 },
   },
+  {
+    // Light counterpart to Dark Noir — same strictly grayscale approach,
+    // accent/accent2 are pure dark/mid grays instead of a hue.
+    id: 'noir-light', name: 'White Noir',
+    cssVars: {
+      '--bg':       '#f7f7f7',
+      '--surface':  '#ffffff',
+      '--surface2': '#eeeeee',
+      '--surface3': '#e2e2e2',
+      '--border':   '#d2d2d2',
+      '--accent':   '#1a1a1a',
+      '--accent2':  '#6e6e6e',
+      '--text1':    '#111111',
+      '--text2':    '#555555',
+      '--text3':    '#969696',
+      '--danger':   '#dc2626',
+      '--success':  '#16a34a',
+      '--amber':    '#d97706',
+      '--shadow-color': 'rgba(70, 65, 110, 0.30)',
+      '--popover-bg':   'var(--surface)',
+    },
+    bg: { type: 'color', color: '#f7f7f7', pattern: 'dots', patternColor: '#000000', patternOpacity: 0.04 },
+    widgetStyle: { bgColor: '#ffffff', borderColor: '#d2d2d2', borderWidth: 1, borderRadius: 10, shadow: 'sm', blur: 0, opacity: 1, gradient: null, gradientDir: 'to-br', glowColor: null, glowSize: 0 },
+  },
 ]
 
-export const LIGHT_THEME_IDS = ['light', 'paper', 'arctic', 'blossom', 'mint', 'lavender', 'sand']
+export const LIGHT_THEME_IDS = ['light', 'paper', 'arctic', 'blossom', 'mint', 'lavender', 'sand', 'noir-light']
 
 export const DEFAULT_THEME = THEMES[0]
 

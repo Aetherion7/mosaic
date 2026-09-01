@@ -301,12 +301,11 @@ export function IconClockFlip({ size, strokeWidth }: P) {
   </Ic>
 }
 export function IconReader({ size, strokeWidth }: P) {
+  // A single open book.
   return <Ic size={size} strokeWidth={strokeWidth}>
-    <path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/>
-    <polyline points="10,2 10,5 13,5"/>
-    <line x1="5" y1="7" x2="11" y2="7"/>
-    <line x1="5" y1="9.5" x2="11" y2="9.5"/>
-    <rect x="4.5" y="11" width="4" height="1.5" rx="0.5" fill="currentColor" stroke="none" opacity="0.7"/>
+    <path d="M8 3.4C6.3 2.4 4 2.2 2 2.8v9.6c2-0.6 4.3-0.4 6 0.6"/>
+    <path d="M8 3.4c1.7-1 4-1.2 6-0.6v9.6c-2-0.6-4.3-0.4-6 0.6"/>
+    <line x1="8" y1="3.4" x2="8" y2="13.4"/>
   </Ic>
 }
 export function IconSleep({ size, strokeWidth }: P) {

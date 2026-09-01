@@ -233,6 +233,9 @@ export interface ReaderHighlight {
   cfiRange?:  string  // EPUB: epub.js CFI range instead of pixel rects
 }
 
+// Vestigial — nur noch für die Alt-Migration in NoteWidget.tsx gebraucht
+// (Markdown-Links / d.pdfLinks aus sehr alten Boards), sonst tot: id und
+// highlightId werden nirgends mehr gelesen. Nicht erweitern.
 export interface NotePdfLink {
   id:             string
   highlightId:    string
@@ -244,16 +247,34 @@ export interface NotePdfLink {
 
 export type ReaderFileType = 'pdf' | 'epub'
 
-export interface ReaderData {
-  fileName?:     string
-  fileData?:     string
-  fileType?:     ReaderFileType
+// Ein einzelnes Buch in der Reader-Bibliothek — vor der Multi-Buch-Umstellung
+// waren das genau diese Felder direkt auf ReaderData.
+export interface ReaderBook {
+  id:            string
+  fileName:      string
+  fileData:      string
+  fileType:      ReaderFileType
+  coverRef?:     string   // idb-blob://-Referenz auf ein generiertes Cover-Bild
   highlights:    Record<string, ReaderHighlight>
   currentPage:   number
-  currentCfi?:   string   // EPUB: exact position (survives across "location" regeneration)
+  currentCfi?:   string   // EPUB: exakte Position (übersteht "Locations"-Neuerzeugung)
   epubLocations?: string  // Legacy: Locations-Cache inline im Board-JSON (wird beim Laden in die Blob-DB migriert)
   epubLocationsRef?: string  // EPUB: idb-blob://-Referenz auf den Locations-Cache (book.locations.save())
+  epubLocationChars?: number  // Granularität, mit der epubLocationsRef erzeugt wurde — bei Abweichung vom aktuellen Wert wird neu generiert
+  totalPages?:   number   // gecachter Nenner für die Fortschritts-% — beim ersten Öffnen gesetzt
   twoPageSpread?: boolean
+  category?:     string   // freier Text, eine Kategorie pro Buch (v1 — kein Mehrfach-Tag)
+  addedAt:       number
+  lastOpenedAt?: number
+}
+
+export interface ReaderData {
+  books:        Record<string, ReaderBook>
+  activeBookId?: string   // undefined = Regal-Ansicht
+  // Eigenständige Kategorie-Liste, unabhängig von der Buch-Zuordnung — nur
+  // aus book.category abzuleiten würde eine gerade erst (mit noch keinem
+  // zugeordneten Buch) angelegte Kategorie sofort wieder verschwinden lassen.
+  categories?:  string[]
 }
 
 export interface SpreadsheetData {
@@ -332,8 +353,8 @@ export interface BoardBg {
 // ─── Theme ────────────────────────────────────────────────────────────────────
 export type ThemeId =
   | 'dark' | 'glass' | 'cyber' | 'nature' | 'neon'
-  | 'aurora' | 'sunset' | 'ocean' | 'rose' | 'nordic' | 'carbon'
-  | 'light' | 'paper' | 'arctic' | 'blossom' | 'mint' | 'lavender' | 'sand'
+  | 'aurora' | 'sunset' | 'ocean' | 'rose' | 'nordic' | 'carbon' | 'noir-dark'
+  | 'light' | 'paper' | 'arctic' | 'blossom' | 'mint' | 'lavender' | 'sand' | 'noir-light'
 
 export interface ThemePreset {
   id:          ThemeId

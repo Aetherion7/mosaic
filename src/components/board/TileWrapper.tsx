@@ -2,7 +2,7 @@
 import { useRef, useState, useMemo, useCallback, useEffect, useLayoutEffect, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDraggable } from '@dnd-kit/core'
-import { useBoardStore, selectBoard } from '@/store/boardStore'
+import { useBoardStore, selectBoard, countReaderLinks } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { useSettings } from '@/store/settingsStore'
 import { useT } from '@/hooks/useT'
@@ -253,16 +253,32 @@ function TileWrapperInner({ widget, gridRef }: Props) {
     ? otherBoards.filter(b => b.name.toLowerCase().includes(transferQuery.trim().toLowerCase()))
     : otherBoards
 
-  function doTransfer(targetId: string) {
+  // Moving (not copying) a Reader widget with linked notes breaks those
+  // links — cross-board resolution isn't supported by design (see the
+  // comment at boardStore.ts's transferWidget). Warn before committing,
+  // same style as the reader's own delete-highlight/delete-book dialogs.
+  const [confirmMove, setConfirmMove] = useState<{ targetId: string; count: number } | null>(null)
+
+  function performTransfer(targetId: string) {
     const copy = transferMode === 'copy'
     transferWidget(widget.id, targetId, copy)
     setTransferOpen(false)
+    setConfirmMove(null)
     const targetName = otherBoards.find(b => b.id === targetId)?.name ?? t('Board')
     showActionToast(
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
         <WidgetTypeBadge type={widget.type} /> {t('in')} “<strong style={{ color: 'var(--text1)' }}>{targetName}</strong>” {copy ? t('copied') : t('moved')}
       </span>
     )
+  }
+
+  function doTransfer(targetId: string) {
+    if (transferMode === 'move' && widget.type === 'reader') {
+      const board = selectBoard(useBoardStore.getState())
+      const count = board ? countReaderLinks(board, widget.id) : 0
+      if (count > 0) { setConfirmMove({ targetId, count }); return }
+    }
+    performTransfer(targetId)
   }
 
   // Fokus-Modus: Doppelklick (in Ansichts- UND Bearbeitungsmodus) oeffnet das
@@ -744,6 +760,37 @@ function TileWrapperInner({ widget, gridRef }: Props) {
       </div>
 
       {transferMenu}
+
+      {confirmMove && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 500,
+          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+          onPointerDown={e => e.stopPropagation()}
+        >
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 14, padding: '22px 26px', maxWidth: 340, width: '90%',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text1)', marginBottom: 10 }}>
+              {t('Moving this reader will break {n} linked note reference(s) on this board.').replace('{n}', String(confirmMove.count))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setConfirmMove(null)}
+                style={{ padding: '6px 14px', fontSize: 12, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
+              >{t('Cancel')}</button>
+              <button
+                onClick={() => performTransfer(confirmMove.targetId)}
+                style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, borderRadius: 999, border: 'none', background: '#e53e3e', color: 'white', cursor: 'pointer' }}
+              >{t('Move anyway')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {aiChatOpen && <WidgetAiChat widget={widget} label={t(TYPE_LABELS[widget.type] ?? widget.type)} side={aiChatSide} top={aiChatTop} onClose={() => setAiChatOpen(false)} />}
     </motion.div>
   )

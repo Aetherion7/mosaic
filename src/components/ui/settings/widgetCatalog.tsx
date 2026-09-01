@@ -25,7 +25,7 @@ export const BUILT_IN_WIDGETS: { type: WidgetType; icon: React.ReactNode; desc: 
   { type: 'drawboard',   icon: <IconDraw size={18} />,       desc: 'Draw sketches & diagrams' },
   { type: 'clock',       icon: <IconClock size={18} />,      desc: 'Digital, analog & more' },
   { type: 'chart',       icon: <IconChart size={18} />,      desc: 'Bar, line, pie & more' },
-  { type: 'reader',      icon: <IconReader size={18} />,     desc: 'Read & highlight PDFs and EPUBs' },
+  { type: 'reader',      icon: <IconReader size={18} />,     desc: 'A library of PDFs and EPUBs, with highlights' },
   { type: 'sleep',       icon: <IconSleep size={18} />,      desc: 'Track daily sleep duration' },
   { type: 'agenda',      icon: <IconAgenda size={18} />,     desc: 'Upcoming events at a glance' },
   { type: 'quicklinks',  icon: <IconLinks size={18} />,      desc: 'Quick access to websites' },

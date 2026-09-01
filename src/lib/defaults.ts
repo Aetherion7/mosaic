@@ -65,7 +65,7 @@ const DEFAULT_SPANS: Record<WidgetType, { colSpan: number; rowSpan: number }> = 
   weather:     { colSpan: 4, rowSpan: 2 },
   map:         { colSpan: 6, rowSpan: 3 },
   html:        { colSpan: 4, rowSpan: 2 },
-  reader:      { colSpan: 6, rowSpan: 4 },
+  reader:      { colSpan: 8, rowSpan: 5 },
   sleep:       { colSpan: 4, rowSpan: 2 },
   agenda:      { colSpan: 3, rowSpan: 2 },
   quicklinks:  { colSpan: 4, rowSpan: 2 },
@@ -189,7 +189,7 @@ export function defaultWidget(
     case 'html':
       return { ...base, type, data: { html: '' } }
     case 'reader':
-      return { ...base, type, data: { highlights: {}, currentPage: 1 } }
+      return { ...base, type, data: { books: {}, activeBookId: undefined } }
     case 'sleep':
       return { ...base, type, data: { goalH: 8, log: {} } }
     case 'agenda':

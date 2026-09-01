@@ -907,7 +907,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
         <span style={{
           display: 'flex', alignItems: 'center', gap: 5, minWidth: 0,
           background: 'var(--surface2)', border: '1px solid var(--border)',
-          borderRadius: 999, padding: '3px 10px',
+          borderRadius: 7, padding: '3px 10px',
           fontSize: 10, fontWeight: 700, color: 'var(--text1)', whiteSpace: 'nowrap',
         }}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>

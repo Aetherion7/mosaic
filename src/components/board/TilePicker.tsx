@@ -35,7 +35,7 @@ export const TILES: { type: WidgetType; icon: React.ReactNode; label: string; de
   { type: 'drawboard',   icon: <IconDraw />,       label: 'Drawboard',  desc: 'Draw sketches & diagrams' },
   { type: 'clock',       icon: <IconClock />,      label: 'Clock',      desc: 'Digital, analog & more' },
   { type: 'chart',       icon: <IconChart />,      label: 'Chart',      desc: 'Bar, line, pie & more' },
-  { type: 'reader',      icon: <IconReader />,     label: 'Reader',     desc: 'Read & highlight PDFs and EPUBs' },
+  { type: 'reader',      icon: <IconReader />,     label: 'Reader',     desc: 'A library of PDFs and EPUBs, with highlights' },
   { type: 'sleep',       icon: <IconSleep />,      label: 'Sleep',      desc: 'Track daily sleep duration' },
   { type: 'agenda',      icon: <IconAgenda />,     label: 'Agenda',     desc: 'Upcoming events at a glance' },
   { type: 'quicklinks',  icon: <IconLinks />,      label: 'Quicklinks', desc: 'Quick access to websites' },
@@ -105,19 +105,6 @@ function TileCard({
   )
 }
 
-const RECENT_KEY = 'planboard-recent-widgets'
-const RECENT_MAX = 5
-
-function getRecentTypes(): string[] {
-  try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]') } catch { return [] }
-}
-function pushRecentType(type: string) {
-  try {
-    const prev = getRecentTypes().filter(t => t !== type)
-    localStorage.setItem(RECENT_KEY, JSON.stringify([type, ...prev].slice(0, RECENT_MAX)))
-  } catch {}
-}
-
 export default function TilePicker() {
   const t = useT()
   const addWidget        = useBoardStore(s => s.addWidget)
@@ -128,15 +115,8 @@ export default function TilePicker() {
 
   const [hovered,     setHovered]     = useState<string | null>(null)
   const [search,      setSearch]      = useState('')
-  // Lazy statt leerem Array: sonst ist die „Zuletzt verwendet"-Zeile beim
-  // allerersten Panel-Öffnen für einen Frame leer und poppt erst danach rein
-  // (Layout-Sprung, kurz zweizeilig durch die Öffnungs-Animation). Das
-  // Effekt unten hält die Liste bei jedem weiteren Öffnen aktuell.
-  const [recentTypes, setRecentTypes] = useState<string[]>(() => getRecentTypes())
   const desktopRef = useRef<HTMLDivElement>(null)
   const isOpen = panel === 'addWidget'
-
-  useEffect(() => { if (isOpen) setRecentTypes(getRecentTypes()) }, [isOpen])
 
   useEffect(() => { if (!isOpen) setSearch('') }, [isOpen])
   useFocusTrap(desktopRef, isOpen)
@@ -172,7 +152,6 @@ export default function TilePicker() {
       pos = findNextPos(b.widgets, type)
     }
     const w = defaultWidget(type, pos, theme.widgetStyle)
-    pushRecentType(type)
     addWidget(w)
     useUIStore.getState().setLastAddedWidget(w.id)
     openPanel(null)
@@ -230,41 +209,6 @@ export default function TilePicker() {
 
                 {/* Scrollable grid area */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px' }}>
-                  {/* Zuletzt benutzt */}
-                  {!search && recentTypes.length > 0 && (() => {
-                    const recentTiles = recentTypes
-                      .map(key => allTiles.find(t => t.type === key))
-                      .filter(Boolean) as typeof allTiles
-                    if (!recentTiles.length) return null
-                    return (
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{t('Recently used')}</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, overflow: 'hidden' }}>
-                          <AnimatePresence>
-                            {recentTiles.map((t, i) => {
-                              const hvr = `recent-${t.type}`
-                              return (
-                                <motion.div
-                                  key={`recent-${t.type}`}
-                                  initial={{ x: -24, opacity: 0 }}
-                                  animate={{ x: 0, opacity: 1 }}
-                                  exit={{ x: 24, opacity: 0 }}
-                                  transition={{ type: 'spring', stiffness: 380, damping: 32, delay: i * 0.05 }}
-                                  style={{ minWidth: 0, height: '100%' }}
-                                >
-                                  <TileCard icon={t.icon} label={t.label} desc={t.desc}
-                                    hovered={hovered === hvr} onHover={() => setHovered(hvr)} onLeave={() => setHovered(null)}
-                                    onClick={() => add(t.type)} />
-                                </motion.div>
-                              )
-                            })}
-                          </AnimatePresence>
-                        </div>
-                        <div style={{ height: 1, background: 'var(--border)', margin: '14px 0 10px' }} />
-                      </div>
-                    )
-                  })()}
-
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
                     {filteredTiles.map(t => (
                       <TileCard key={t.type} icon={t.icon} label={t.label} desc={t.desc}

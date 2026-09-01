@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Document, Page, pdfjs } from 'react-pdf'
 import 'react-pdf/dist/Page/TextLayer.css'
@@ -10,13 +10,15 @@ import type Contents from 'epubjs/types/contents'
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { useShallow } from 'zustand/react/shallow'
-import { saveBlob, getBlob, useBlobUrl } from '@/lib/blobStore'
+import { saveBlob, getBlob, deleteBlob, useBlobUrl } from '@/lib/blobStore'
+import { bookSpanRegexes } from '@/lib/pdfRefCleanup'
 import { registerReader, unregisterReader } from '@/lib/ai/readerRegistry'
 import { LIGHT_THEME_IDS } from '@/lib/themes'
 import { extractNoteTitle, renderNoteTitleHtml } from '@/lib/noteTitle'
 import { useT } from '@/hooks/useT'
+import ReaderShelf from './ReaderShelf'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import type { Widget, ReaderHighlight, ReaderFileType } from '@/types'
+import type { Widget, ReaderBook, ReaderData, ReaderHighlight, ReaderFileType } from '@/types'
 
 if (typeof window !== 'undefined') {
   pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -33,12 +35,16 @@ const HIGHLIGHT_COLORS = [
 ]
 
 const ZOOM_STEPS = [50, 75, 100, 125, 150, 175, 200]
-// Zeichen pro "Seite" bei der Locations-Generierung. Kleiner = feinere
-// Granularität → ein "Weiterblättern" bewegt die Seitenzahl im Schnitt um
-// weniger und gleichmäßigere Schritte (die tatsächlich gerenderte Seite hängt
-// von Widget-Breite/Zoom/Spalten ab, deshalb bleibt es eine Annäherung, egal
-// wie fein — 300 statt 1024 verkleinert nur den typischen Sprung spürbar).
-const EPUB_LOCATION_CHARS = 300
+// Zeichen pro "Seite" bei der Locations-Generierung. Die tatsächlich
+// gerenderte Seite hängt von Widget-Breite/Zoom/Spalten ab, deshalb bleibt
+// die "Seitenzahl" immer eine Annäherung — aber der Prozentsatz (aktuelle
+// Location / Gesamtzahl) ist von diesem Wert unabhängig, da beide
+// proportional mitskalieren. Ein zu kleiner Wert (früher 300) erzeugt daher
+// nur eine unrealistisch hohe Gesamtzahl (z.B. "Seite 340 von 4200" für
+// einen normalen Roman) ohne echten Nutzen — 1024 ist epub.js' eigener
+// Standardwert und liefert Seitenzahlen in der Größenordnung eines echten
+// gedruckten Buchs.
+const EPUB_LOCATION_CHARS = 1024
 
 type ScrollDir = 'vertical' | 'horizontal'
 
@@ -48,6 +54,41 @@ interface SelectionState { text: string; x: number; y: number; rects?: Highlight
 function fileTypeOf(fileName: string | undefined, stored?: ReaderFileType): ReaderFileType {
   if (stored) return stored
   return fileName?.toLowerCase().endsWith('.epub') ? 'epub' : 'pdf'
+}
+
+function uidBook() { return `book_${Date.now()}_${Math.random().toString(36).slice(2, 6)}` }
+
+// ── Legacy single-book → library migration ────────────────────────────────────
+// Pre-library boards stored fileName/fileData/... directly on widget.data.
+// Wrap that into a one-book library, preserving every field with zero data
+// loss. Computed via useMemo for the RENDER (no shelf-then-book flash on
+// first paint); the caller persists it via patch() in a mount-only effect.
+interface LegacyReaderFields {
+  fileName?: string; fileData?: string; fileType?: ReaderFileType
+  highlights?: Record<string, ReaderHighlight>; currentPage?: number
+  currentCfi?: string; epubLocations?: string; epubLocationsRef?: string
+  scrollDir?: ScrollDir; twoPageSpread?: boolean
+}
+
+function migrateLegacyReaderData(raw: Partial<ReaderData> & LegacyReaderFields): { books: Record<string, ReaderBook>; activeBookId?: string; categories: string[]; migrated: boolean } {
+  if (raw.books) return { books: raw.books, activeBookId: raw.activeBookId, categories: raw.categories ?? [], migrated: false }
+  if (!raw.fileData) return { books: {}, activeBookId: undefined, categories: raw.categories ?? [], migrated: false }
+  const id = uidBook()
+  const book: ReaderBook = {
+    id,
+    fileName: raw.fileName ?? 'Untitled',
+    fileData: raw.fileData,
+    fileType: raw.fileType ?? fileTypeOf(raw.fileName),
+    highlights: raw.highlights ?? {},
+    currentPage: raw.currentPage ?? 1,
+    currentCfi: raw.currentCfi,
+    epubLocations: raw.epubLocations,
+    epubLocationsRef: raw.epubLocationsRef,
+    twoPageSpread: raw.twoPageSpread,
+    addedAt: Date.now(),
+    lastOpenedAt: Date.now(),
+  }
+  return { books: { [id]: book }, activeBookId: id, categories: raw.categories ?? [], migrated: true }
 }
 
 // ── SVG icon helpers ──────────────────────────────────────────────────────────
@@ -67,7 +108,8 @@ const IcoSkipLeft   = () => <Svg><polyline points="19,18 13,12 19,6"/><line x1="
 const IcoSkipRight  = () => <Svg><polyline points="5,18 11,12 5,6"/><line x1="19" y1="6" x2="19" y2="18"/></Svg>
 const IcoZoomIn     = () => <Svg><circle cx="11" cy="11" r="7"/><line x1="18" y1="18" x2="14.35" y2="14.35"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></Svg>
 const IcoZoomOut    = () => <Svg><circle cx="11" cy="11" r="7"/><line x1="18" y1="18" x2="14.35" y2="14.35"/><line x1="8" y1="11" x2="14" y2="11"/></Svg>
-const IcoUpload     = () => <Svg><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></Svg>
+const IcoTrash      = () => <Svg size={13}><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></Svg>
+const IcoLibrary    = () => <Svg size={13}><polyline points="15,18 9,12 15,6"/></Svg>
 const IcoHighlight  = () => <Svg size={13}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></Svg>
 const IcoBurger     = () => <Svg size={13}><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></Svg>
 // Scroll direction icons — ↕ vertical, ↔ horizontal
@@ -142,19 +184,193 @@ function PdfThumbnail({ pageNum, isCurrent, onClick }: { pageNum: number; isCurr
   )
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Top-level widget: dispatches between the shelf and an open book ──────────
 
 export default function ReaderWidget({ widget }: { widget: Widget }) {
-  const t = useT()
-  const d = widget.data as {
-    fileName?: string; fileData?: string; fileType?: ReaderFileType
-    highlights?: Record<string, ReaderHighlight>; currentPage?: number
-    currentCfi?: string; epubLocations?: string; epubLocationsRef?: string
-    scrollDir?: ScrollDir; twoPageSpread?: boolean
-  }
   const updateWidget      = useBoardStore(s => s.updateWidget)
   const updateWidgetQuiet = useBoardStore(s => s.updateWidgetQuiet)
-  const allWidgets   = useBoardStore(useShallow(s => selectBoard(s)?.widgets ?? {}))
+  const allWidgets = useBoardStore(useShallow(s => selectBoard(s)?.widgets ?? {}))
+
+  const rawData = widget.data as Partial<ReaderData> & LegacyReaderFields
+  const { books, activeBookId, categories, migrated } = useMemo(() => migrateLegacyReaderData(rawData), [rawData])
+
+  // Persist a one-time legacy migration write. Runs once per detected legacy
+  // shape (not on every render — `migrated` only flips true the first time).
+  useEffect(() => {
+    if (migrated) updateWidget(widget.id, { data: { books, activeBookId, categories } })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [migrated])
+
+  // A stale activeBookId (deleted book, undo/redo) falls back to the shelf
+  // instead of crashing.
+  const activeBook = activeBookId ? books[activeBookId] : undefined
+
+  function readFreshData(): ReaderData {
+    return (selectBoard(useBoardStore.getState())?.widgets[widget.id]?.data ?? { books, activeBookId, categories }) as ReaderData
+  }
+
+  const patchBook = useCallback((partial: Partial<ReaderBook>) => {
+    if (!activeBook) return
+    const fresh = readFreshData()
+    const cur = fresh.books[activeBook.id] ?? activeBook
+    updateWidget(widget.id, { data: { books: { ...fresh.books, [activeBook.id]: { ...cur, ...partial } }, activeBookId: fresh.activeBookId } })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [updateWidget, widget.id, activeBook?.id])
+
+  const patchBookQuiet = useCallback((partial: Partial<ReaderBook>) => {
+    if (!activeBook) return
+    const fresh = readFreshData()
+    const cur = fresh.books[activeBook.id] ?? activeBook
+    updateWidgetQuiet(widget.id, { data: { books: { ...fresh.books, [activeBook.id]: { ...cur, ...partial } }, activeBookId: fresh.activeBookId } })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [updateWidgetQuiet, widget.id, activeBook?.id])
+
+  async function handleAddBook(file: File) {
+    try {
+      const ref  = await saveBlob(file)
+      const type = fileTypeOf(file.name)
+      const id   = uidBook()
+      const book: ReaderBook = {
+        id, fileName: file.name, fileData: ref, fileType: type,
+        highlights: {}, currentPage: 1, addedAt: Date.now(), lastOpenedAt: Date.now(),
+      }
+      const fresh = readFreshData()
+      // No cover generation here: activeBookId flips to this book on the
+      // same write, so ReaderBookView mounts and starts its OWN epub.js/
+      // pdfjs instance for this exact file right away — running a second,
+      // throwaway instance concurrently (as this used to do) raced epub.js's
+      // internal parsing and crashed inside its bundled code. ReaderShelf's
+      // BookCard generates the cover lazily instead, only once the shelf is
+      // showing this book's card (i.e. never while it's actively open).
+      updateWidget(widget.id, { data: { books: { ...fresh.books, [id]: book }, activeBookId: id } })
+    } catch { /* Blob-Speicher nicht verfügbar */ }
+  }
+
+  function openBook(id: string) {
+    const fresh = readFreshData()
+    const b = fresh.books[id]
+    if (!b) return
+    updateWidget(widget.id, { data: { books: { ...fresh.books, [id]: { ...b, lastOpenedAt: Date.now() } }, activeBookId: id } })
+  }
+
+  function backToLibrary() {
+    const fresh = readFreshData()
+    updateWidget(widget.id, { data: { books: fresh.books, activeBookId: undefined } })
+  }
+
+  function deleteBook(id: string) {
+    const fresh = readFreshData()
+    const b = fresh.books[id]
+    const nextBooks = { ...fresh.books }
+    delete nextBooks[id]
+    updateWidget(widget.id, { data: { books: nextBooks, activeBookId: fresh.activeBookId === id ? undefined : fresh.activeBookId } })
+    if (b) {
+      deleteBlob(b.fileData).catch(() => {})
+      if (b.coverRef) deleteBlob(b.coverRef).catch(() => {})
+      if (b.epubLocationsRef) deleteBlob(b.epubLocationsRef).catch(() => {})
+    }
+  }
+
+  function renameBook(id: string, fileName: string) {
+    const fresh = readFreshData()
+    if (!fresh.books[id]) return
+    updateWidget(widget.id, { data: { ...fresh, books: { ...fresh.books, [id]: { ...fresh.books[id], fileName } } } })
+  }
+
+  function setBookCategory(id: string, category: string | undefined) {
+    const fresh = readFreshData()
+    if (!fresh.books[id]) return
+    updateWidget(widget.id, { data: { ...fresh, books: { ...fresh.books, [id]: { ...fresh.books[id], category } } } })
+  }
+
+  // Categories are managed independently of book assignment (top bar) —
+  // otherwise a freshly created, still-unassigned category would vanish
+  // immediately (nothing would reference it). `categories` is the source of
+  // truth for what exists; renaming/deleting also sweeps every book
+  // carrying the old name, in the same batched write (one undo step).
+  function addCategory(name: string) {
+    const v = name.trim()
+    if (!v) return
+    const fresh = readFreshData()
+    const cats = fresh.categories ?? []
+    if (cats.includes(v)) return
+    updateWidget(widget.id, { data: { ...fresh, categories: [...cats, v] } })
+  }
+
+  function renameCategory(oldName: string, newName: string) {
+    const name = newName.trim()
+    if (!name || name === oldName) return
+    const fresh = readFreshData()
+    const nextBooks = { ...fresh.books }
+    for (const [id, b] of Object.entries(nextBooks)) {
+      if (b.category === oldName) nextBooks[id] = { ...b, category: name }
+    }
+    const cats = (fresh.categories ?? []).filter(c => c !== oldName)
+    if (!cats.includes(name)) cats.push(name)
+    updateWidget(widget.id, { data: { ...fresh, books: nextBooks, categories: cats } })
+  }
+
+  function deleteCategory(name: string) {
+    const fresh = readFreshData()
+    const nextBooks = { ...fresh.books }
+    for (const [id, b] of Object.entries(nextBooks)) {
+      if (b.category === name) nextBooks[id] = { ...b, category: undefined }
+    }
+    const cats = (fresh.categories ?? []).filter(c => c !== name)
+    updateWidget(widget.id, { data: { ...fresh, books: nextBooks, categories: cats } })
+  }
+
+  function onCoverGenerated(id: string, coverRef: string) {
+    const fresh = readFreshData()
+    if (!fresh.books[id]) return
+    updateWidget(widget.id, { data: { ...fresh, books: { ...fresh.books, [id]: { ...fresh.books[id], coverRef } } } })
+  }
+
+  if (!activeBook) {
+    return (
+      <ReaderShelf
+        books={books}
+        categories={categories}
+        onOpen={openBook}
+        onAdd={handleAddBook}
+        onDelete={deleteBook}
+        onRename={renameBook}
+        onSetCategory={setBookCategory}
+        onAddCategory={addCategory}
+        onRenameCategory={renameCategory}
+        onDeleteCategory={deleteCategory}
+        onCoverGenerated={onCoverGenerated}
+      />
+    )
+  }
+
+  return (
+    <ReaderBookView
+      widget={widget}
+      book={activeBook}
+      allWidgets={allWidgets}
+      onBack={backToLibrary}
+      patchBook={patchBook}
+      patchBookQuiet={patchBookQuiet}
+      onDeleteBook={() => deleteBook(activeBook.id)}
+    />
+  )
+}
+
+// ── One open book ──────────────────────────────────────────────────────────────
+
+function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBookQuiet, onDeleteBook }: {
+  widget: Widget
+  book: ReaderBook
+  allWidgets: Record<string, Widget>
+  onBack: () => void
+  patchBook: (partial: Partial<ReaderBook>) => void
+  patchBookQuiet: (partial: Partial<ReaderBook>) => void
+  onDeleteBook: () => void
+}) {
+  const t = useT()
+  const d = book as ReaderBook & { scrollDir?: ScrollDir }
+  const updateWidget = useBoardStore(s => s.updateWidget)
   const mode         = useUIStore(s => s.mode)
   // Das Board wird per CSS transform:scale gezoomt (InfiniteCanvas.tsx) — anders
   // als Text/Vektor-Inhalte wird ein <canvas> dabei vom Browser NICHT neu
@@ -192,20 +408,24 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
   const [showPagePanel, setShowPagePanel] = useState(false)
   const [fitWidth,    setFitWidth]    = useState(400)
   const [zoom,        setZoom]        = useState(100)
-  const [scrollDir,   setScrollDir]   = useState<ScrollDir>(d.scrollDir ?? 'vertical')
+  // EPUBs: nur horizontale (paginierte) Darstellung erlaubt — im
+  // durchgehend scrollenden Modus rendert epub.js mehrere Kapitel
+  // gleichzeitig/überlappend, was in der Praxis zu falschen
+  // Seitenzahlen und zu einem internen epub.js-Absturz führen konnte.
+  // Ein evtl. vorher gespeichertes 'vertical' (aus einer älteren Version
+  // oder von einem PDF vor einem Dateitausch) wird hier ignoriert.
+  const [scrollDir,   setScrollDir]   = useState<ScrollDir>(fileType === 'epub' ? 'horizontal' : (d.scrollDir ?? 'vertical'))
   const [twoPageSpread, setTwoPageSpread] = useState(!!d.twoPageSpread)
   const [direction,   setDirection]   = useState<1 | -1>(1)
   const [linkingHighlightId, setLinkingHighlightId] = useState<string | null>(null)
-  const [pendingFile,       setPendingFile]       = useState<File | null>(null)
   const [confirmDeleteHl,   setConfirmDeleteHl]   = useState<{ id: string; count: number } | null>(null)
+  const [confirmDeleteBook, setConfirmDeleteBook] = useState(false)
   const [expandedHls,       setExpandedHls]       = useState<Set<string>>(new Set())
   const [epubLoading,       setEpubLoading]       = useState(true)
   const [epubError,         setEpubError]         = useState(false)
   // Inhaltsverzeichnis des EPUBs (verschachtelte Einträge flach mit Ebene)
   const [epubToc,           setEpubToc]           = useState<{ label: string; href: string; depth: number }[]>([])
   const [epubHref,          setEpubHref]          = useState('')
-  const [importToast,      setImportToast]      = useState<string | null>(null)
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const containerRef     = useRef<HTMLDivElement>(null)
   const viewerRef        = useRef<HTMLDivElement>(null)
@@ -235,6 +455,11 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
   const twoPageRef       = useRef(twoPageSpread); twoPageRef.current   = twoPageSpread
   const isDarkBoardThemeRef = useRef(isDarkBoardTheme); isDarkBoardThemeRef.current = isDarkBoardTheme
   const wheelCooldownRef = useRef(false)
+  // Mirror the parent's patch callbacks into refs so debounced/async writers
+  // (patchQuiet's flush, the AI highlightAll callbacks) always call the
+  // latest version instead of one captured at their own creation time.
+  const patchBookRef      = useRef(patchBook);      patchBookRef.current      = patchBook
+  const patchBookQuietRef = useRef(patchBookQuiet); patchBookQuietRef.current = patchBookQuiet
 
   // Erzwungenen hellen Hintergrund an- oder abschalten — als eigene Funktion,
   // weil sie sowohl direkt nach dem Rendition-Aufbau als auch reaktiv bei
@@ -334,8 +559,8 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d.currentPage])
 
-  function patch(partial: Record<string, unknown>) {
-    updateWidget(widget.id, { data: { ...d, ...partial } })
+  function patch(partial: Partial<ReaderBook>) {
+    patchBook(partial)
   }
 
   // Lesezustand (Seite/CFI) still persistieren: kein Undo-Schritt, kein
@@ -343,25 +568,24 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
   // feuert "relocated" im Sekundentakt, deshalb zusätzlich entprellt: sonst
   // serialisiert zustand-persist die komplette Boards-Map pro Scroll-Tick.
   const posFlushTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pendingPosRef = useRef<Record<string, unknown> | null>(null)
-  const patchQuiet = useCallback((partial: Record<string, unknown>, debounce = false) => {
+  const pendingPosRef = useRef<Partial<ReaderBook> | null>(null)
+  const patchQuiet = useCallback((partial: Partial<ReaderBook>, debounce = false) => {
     pendingPosRef.current = { ...(pendingPosRef.current ?? {}), ...partial }
     const flush = () => {
       const p = pendingPosRef.current
       pendingPosRef.current = null
       posFlushTimer.current = null
-      if (p) updateWidgetQuiet(widget.id, { data: { ...dRef.current, ...p } })
+      if (p) patchBookQuietRef.current(p)
     }
     if (posFlushTimer.current) clearTimeout(posFlushTimer.current)
     if (debounce) posFlushTimer.current = setTimeout(flush, 1000)
     else flush()
-  }, [updateWidgetQuiet, widget.id])
+  }, [])
   // Ausstehende Position beim Unmount noch wegschreiben
   useEffect(() => () => {
     if (posFlushTimer.current) clearTimeout(posFlushTimer.current)
     const p = pendingPosRef.current
-    if (p) updateWidgetQuiet(widget.id, { data: { ...dRef.current, ...p } })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (p) patchBookQuietRef.current(p)
   }, [])
 
   // ── KI-Markierungen: alle Vorkommen eines Suchtexts markieren ──────────────
@@ -409,10 +633,10 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
       }
     }
     if (total > 0) {
-      updateWidget(widget.id, { data: { ...dRef.current, highlights: { ...(dRef.current.highlights ?? {}), ...newHls } } })
+      patchBookRef.current({ highlights: { ...(dRef.current.highlights ?? {}), ...newHls } })
     }
     return total
-  }, [updateWidget, widget.id])
+  }, [])
 
   const epubHighlightAll = useCallback(async (query: string, color: string): Promise<number> => {
     const book = bookRef.current
@@ -443,10 +667,10 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
       finally { try { item.unload() } catch { /* ignore */ } }
     }
     if (total > 0) {
-      updateWidget(widget.id, { data: { ...dRef.current, highlights: { ...(dRef.current.highlights ?? {}), ...newHls } } })
+      patchBookRef.current({ highlights: { ...(dRef.current.highlights ?? {}), ...newHls } })
     }
     return total
-  }, [updateWidget, widget.id])
+  }, [])
 
   // Datei entfernt/gewechselt → alter PDF-Proxy darf nicht weiterleben
   useEffect(() => {
@@ -488,10 +712,15 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
         // im Board-JSON würde er bei JEDEM Persist mitserialisiert)
         const saveLocations = async () => {
           const ref = await saveBlob(new Blob([book.locations.save()], { type: 'application/json' }))
-          patch({ epubLocationsRef: ref, epubLocations: undefined })
+          patch({ epubLocationsRef: ref, epubLocations: undefined, epubLocationChars: EPUB_LOCATION_CHARS })
         }
+        // Ein Cache, der mit einer anderen Granularität erzeugt wurde (z.B.
+        // von vor dieser Änderung), würde eine falsche/unrealistische
+        // Gesamt-Seitenzahl weiterschleppen — in dem Fall lieber neu
+        // generieren statt den veralteten Cache zu übernehmen.
         const cachedRef = dRef.current.epubLocationsRef
-        const cachedBlob = cachedRef ? await getBlob(cachedRef) : null
+        const cachedChars = dRef.current.epubLocationChars
+        const cachedBlob = cachedRef && cachedChars === EPUB_LOCATION_CHARS ? await getBlob(cachedRef) : null
         if (cancelled) return
         if (cachedBlob) {
           book.locations.load(await cachedBlob.text())
@@ -505,7 +734,9 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
           await saveLocations()
         }
         if (cancelled) return
-        setNumPages(book.locations.length())
+        const total = book.locations.length()
+        setNumPages(total)
+        patch({ totalPages: total })
 
         // Inhaltsverzeichnis fürs Kapitel-Panel (verschachtelt → flach mit Ebene)
         try {
@@ -604,8 +835,47 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
         renditionRef.current.destroy()
       }
       renditionRef.current = null
-      bookRef.current?.destroy()
+      // Zweite, unabhängige epub.js-Race — die eigentliche Ursache des
+      // wiederholt gemeldeten "Cannot read properties of undefined"-
+      // Absturzes (beobachtet u.a. bei resources.replaceCss UND bei
+      // loaded.displayOptions — also nicht auf eine einzelne Stelle
+      // begrenzt): book.open() stößt für jedes archivierte (binär
+      // geladene) Buch automatisch eine interne Kette an (book.
+      // replacements() → … → this.opening.resolve()), auf die weder
+      // book.ready noch dieser Effekt wartet — sie läuft im Hintergrund
+      // weiter, auch nachdem die Seite längst angezeigt wird. book.
+      // destroy() setzt dabei mehrere Felder (resources, loaded, …), die
+      // diese Kette in ihren eigenen .then()-Schritten noch liest, auf
+      // undefined — läuft sie weiter, während destroy() schon lief, stürzt
+      // der nächste Schritt auf genau so einem undefined-Feld ab. Statt
+      // einzelne Felder nachträglich zu patchen (fragil — jedes weitere
+      // gelesene Feld wäre ein neuer Absturzpfad), wird auf book.opened
+      // gewartet — das genau dann auflöst, wenn diese Kette vollständig
+      // durchgelaufen ist — BEVOR wirklich zerstört wird. Ein Timeout
+      // dient nur als Rückfalloption, falls book.opened nie auflöst
+      // (epub.js schluckt einen Kettenfehler intern per console.error,
+      // ohne die Promise je aufzulösen).
+      const book = bookRef.current
       bookRef.current = null
+      if (book) {
+        Promise.race([
+          book.opened.catch(() => {}),
+          new Promise<void>(resolve => setTimeout(resolve, 4000)),
+        ]).then(() => {
+          book.destroy()
+          // Backstop für den Timeout-Fall: falls die Kette doch noch nicht
+          // fertig war, findet eine verspätete Fortsetzung hier harmlose
+          // No-op-Werte statt undefined vor.
+          book.resources = {
+            replaceCss: () => Promise.resolve([]),
+            replacements: () => Promise.resolve([]),
+            substitute: (content: string) => content,
+            replacementUrls: [],
+            urls: [],
+            cssUrls: [],
+          } as unknown as Book['resources']
+        })
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileType, resolvedFile])
@@ -664,7 +934,7 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
   function toggleScrollDir() {
     const next: ScrollDir = scrollDir === 'vertical' ? 'horizontal' : 'vertical'
     setScrollDir(next)
-    patch({ scrollDir: next })
+    patch({ scrollDir: next } as Partial<ReaderBook>)
   }
 
   function toggleTwoPageSpread() {
@@ -698,9 +968,8 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
   // läuft aber nur EIN einziges Mal direkt nach dem allerersten Mount — findet
   // er containerRef.current dort null vor, bricht er ab und wird nie wieder
   // ausgeführt, auch nicht nachdem die Datei geladen ist und der Container
-  // real existiert. Ergebnis: das Mausrad scrollte nur noch nativ innerhalb
-  // der Seite, blätterte aber nie um. Ein Callback-Ref feuert dagegen genau
-  // dann, wenn der echte DOM-Knoten entsteht — unabhängig von Render-Reihenfolge.
+  // real existiert. Ein Callback-Ref feuert dagegen genau dann, wenn der echte
+  // DOM-Knoten entsteht — unabhängig von Render-Reihenfolge.
   const wheelCleanupRef = useRef<(() => void) | null>(null)
   const setContainerRef = useCallback((el: HTMLDivElement | null) => {
     wheelCleanupRef.current?.()
@@ -775,46 +1044,34 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  function showToast(msg: string) {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-    setImportToast(msg)
-    toastTimerRef.current = setTimeout(() => setImportToast(null), 3500)
-  }
 
-  async function handleFileUpload(file: File) {
-    // Datei als Blob in IndexedDB — im Board-JSON steht nur die Referenz
-    try {
-      const ref  = await saveBlob(file)
-      const type = fileTypeOf(file.name)
-      patch({
-        fileName: file.name, fileData: ref, fileType: type,
-        currentPage: 1, highlights: {}, currentCfi: undefined, epubLocations: undefined, epubLocationsRef: undefined,
-      })
-      setCurrentPage(1)
-      showToast(`${file.name} - ${t('added')}`)
-    } catch { /* Blob-Speicher nicht verfügbar */ }
-  }
+  function saveHighlight(color: string) {
+    if (!selection) return
+    suppressSelectionRef.current = true
 
-  function handleFileChange(file: File) {
-    const hasHighlights = Object.keys(d.highlights ?? {}).length > 0
-    if (hasHighlights) {
-      setPendingFile(file)
-    } else {
-      handleFileUpload(file)
+    if (fileType === 'epub' && selection.cfiRange) {
+      const h: ReaderHighlight = {
+        id: `h_${Date.now()}`, page: currentPage,
+        text: selection.text, color, createdAt: Date.now(), cfiRange: selection.cfiRange,
+      }
+      patch({ highlights: { ...highlights, [h.id]: h } })
+      try {
+        renditionRef.current?.annotations.add('highlight', selection.cfiRange, {}, undefined, 'epub-hl',
+          { fill: color, 'fill-opacity': '0.35', 'mix-blend-mode': 'multiply' })
+      } catch { /* ignore */ }
+      selectedContentsRef.current?.window.getSelection()?.removeAllRanges()
+      setSelection(null)
+      return
     }
-  }
 
-  function cleanupLinkedNotes() {
-    const readerId  = widget.id
-    const escapedId = readerId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const spanRe    = new RegExp(`<span[^>]*data-pdf-reader="${escapedId}"[^>]*>[\\s\\S]*?<\\/span>`, 'g')
-    for (const [id, w] of Object.entries(allWidgets)) {
-      if (w.type !== 'note') continue
-      const content = (w.data.content ?? '') as string
-      if (!content.includes(`data-pdf-reader="${readerId}"`)) continue
-      const cleaned = content.replace(spanRe, '').replace(/\n{3,}/g, '\n\n')
-      updateWidget(id, { data: { ...w.data, content: cleaned } })
+    const h: ReaderHighlight = {
+      id: `h_${Date.now()}`, page: (selection as SelectionState & { page?: number }).page ?? currentPage,
+      text: selection.text, color,
+      createdAt: Date.now(), rects: selection.rects,
     }
+    patch({ highlights: { ...highlights, [h.id]: h } })
+    window.getSelection()?.removeAllRanges()
+    setSelection(null)
   }
 
   // Listen for pointerup on document (bubble phase) — nur für PDF-Markierungen.
@@ -908,35 +1165,6 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
     return () => document.removeEventListener('pointerup', onPointerUp)
   }, [])
 
-  function saveHighlight(color: string) {
-    if (!selection) return
-    suppressSelectionRef.current = true
-
-    if (fileType === 'epub' && selection.cfiRange) {
-      const h: ReaderHighlight = {
-        id: `h_${Date.now()}`, page: currentPage,
-        text: selection.text, color, createdAt: Date.now(), cfiRange: selection.cfiRange,
-      }
-      patch({ highlights: { ...highlights, [h.id]: h } })
-      try {
-        renditionRef.current?.annotations.add('highlight', selection.cfiRange, {}, undefined, 'epub-hl',
-          { fill: color, 'fill-opacity': '0.35', 'mix-blend-mode': 'multiply' })
-      } catch { /* ignore */ }
-      selectedContentsRef.current?.window.getSelection()?.removeAllRanges()
-      setSelection(null)
-      return
-    }
-
-    const h: ReaderHighlight = {
-      id: `h_${Date.now()}`, page: (selection as SelectionState & { page?: number }).page ?? currentPage,
-      text: selection.text, color,
-      createdAt: Date.now(), rects: selection.rects,
-    }
-    patch({ highlights: { ...highlights, [h.id]: h } })
-    window.getSelection()?.removeAllRanges()
-    setSelection(null)
-  }
-
   function jumpToHighlight(h: ReaderHighlight) {
     if (h.cfiRange) { renditionRef.current?.display(h.cfiRange).catch(() => {}); return }
     goTo(h.page)
@@ -945,38 +1173,36 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
   const noteWidgets = Object.values(allWidgets).filter(w => w.type === 'note')
 
   // ── Verlinkte Notiz-Referenzen einer Markierung finden/entfernen ────────────
-  // Spans tragen keine Highlight-ID (geht bei Notiz-Bearbeitung verloren) —
-  // Matching daher über Reader-ID + Seite + exakten Text.
-  function escapeRegex(s: string) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }
-
-  function highlightSpanRegex(h: ReaderHighlight): RegExp {
-    const text = h.text.replace(/[\r\n\t]+/g, ' ').replace(/</g, '&lt;').replace(/>/g, '&gt;').trim()
-    const rid  = escapeRegex(widget.id)
-    return new RegExp(
-      `<span[^>]*data-pdf-reader="${rid}"[^>]*data-pdf-page="${h.page}"[^>]*>${escapeRegex(text)}<\\/span>`,
-      'g',
-    )
-  }
-
+  // Book-scoped, mit Fallback auf bookId-lose Spans (Links von vor der
+  // Bibliotheks-Umstellung) — s. lib/pdfRefCleanup.ts.
   function countLinkedRefs(h: ReaderHighlight): number {
-    const re = highlightSpanRegex(h)
+    const [scoped, legacy] = bookSpanRegexes(widget.id, book.id, h.page, h.text)
     let n = 0
     for (const w of noteWidgets) {
       const content = (w.data.content ?? '') as string
-      n += (content.match(re) ?? []).length
+      n += (content.match(scoped) ?? []).length
+      n += (content.match(legacy) ?? []).length
     }
     return n
   }
 
   function removeLinkedRefs(h: ReaderHighlight) {
-    const re = highlightSpanRegex(h)
+    const [scoped, legacy] = bookSpanRegexes(widget.id, book.id, h.page, h.text)
     for (const w of noteWidgets) {
       const content = (w.data.content ?? '') as string
-      if (!re.test(content)) { re.lastIndex = 0; continue }
-      re.lastIndex = 0
-      const cleaned = content.replace(re, '').replace(/\n{3,}/g, '\n\n').trim()
+      if (!scoped.test(content) && !(legacy.lastIndex = 0, legacy.test(content))) { scoped.lastIndex = 0; legacy.lastIndex = 0; continue }
+      scoped.lastIndex = 0; legacy.lastIndex = 0
+      const cleaned = content.replace(scoped, '').replace(legacy, '').replace(/\n{3,}/g, '\n\n').trim()
       updateWidget(w.id, { data: { ...w.data, content: cleaned } })
     }
+  }
+
+  function countAllBookRefs(): number {
+    return Object.values(highlights).reduce((sum, h) => sum + countLinkedRefs(h), 0)
+  }
+
+  function removeAllBookRefs() {
+    for (const h of Object.values(highlights)) removeLinkedRefs(h)
   }
 
   function doDeleteHighlight(id: string, alsoNotes: boolean) {
@@ -1006,10 +1232,16 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
     const c     = highlight.color
     // Insert as a <span data-pdf-reader> so NoteWidget's PdfRef mark handles clicks —
     // no <a href> means no browser navigation.
-    const span  = `<span class="pdf-ref" data-pdf-reader="${widget.id}" data-pdf-page="${highlight.page}" data-pdf-color="${c}" style="background:${c}22;border-bottom:2px solid ${c};border-radius:3px;padding:0 3px">${text}</span>`
+    const span  = `<span class="pdf-ref" data-pdf-reader="${widget.id}" data-pdf-book="${book.id}" data-pdf-page="${highlight.page}" data-pdf-color="${c}" style="background:${c}22;border-bottom:2px solid ${c};border-radius:3px;padding:0 3px">${text}</span>`
     const current = ((noteWidget.data.content ?? '') as string).trimEnd()
     updateWidget(noteWidgetId, { data: { ...noteWidget.data, content: current ? current + '\n\n' + span : span } })
     setLinkingHighlightId(null)
+  }
+
+  function doDeleteBook() {
+    removeAllBookRefs()
+    setConfirmDeleteBook(false)
+    onDeleteBook()
   }
 
   const byPage      = Object.values(highlights).reduce<Record<number, ReaderHighlight[]>>((acc, h) => { ;(acc[h.page] ??= []).push(h); return acc }, {})
@@ -1020,7 +1252,12 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
   const showSpread = fileType === 'pdf' && scrollDir === 'horizontal' && twoPageSpread
   const secondPage = showSpread && currentPage + 1 <= numPages ? currentPage + 1 : null
 
-  if (!d.fileData) return <UploadZone onFile={handleFileUpload} />
+  // Also cache the total page count for PDFs, once known, so the shelf can
+  // show a progress % without re-opening every book.
+  useEffect(() => {
+    if (fileType === 'pdf' && numPages > 0 && numPages !== d.totalPages) patch({ totalPages: numPages })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileType, numPages])
 
   // Blob wird noch aus IndexedDB geladen
   if (resolvedFile === null) {
@@ -1033,20 +1270,31 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
     )
   }
 
-  // Referenz ließ sich nicht auflösen (z. B. Backup ohne eingebettete Daten) → neu hochladen
-  if (resolvedFile === '') return <UploadZone onFile={handleFileUpload} />
+  // Referenz ließ sich nicht auflösen (z. B. Backup ohne eingebettete Daten)
+  if (resolvedFile === '') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, padding: 20, textAlign: 'center' }}>
+        <div style={{ fontSize: 12, color: 'var(--text2)' }}>{t('This file could not be opened. It may be corrupt.')}</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={onBack} style={{ padding: '6px 14px', fontSize: 12, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}>
+            {t('Back to library')}
+          </button>
+          <button onClick={onDeleteBook} style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, borderRadius: 999, border: 'none', background: '#e53e3e', color: 'white', cursor: 'pointer' }}>
+            {t('Delete book?')}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div ref={setContainerRef} tabIndex={0} onKeyDown={handleKeyDown}
       style={{ display: 'flex', height: '100%', position: 'relative', overflow: 'hidden', userSelect: 'text', flexDirection: 'column', outline: 'none' }}>
 
-      {/* ── Confirm file-replace dialog ── */}
-      {pendingFile && (() => {
-        const hlCount   = Object.keys(d.highlights ?? {}).length
-        const noteCount = Object.values(allWidgets).filter(w =>
-          w.type === 'note' &&
-          ((w.data.content ?? '') as string).includes(`data-pdf-reader="${widget.id}"`)
-        ).length
+      {/* ── Confirm delete-book dialog ── */}
+      {confirmDeleteBook && (() => {
+        const hlCount   = Object.keys(highlights).length
+        const noteCount = countAllBookRefs()
         return (
           <div style={{
             position: 'absolute', inset: 0, zIndex: 500,
@@ -1061,10 +1309,9 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
               boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
             }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)', marginBottom: 12 }}>
-                {t('Replace file?')}
+                {t('Delete book?')}
               </div>
 
-              {/* What gets deleted */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)' }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: '#e53e3e' }}>
@@ -1080,15 +1327,10 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
                     </svg>
                     <span>
-                      <strong style={{ color: 'var(--text1)' }}>{noteCount}</strong> {noteCount !== 1 ? t('linked references') : t('linked reference')} {t('in')} {noteCount !== 1 ? t('note widgets') : t('a note widget')}
+                      {t('This book is linked {n} time(s) in a note.').replace('{n}', String(noteCount))}
                     </span>
                   </div>
                 )}
-              </div>
-
-              <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 20, padding: '8px 10px', background: 'var(--surface2)', borderRadius: 8, border: '1px solid var(--border)', lineHeight: 1.4, display: 'flex', gap: 4, minWidth: 0 }}>
-                <span style={{ flexShrink: 0 }}>{t('New file:')}</span>
-                <strong style={{ color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{pendingFile.name}</strong>
               </div>
 
               <div style={{ fontSize: 12, color: '#e53e3e', marginBottom: 20, lineHeight: 1.4 }}>
@@ -1097,16 +1339,16 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
 
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button
-                  onClick={() => setPendingFile(null)}
+                  onClick={() => setConfirmDeleteBook(false)}
                   style={{ padding: '7px 16px', fontSize: 13, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
                 >
                   {t('Cancel')}
                 </button>
                 <button
-                  onClick={() => { cleanupLinkedNotes(); handleFileUpload(pendingFile); setPendingFile(null) }}
+                  onClick={doDeleteBook}
                   style={{ padding: '7px 16px', fontSize: 13, fontWeight: 600, borderRadius: 999, border: 'none', background: '#e53e3e', color: 'white', cursor: 'pointer' }}
                 >
-                  {t('Replace & delete everything')}
+                  {t('Delete')}
                 </button>
               </div>
             </div>
@@ -1156,8 +1398,11 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
         background: 'color-mix(in srgb, var(--surface2) 60%, transparent)',
       }}>
 
-        {/* LEFT: burger (page panel) + filename */}
+        {/* LEFT: back-to-library + burger (page panel) + filename */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, paddingRight: 16 }}>
+          <button onClick={onBack} title={t('Back to library')} style={{ ...iconBtnStyle, flexShrink: 0 }}>
+            <IcoLibrary />
+          </button>
           {(fileType === 'pdf' || epubToc.length > 0) && (
             <button
               onClick={() => setShowPagePanel(s => !s)}
@@ -1193,7 +1438,7 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
           <Btn onClick={() => goTo(numPages)}        disabled={currentPage >= numPages} title={t('Last page')}><IcoSkipRight /></Btn>
         </div>
 
-        {/* RIGHT: marker palette + highlights toggle + upload */}
+        {/* RIGHT: marker palette + highlights toggle + delete book */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
 
           {/* Highlight palette — nur im Bearbeiten-Modus */}
@@ -1227,11 +1472,9 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
             <IcoHighlight />
           </button>
           {mode === 'edit' && (
-            <label title={t('Replace file')} style={{ display: 'flex' }}>
-              <span style={iconBtnStyle}><IcoUpload /></span>
-              <input type="file" accept=".pdf,.epub" style={visuallyHiddenStyle}
-                onChange={e => e.target.files?.[0] && handleFileChange(e.target.files[0])} />
-            </label>
+            <button onClick={() => setConfirmDeleteBook(true)} title={t('Delete book?')} style={iconBtnStyle}>
+              <IcoTrash />
+            </button>
           )}
         </div>
       </div>
@@ -1320,13 +1563,17 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
             </button>
             <Btn onClick={() => stepZoom(1)}  disabled={zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1]} title={t('Zoom in (Ctrl++)')}><IcoZoomIn /></Btn>
             <div style={{ width: 1, height: 14, background: 'var(--border)', margin: '0 2px', flexShrink: 0 }} />
-            <button
-              onClick={toggleScrollDir}
-              title={scrollDir === 'vertical' ? t('Switch to horizontal scrolling') : t('Switch to vertical scrolling')}
-              style={{ ...iconBtnStyle, background: 'var(--surface2)', color: 'var(--text2)', borderColor: 'var(--border)' }}
-            >
-              {scrollDir === 'vertical' ? <IcoScrollV /> : <IcoScrollH />}
-            </button>
+            {/* EPUBs sind immer horizontal (paginiert) — keine Wahlmöglichkeit,
+                s. Begründung bei der scrollDir-Initialisierung weiter oben. */}
+            {fileType !== 'epub' && (
+              <button
+                onClick={toggleScrollDir}
+                title={scrollDir === 'vertical' ? t('Switch to horizontal scrolling') : t('Switch to vertical scrolling')}
+                style={{ ...iconBtnStyle, background: 'var(--surface2)', color: 'var(--text2)', borderColor: 'var(--border)' }}
+              >
+                {scrollDir === 'vertical' ? <IcoScrollV /> : <IcoScrollH />}
+              </button>
+            )}
             {scrollDir === 'horizontal' && (
               <button
                 onClick={toggleTwoPageSpread}
@@ -1543,21 +1790,6 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
         )}
       </div>
 
-      {/* ── Import-Toast ── */}
-      {importToast && (
-        <div style={{
-          position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
-          background: 'color-mix(in srgb, var(--surface) 92%, transparent)',
-          border: '1px solid var(--border)', borderRadius: 10,
-          padding: '7px 14px', display: 'flex', alignItems: 'center', gap: 8,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
-          zIndex: 200, pointerEvents: 'none',
-          fontSize: 12, fontWeight: 600, color: 'var(--text1)', whiteSpace: 'nowrap',
-          backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-        }}>
-          {importToast}
-        </div>
-      )}
     </div>
   )
 }
@@ -1573,37 +1805,6 @@ function Btn({ onClick, disabled, title, children }: { onClick: () => void; disa
   )
 }
 
-function UploadZone({ onFile }: { onFile: (f: File) => void }) {
-  const t = useT()
-  const [drag, setDrag] = useState(false)
-  function isAccepted(f: File) {
-    return f.type === 'application/pdf' || f.type === 'application/epub+zip' ||
-      /\.(pdf|epub)$/i.test(f.name)
-  }
-  return (
-    <label
-      onDragOver={e => { e.preventDefault(); setDrag(true) }}
-      onDragLeave={() => setDrag(false)}
-      onDrop={e => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files[0]; if (f && isAccepted(f)) onFile(f) }}
-      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, cursor: 'pointer', borderRadius: 10, border: `1.5px dashed ${drag ? 'var(--accent)' : 'var(--border)'}`, background: drag ? 'color-mix(in srgb, var(--accent) 8%, transparent)' : 'transparent', transition: 'all 0.15s' }}
-    >
-      <div style={{ width: 52, height: 52, borderRadius: 14, background: drag ? 'color-mix(in srgb, var(--accent) 15%, var(--surface2))' : 'var(--surface2)', border: `1px solid ${drag ? 'var(--accent)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: drag ? 'var(--accent)' : 'var(--text3)', transition: 'all 0.15s' }}>
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14,2 14,8 20,8"/>
-          <line x1="12" y1="18" x2="12" y2="12"/>
-          <polyline points="9,15 12,12 15,15"/>
-        </svg>
-      </div>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: drag ? 'var(--accent)' : 'var(--text2)' }}>{t('Drop a PDF or EPUB here')}</div>
-        <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 3 }}>{t('or click to choose')}</div>
-      </div>
-      <input type="file" accept=".pdf,.epub" style={visuallyHiddenStyle} onChange={e => e.target.files?.[0] && onFile(e.target.files[0])} />
-    </label>
-  )
-}
-
 function StateMsg({ text, color = 'var(--text3)' }: { text: string; color?: string }) {
   return <div style={{ padding: 40, color, fontSize: 11, textAlign: 'center' }}>{text}</div>
 }
@@ -1613,12 +1814,4 @@ const iconBtnStyle: React.CSSProperties = {
   background: 'var(--surface2)', color: 'var(--text2)',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   cursor: 'pointer', flexShrink: 0, padding: 0, gap: 2, transition: 'background 0.12s, border-color 0.12s',
-}
-
-// Visuell versteckt, aber im Tab-Fokus erreichbar — anders als display:'none'
-// (das aus der Tab-Reihenfolge entfernt), damit Tastaturnutzer das umgebende
-// <label> per Fokus + Enter/Space erreichen und die Dateiauswahl auslösen können.
-const visuallyHiddenStyle: React.CSSProperties = {
-  position: 'absolute', width: 1, height: 1, padding: 0, margin: -1,
-  overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0,
 }

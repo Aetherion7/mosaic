@@ -10,6 +10,42 @@ import { GRID_COLS } from '@/lib/constants'
 import { findTheme } from '@/lib/themes'
 import { useSettings } from '@/store/settingsStore'
 import { translate } from '@/lib/i18n'
+import { stripPdfRefSpans } from '@/lib/pdfRefCleanup'
+
+// Deleting a Reader widget used to leave its note links dangling (clicking
+// them silently no-ops, since navigateRef looks the widget up and finds
+// nothing) — deleteWidget/deleteWidgets below now strip those spans in the
+// same step. countReaderLinks is used by the UI (TileWrapper's move-to-board
+// action) to warn before a cross-board move, which breaks links for a
+// different reason (NoteWidget only ever resolves widgets on the CURRENT
+// board) that isn't fixable here — see the comment at transferWidget.
+export function countReaderLinks(board: Board, readerId: string): number {
+  const rid = readerId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const re  = new RegExp(`data-pdf-reader="${rid}"`, 'g')
+  let n = 0
+  for (const w of Object.values(board.widgets)) {
+    if (w.type !== 'note') continue
+    const content = (w.data.content ?? '') as string
+    n += (content.match(re) ?? []).length
+  }
+  return n
+}
+
+// Mutates `widgets` in place, stripping every link span for the given
+// (now-deleted) reader widget ids from every note's content.
+function stripReaderRefs(widgets: Record<string, Widget>, readerIds: string[]) {
+  for (const [nid, w] of Object.entries(widgets)) {
+    if (w.type !== 'note') continue
+    let content = (w.data.content ?? '') as string
+    let changed = false
+    for (const rid of readerIds) {
+      if (!content.includes(`data-pdf-reader="${rid}"`)) continue
+      content = stripPdfRefSpans(content, rid)
+      changed = true
+    }
+    if (changed) widgets[nid] = { ...w, data: { ...w.data, content } }
+  }
+}
 
 // ─── State + Actions ──────────────────────────────────────────────────────────
 // Ein Undo-Schritt umfasst Widgets UND Gestaltung (Hintergrund, Theme),
@@ -455,13 +491,17 @@ export const useBoardStore = create<S>()(
 
       deleteWidget: (id) => set(s => ({ ...snap(s), ...patchCur(s, b => {
         const next = { ...b.widgets }
+        const deleted = next[id]
         delete next[id]
+        if (deleted?.type === 'reader') stripReaderRefs(next, [id])
         return { widgets: next }
       }) })),
 
       deleteWidgets: (ids) => set(s => ({ ...snap(s), ...patchCur(s, b => {
         const next = { ...b.widgets }
+        const deletedReaderIds = ids.filter(id => next[id]?.type === 'reader')
         ids.forEach(id => delete next[id])
+        if (deletedReaderIds.length > 0) stripReaderRefs(next, deletedReaderIds)
         return { widgets: next }
       }) })),
 
@@ -486,6 +526,15 @@ export const useBoardStore = create<S>()(
         return { ...snap(s), ...patchWidgets(s, ws => ({ ...ws, [nw.id]: nw })) }
       }),
 
+      // Moving (not copying) a Reader widget to another board breaks any note
+      // links pointing at it — not just because its id changes below, but
+      // because NoteWidget's navigateRef only ever resolves widgets on the
+      // CURRENT board (allWidgets = selectBoard(s).widgets) by design, so a
+      // cross-board link could never resolve even with a preserved id. A full
+      // fix needs cross-board widget resolution, which is out of scope here.
+      // The UI layer (TileWrapper's move-to-board action) warns the user via
+      // countReaderLinks() before calling this when links would break;
+      // this action itself stays a pure state transition either way.
       transferWidget: (id, targetBoardId, copy) => set(s => {
         const src    = cur(s)
         const target = s.boards[targetBoardId]

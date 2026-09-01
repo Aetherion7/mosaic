@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useBoardStore } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { useSettings } from '@/store/settingsStore'
+import SlidingTabs from '@/components/ui/SlidingTabs'
 import { useT } from '@/hooks/useT'
 import type { Widget, MapData, MapMarker, MapRoute } from '@/types'
 
@@ -11,6 +12,13 @@ type Tool = 'none' | 'marker' | 'route'
 function uid() { return `m_${Date.now()}_${Math.random().toString(36).slice(2, 6)}` }
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#ffffff']
+
+const zoomBtnStyle: React.CSSProperties = {
+  width: 28, height: 28, border: 'none', background: 'transparent',
+  color: 'var(--text2)', cursor: 'pointer', padding: 0,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  transition: 'background 0.12s, color 0.12s',
+}
 
 interface NominatimResult {
   place_id: number
@@ -43,22 +51,22 @@ function fmtDist(m: number): string {
 
 function makeIcon(L: typeof import('leaflet'), color: string, label: string) {
   const dark = color !== '#ffffff' && color !== '#f3f4f6'
+  // Flat fill, no stroke/gloss highlight, a light shadow instead of a heavy
+  // one — a plain dot (or short label) is the only interior detail.
   const inner = label
-    ? `<text x="16" y="20" text-anchor="middle" font-size="${label.length > 2 ? 6 : 8}" font-weight="700" fill="${dark ? 'white' : '#333'}" font-family="system-ui">${label.slice(0, 3)}</text>`
-    : `<circle cx="16" cy="16" r="5" fill="${dark ? 'rgba(255,255,255,0.85)' : '#555'}"/>`
+    ? `<text x="13" y="17" text-anchor="middle" font-size="${label.length > 2 ? 5.5 : 7}" font-weight="700" fill="${dark ? 'white' : '#333'}" font-family="system-ui">${label.slice(0, 3)}</text>`
+    : `<circle cx="13" cy="13" r="4" fill="${dark ? 'white' : '#333'}"/>`
   return L.divIcon({
-    html: `<div style="filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5));width:32px;height:42px">
-      <svg viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M16 0C7.16 0 0 7.16 0 16C0 28 16 42 16 42C16 42 32 28 32 16C32 7.16 24.84 0 16 0Z"
-          fill="${color}" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
-        <circle cx="16" cy="16" r="9" fill="rgba(255,255,255,0.18)"/>
+    html: `<div style="filter:drop-shadow(0 1px 3px rgba(0,0,0,0.35));width:26px;height:34px">
+      <svg viewBox="0 0 26 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21s13-11.25 13-21C26 5.82 20.18 0 13 0Z" fill="${color}"/>
         ${inner}
       </svg>
     </div>`,
     className: '',
-    iconSize:    [32, 42],
-    iconAnchor:  [16, 42],
-    popupAnchor: [0, -44],
+    iconSize:    [26, 34],
+    iconAnchor:  [13, 34],
+    popupAnchor: [0, -36],
   })
 }
 
@@ -103,6 +111,7 @@ export default function MapWidget({ widget }: { widget: Widget }) {
   const [activeColor,    setActiveColor]   = useState(COLORS[4])
   const [initialized,    setInitialized]   = useState(false)
   const [directoryOpen,  setDirectoryOpen] = useState(false)
+  const [dirTab,         setDirTab]        = useState<'markers' | 'routes'>('markers')
   const [editingLabel,   setEditingLabel]  = useState<{ type: 'marker' | 'route'; id: string; val: string } | null>(null)
 
   const [markerPanel, setMarkerPanel] = useState<{ id: string; label: string } | null>(null)
@@ -138,7 +147,9 @@ export default function MapWidget({ widget }: { widget: Widget }) {
         attributionControl: false,
       })
 
-      L.control.zoom({ position: 'topleft' }).addTo(map)
+      // No L.control.zoom() — replaced by the custom, theme-colored zoom
+      // buttons rendered in JSX below, matching the widget's own floating
+      // glass panels instead of Leaflet's hardcoded white default control.
       L.control.attribution({ prefix: false, position: 'bottomright' })
         .addAttribution('© <a href="https://osm.org/copyright" target="_blank" rel="noopener">OSM</a>')
         .addTo(map)
@@ -416,7 +427,6 @@ export default function MapWidget({ widget }: { widget: Widget }) {
 
   const isEdit     = mode === 'edit'
   const hasContent = d.markers.length > 0 || d.routes.length > 0
-  const totalItems = d.markers.length + d.routes.length
 
   return (
     <div
@@ -518,16 +528,9 @@ export default function MapWidget({ widget }: { widget: Widget }) {
 
             <Divider />
 
-            <ToolBtn title={t('Remove last marker')}
-              onClick={() => patch({ markers: dRef.current.markers.slice(0, -1) })}
-              disabled={!d.markers.length}>
-              <RemoveMarkerSvg />
-            </ToolBtn>
-            <ToolBtn title={t('Remove last route')}
-              onClick={() => patch({ routes: dRef.current.routes.slice(0, -1) })}
-              disabled={!d.routes.length}>
-              <RemoveRouteSvg />
-            </ToolBtn>
+            {/* Deleting a single marker/route now happens from the
+                directory list itself (each row has its own delete button) —
+                only the bulk "clear everything" action stays in the toolbar. */}
             <ToolBtn title={t('Clear all')}
               onClick={() => { patch({ markers: [], routes: [] }); setRoutePts([]) }}
               disabled={!hasContent} danger>
@@ -539,27 +542,45 @@ export default function MapWidget({ widget }: { widget: Widget }) {
         )}
 
         {/* Directory button — always visible */}
-        <div style={{ position: 'relative', flexShrink: 0 }}>
-          <ToolBtn active={directoryOpen} title={t('Open directory')} onClick={() => setDirectoryOpen(v => !v)}>
-            <ListSvg />
-          </ToolBtn>
-          {totalItems > 0 && !directoryOpen && (
-            <div style={{
-              position: 'absolute', top: -4, right: -4, minWidth: 14, height: 14,
-              borderRadius: 7, padding: '0 3px',
-              background: 'var(--accent)', color: 'white',
-              fontSize: 8, fontWeight: 700,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              pointerEvents: 'none', boxSizing: 'border-box',
-            }}>
-              {totalItems > 99 ? '99+' : totalItems}
-            </div>
-          )}
-        </div>
+        <ToolBtn active={directoryOpen} title={t('Open directory')} onClick={() => setDirectoryOpen(v => !v)}>
+          <ListSvg />
+        </ToolBtn>
       </div>
 
       {/* Map */}
       <div ref={containerRef} style={{ flex: 1, minHeight: 0, zIndex: 0 }} />
+
+      {/* Custom zoom controls — Leaflet's zoomControl is off (see init
+          effect); same floating-glass look as the directory/marker panels
+          below, and themed via CSS vars instead of Leaflet's hardcoded
+          white default buttons. */}
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          position: 'absolute', top: 48, left: 8, zIndex: 1000,
+          display: 'flex', flexDirection: 'column',
+          background: 'color-mix(in srgb, var(--surface) 92%, transparent)',
+          backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+          border: '1px solid var(--border)', borderRadius: 8,
+          overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+        }}
+      >
+        <button
+          onClick={() => mapRef.current?.zoomIn()}
+          title={t('Zoom in')}
+          style={zoomBtnStyle}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.color = 'var(--text1)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text2)' }}
+        ><PlusSvg /></button>
+        <div style={{ height: 1, background: 'var(--border)' }} />
+        <button
+          onClick={() => mapRef.current?.zoomOut()}
+          title={t('Zoom out')}
+          style={zoomBtnStyle}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.color = 'var(--text1)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text2)' }}
+        ><MinusSvg /></button>
+      </div>
 
       {/* ── Directory panel ── */}
       {directoryOpen && (
@@ -583,126 +604,141 @@ export default function MapWidget({ widget }: { widget: Widget }) {
               style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 2px' }}>×</button>
           </div>
 
+          {/* Pins / Routes filter — replaces the old always-stacked list */}
+          <div style={{ padding: 6, borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+            <SlidingTabs<'markers' | 'routes'>
+              options={[
+                { value: 'markers', icon: <PinSvg />,   label: `${t('Pins')} (${d.markers.length})` },
+                { value: 'routes',  icon: <RouteSvg />, label: `${t('Routes')} (${d.routes.length})` },
+              ]}
+              value={dirTab}
+              onChange={setDirTab}
+              slotH={24} radius={6} fontSize={10} soft
+            />
+          </div>
+
           <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
 
-            {/* Markers */}
-            {d.markers.length > 0 && (
-              <div>
-                <div style={{ padding: '4px 10px 2px', fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  {t('Markers')} ({d.markers.length})
+            {/* Pins */}
+            {dirTab === 'markers' && d.markers.map(m => (
+              <div key={m.id}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '5px 8px 5px 10px' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              >
+                <div style={{ width: 9, height: 9, borderRadius: '50%', background: m.color, border: '1.5px solid rgba(255,255,255,0.3)', flexShrink: 0 }} />
+
+                <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
+                  role="button" tabIndex={0}
+                  onClick={() => flyTo(m.lat, m.lng)}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flyTo(m.lat, m.lng) } }}
+                >
+                  {editingLabel?.id === m.id ? (
+                    <input
+                      autoFocus
+                      value={editingLabel.val}
+                      onChange={e => setEditingLabel(x => x ? { ...x, val: e.target.value } : null)}
+                      onBlur={saveDirLabel}
+                      onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') saveDirLabel(); if (e.key === 'Escape') setEditingLabel(null) }}
+                      onClick={e => e.stopPropagation()}
+                      style={{ fontSize: 11, background: 'var(--surface2)', border: '1px solid var(--accent)', borderRadius: 4, color: 'var(--text1)', padding: '1px 5px', width: '100%', boxSizing: 'border-box', outline: 'none' }}
+                    />
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 11, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {m.label || <span style={{ color: 'var(--text3)', fontStyle: 'italic' }}>{t('Unnamed')}</span>}
+                      </div>
+                      <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 1 }}>
+                        {m.lat.toFixed(5)}, {m.lng.toFixed(5)}
+                      </div>
+                    </>
+                  )}
                 </div>
-                {d.markers.map(m => (
-                  <div key={m.id}
-                    style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '5px 8px 5px 10px' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                  >
-                    <div style={{ width: 9, height: 9, borderRadius: '50%', background: m.color, border: '1.5px solid rgba(255,255,255,0.3)', flexShrink: 0 }} />
 
-                    <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
-                      role="button" tabIndex={0}
-                      onClick={() => flyTo(m.lat, m.lng)}
-                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flyTo(m.lat, m.lng) } }}
-                    >
-                      {editingLabel?.id === m.id ? (
-                        <input
-                          autoFocus
-                          value={editingLabel.val}
-                          onChange={e => setEditingLabel(x => x ? { ...x, val: e.target.value } : null)}
-                          onBlur={saveDirLabel}
-                          onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') saveDirLabel(); if (e.key === 'Escape') setEditingLabel(null) }}
-                          onClick={e => e.stopPropagation()}
-                          style={{ fontSize: 11, background: 'var(--surface2)', border: '1px solid var(--accent)', borderRadius: 4, color: 'var(--text1)', padding: '1px 5px', width: '100%', boxSizing: 'border-box', outline: 'none' }}
-                        />
-                      ) : (
-                        <>
-                          <div
-                            style={{ fontSize: 11, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                            onClick={e => { e.stopPropagation(); setEditingLabel({ type: 'marker', id: m.id, val: m.label }) }}
-                            title={m.label ? t('Click to edit') : t('Click to name')}
-                          >
-                            {m.label || <span style={{ color: 'var(--text3)', fontStyle: 'italic' }}>{t('Unnamed')}</span>}
-                          </div>
-                          <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 1 }}>
-                            {m.lat.toFixed(5)}, {m.lng.toFixed(5)}
-                          </div>
-                        </>
-                      )}
-                    </div>
+                {editingLabel?.id !== m.id && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setEditingLabel({ type: 'marker', id: m.id, val: m.label }) }}
+                    title={t('Rename')}
+                    style={{ flexShrink: 0, display: 'flex', background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: '2px 4px', borderRadius: 4 }}
+                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--text1)' }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text3)' }}
+                  ><PencilSvg /></button>
+                )}
 
-                    <button
-                      onClick={e => { e.stopPropagation(); deleteMarker(m.id) }}
-                      title={t('Delete marker')}
-                      style={{ flexShrink: 0, background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: '2px 4px', borderRadius: 4 }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#ef4444' }}
-                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--text3)' }}
-                    >×</button>
-                  </div>
-                ))}
+                <button
+                  onClick={e => { e.stopPropagation(); deleteMarker(m.id) }}
+                  title={t('Delete marker')}
+                  style={{ flexShrink: 0, background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: '2px 4px', borderRadius: 4 }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#ef4444' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text3)' }}
+                >×</button>
+              </div>
+            ))}
+            {dirTab === 'markers' && d.markers.length === 0 && (
+              <div style={{ padding: '20px 14px', textAlign: 'center', color: 'var(--text3)', fontSize: 11 }}>
+                {t('No pins yet.')}
               </div>
             )}
 
             {/* Routes */}
-            {d.routes.length > 0 && (
-              <div style={{ marginTop: d.markers.length > 0 ? 6 : 0 }}>
-                <div style={{ padding: '4px 10px 2px', fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  {t('Routes')} ({d.routes.length})
+            {dirTab === 'routes' && d.routes.map((r, ri) => (
+              <div key={r.id}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '5px 8px 5px 10px' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              >
+                <div style={{ width: 9, height: 9, borderRadius: 2, background: r.color, flexShrink: 0 }} />
+
+                <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
+                  role="button" tabIndex={0}
+                  onClick={() => { if (r.points.length > 0) flyTo(r.points[0].lat, r.points[0].lng) }}
+                  onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && r.points.length > 0) { e.preventDefault(); flyTo(r.points[0].lat, r.points[0].lng) } }}
+                >
+                  {editingLabel?.id === r.id ? (
+                    <input
+                      autoFocus
+                      value={editingLabel.val}
+                      onChange={e => setEditingLabel(x => x ? { ...x, val: e.target.value } : null)}
+                      onBlur={saveDirLabel}
+                      onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') saveDirLabel(); if (e.key === 'Escape') setEditingLabel(null) }}
+                      onClick={e => e.stopPropagation()}
+                      style={{ fontSize: 11, background: 'var(--surface2)', border: '1px solid var(--accent)', borderRadius: 4, color: 'var(--text1)', padding: '1px 5px', width: '100%', boxSizing: 'border-box', outline: 'none' }}
+                    />
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 11, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {r.label || <span style={{ color: 'var(--text3)', fontStyle: 'italic' }}>Route {ri + 1}</span>}
+                      </div>
+                      <div style={{ fontSize: 9, marginTop: 1, display: 'flex', gap: 6 }}>
+                        <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{fmtDist(routeDist(r.points))}</span>
+                        <span style={{ color: 'var(--text3)' }}>{r.points.length} {t('points')}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
-                {d.routes.map((r, ri) => (
-                  <div key={r.id}
-                    style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '5px 8px 5px 10px' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                  >
-                    <div style={{ width: 9, height: 9, borderRadius: 2, background: r.color, flexShrink: 0 }} />
 
-                    <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
-                      role="button" tabIndex={0}
-                      onClick={() => { if (r.points.length > 0) flyTo(r.points[0].lat, r.points[0].lng) }}
-                      onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && r.points.length > 0) { e.preventDefault(); flyTo(r.points[0].lat, r.points[0].lng) } }}
-                    >
-                      {editingLabel?.id === r.id ? (
-                        <input
-                          autoFocus
-                          value={editingLabel.val}
-                          onChange={e => setEditingLabel(x => x ? { ...x, val: e.target.value } : null)}
-                          onBlur={saveDirLabel}
-                          onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') saveDirLabel(); if (e.key === 'Escape') setEditingLabel(null) }}
-                          onClick={e => e.stopPropagation()}
-                          style={{ fontSize: 11, background: 'var(--surface2)', border: '1px solid var(--accent)', borderRadius: 4, color: 'var(--text1)', padding: '1px 5px', width: '100%', boxSizing: 'border-box', outline: 'none' }}
-                        />
-                      ) : (
-                        <>
-                          <div
-                            style={{ fontSize: 11, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                            onClick={e => { e.stopPropagation(); setEditingLabel({ type: 'route', id: r.id, val: r.label }) }}
-                            title={r.label ? t('Click to edit') : t('Click to name')}
-                          >
-                            {r.label || <span style={{ color: 'var(--text3)', fontStyle: 'italic' }}>Route {ri + 1}</span>}
-                          </div>
-                          <div style={{ fontSize: 9, marginTop: 1, display: 'flex', gap: 6 }}>
-                            <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{fmtDist(routeDist(r.points))}</span>
-                            <span style={{ color: 'var(--text3)' }}>{r.points.length} {t('points')}</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                {editingLabel?.id !== r.id && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setEditingLabel({ type: 'route', id: r.id, val: r.label }) }}
+                    title={t('Rename')}
+                    style={{ flexShrink: 0, display: 'flex', background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: '2px 4px', borderRadius: 4 }}
+                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--text1)' }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text3)' }}
+                  ><PencilSvg /></button>
+                )}
 
-                    <button
-                      onClick={e => { e.stopPropagation(); deleteRoute(r.id) }}
-                      title={t('Delete route')}
-                      style={{ flexShrink: 0, background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: '2px 4px', borderRadius: 4 }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#ef4444' }}
-                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--text3)' }}
-                    >×</button>
-                  </div>
-                ))}
+                <button
+                  onClick={e => { e.stopPropagation(); deleteRoute(r.id) }}
+                  title={t('Delete route')}
+                  style={{ flexShrink: 0, background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: '2px 4px', borderRadius: 4 }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#ef4444' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text3)' }}
+                >×</button>
               </div>
-            )}
-
-            {totalItems === 0 && (
+            ))}
+            {dirTab === 'routes' && d.routes.length === 0 && (
               <div style={{ padding: '20px 14px', textAlign: 'center', color: 'var(--text3)', fontSize: 11 }}>
-                {t('No markers or routes yet.')}
+                {t('No routes yet.')}
               </div>
             )}
           </div>
@@ -839,9 +875,8 @@ function ToolBtn({ children, onClick, active, title, disabled, danger }: {
 
 function PinSvg() {
   return (
-    <svg width="11" height="14" viewBox="0 0 32 42" fill="currentColor">
-      <path d="M16 0C7.16 0 0 7.16 0 16C0 28 16 42 16 42C16 42 32 28 32 16C32 7.16 24.84 0 16 0Z"/>
-      <circle cx="16" cy="16" r="6" fill="rgba(0,0,0,0.25)"/>
+    <svg width="10" height="13" viewBox="0 0 26 34" fill="currentColor">
+      <path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21s13-11.25 13-21C26 5.82 20.18 0 13 0Z"/>
     </svg>
   )
 }
@@ -856,23 +891,22 @@ function RouteSvg() {
   )
 }
 
-function RemoveMarkerSvg() {
+function PlusSvg() {
   return (
-    <svg width="16" height="13" viewBox="0 0 20 16" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 1C5.79 1 4 2.79 4 5c0 3.3 4 8.5 4 8.5S12 8.3 12 5c0-2.21-1.79-4-4-4z"/>
-      <circle cx="8" cy="5" r="1.6" fill="currentColor" fillOpacity="0.3" stroke="none"/>
-      <line x1="15" y1="6.5" x2="20" y2="6.5"/>
-    </svg>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   )
 }
 
-function RemoveRouteSvg() {
+function MinusSvg() {
   return (
-    <svg width="16" height="13" viewBox="0 0 20 16" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 13 C2 8 11 8 11 3"/>
-      <circle cx="2" cy="13" r="2" fill="currentColor" stroke="none"/>
-      <circle cx="11" cy="3" r="2" fill="currentColor" stroke="none"/>
-      <line x1="15" y1="8" x2="20" y2="8"/>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  )
+}
+
+function PencilSvg() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>
     </svg>
   )
 }

@@ -37,10 +37,11 @@ is no mosaic server and no account, so there's nothing to sign up for and nothin
 out of your own data.
 
 - **17 widget types** — task/habit tracking, notes with custom fonts/color/shadow/outline, calendar,
-  spreadsheet with formulas, drawboard, PDF/EPUB reader with highlights, charts, weather, map, clock,
-  timer, water and sleep tracking, agenda, quicklinks, images, and a sandboxed HTML widget for your
+  spreadsheet with formulas, drawboard, a PDF/EPUB reader with its own bookshelf and per-book
+  highlights, charts, weather, map, clock, timer, water and sleep tracking, agenda, quicklinks,
+  images, and a sandboxed HTML widget for your
   own pasted pages.
-- **18 built-in themes** (plus your own custom ones) — from Deep Space to Soft Light, each with its
+- **20 built-in themes** (plus your own custom ones) — from Deep Space to Soft Light, each with its
   own accent colors and background pattern; every widget can additionally be styled individually.
 - **Optional AI assistant (bring your own key)** — connect your own Anthropic/OpenAI/Gemini (or any
   OpenAI-compatible) API key and let it build and manage boards with you, or open a mini chat scoped
@@ -159,13 +160,13 @@ the file back out of a terminal every time. The `.deb` install gets this the nor
 <tr>
 <td width="50%">
 
-<img src="docs/screenshots/themes.png" alt="Theme picker with 18 themes, plus background and grid pattern options" width="100%">
+<img src="docs/screenshots/themes.png" alt="Theme picker with 20 themes, plus background and grid pattern options" width="100%">
 
 </td>
 <td width="50%">
 
 **Themes & appearance**
-- 18 built-in themes (dark and light), plus custom themes via JSON
+- 20 built-in themes (dark and light), plus custom themes via JSON
 - Per-widget styling: color, gradient, border, shadow, glow, transparency
 - Two header styles, animation toggle, keyboard-shortcut hints
 
@@ -194,7 +195,7 @@ the file back out of a terminal every time. The `.deb` install gets this the nor
 
 A few things that aren't obvious from a feature list:
 
-- **Reader ↔ Note highlight linking.** Highlight text in the PDF/EPUB reader, then link that highlight into any Note widget on the board as a colored inline reference. Clicking it in the note jumps the reader straight back to that page (PDF) or location (EPUB) — works both ways, and a highlight can be linked into more than one note.
+- **Reader ↔ Note highlight linking.** Highlight text in any book in the reader's library, then link that highlight into any Note widget on the board as a colored inline reference. Clicking it in the note jumps the reader straight back to that book, and to the exact page (PDF) or location (EPUB) — works both ways, a highlight can be linked into more than one note, and reading progress and highlights all save automatically per book.
 - **Move or copy a widget to a different board.** Every widget's toolbar has a "Move/copy to board" action: pick a target board from a searchable list (each tinted with that board's own accent color) and it's transferred instantly, size and style intact — no dragging across two open windows required.
 - **Map markers and hand-drawn routes.** Drop colored, labeled pins anywhere on the map, or draw a route by clicking a sequence of points — mosaic shows the running distance live as you place them. Routes are plain waypoints you control directly, not an auto-routed driving path.
 - **Per-widget AI chat with hard-enforced scope.** Beyond the board-wide assistant, any widget can get its own pinned mini-chat. That chat is restricted in code, not just by prompt — it physically cannot call a tool against a different widget's ID or touch the board theme, regardless of what it's asked to do.

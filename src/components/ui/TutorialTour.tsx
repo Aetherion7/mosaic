@@ -159,7 +159,7 @@ const STEPS: Step[] = [
     target: '#tour-theme',
     icon:   ICONS.theme,
     title:  'Your look',
-    text:   'Choose from 18 themes — from Deep Space to Pastel. Every widget can also be styled individually: color, border, transparency, glow.',
+    text:   'Choose from 20 themes — from Deep Space to Pastel. Every widget can also be styled individually: color, border, transparency, glow.',
     kbd:    'T',
   },
   {

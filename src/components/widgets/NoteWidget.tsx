@@ -173,12 +173,13 @@ const HeadingWithAlign = Heading.extend({
 // Uses <span data-pdf-reader> so there is NO <a href> and no browser navigation.
 // Serialised to/from Markdown as raw HTML (requires html:true in Markdown extension).
 
-function pdfRefHtml(readerId: string, page: number | string, color: string) {
+function pdfRefHtml(readerId: string, page: number | string, color: string, bookId?: string) {
   const c = color || '#ffd166'
-  return `<span class="pdf-ref" data-pdf-reader="${readerId}" data-pdf-page="${page}" data-pdf-color="${c}" style="background:${c}22;border-bottom:2px solid ${c};border-radius:3px;padding:0 3px">`
+  const bookAttr = bookId ? ` data-pdf-book="${bookId}"` : ''
+  return `<span class="pdf-ref" data-pdf-reader="${readerId}"${bookAttr} data-pdf-page="${page}" data-pdf-color="${c}" style="background:${c}22;border-bottom:2px solid ${c};border-radius:3px;padding:0 3px">`
 }
 
-const PdfRef = Mark.create<{ onNavigate: (readerId: string, page: number) => void }>({
+const PdfRef = Mark.create<{ onNavigate: (readerId: string, bookId: string | undefined, page: number) => void }>({
   name: 'pdfRef',
 
   addOptions() {
@@ -188,16 +189,18 @@ const PdfRef = Mark.create<{ onNavigate: (readerId: string, page: number) => voi
   addAttributes() {
     return {
       readerId: { default: null },
+      bookId:   { default: null },
       page:     { default: 1 },
       color:    { default: '#ffd166' },
     }
   },
 
   renderHTML({ HTMLAttributes }) {
-    const { readerId, page, color } = HTMLAttributes
+    const { readerId, bookId, page, color } = HTMLAttributes
     return ['span', {
       class: 'pdf-ref',
       'data-pdf-reader': readerId,
+      ...(bookId ? { 'data-pdf-book': bookId } : {}),
       'data-pdf-page': String(page),
       'data-pdf-color': color,
       style: `background:${color}22;border-bottom:2px solid ${color};border-radius:3px;padding:0 3px`,
@@ -211,6 +214,7 @@ const PdfRef = Mark.create<{ onNavigate: (readerId: string, page: number) => voi
         const el = dom as HTMLElement
         return {
           readerId: el.getAttribute('data-pdf-reader'),
+          bookId:   el.getAttribute('data-pdf-book'),
           page:     parseInt(el.getAttribute('data-pdf-page') ?? '1', 10),
           color:    el.getAttribute('data-pdf-color') ?? '#ffd166',
         }
@@ -224,8 +228,8 @@ const PdfRef = Mark.create<{ onNavigate: (readerId: string, page: number) => voi
       markdown: {
         serialize: {
           open(_state: unknown, mark: { attrs: Record<string, unknown> }) {
-            const { readerId, page, color } = mark.attrs
-            return pdfRefHtml(String(readerId), String(page), String(color))
+            const { readerId, bookId, page, color } = mark.attrs
+            return pdfRefHtml(String(readerId), String(page), String(color), bookId ? String(bookId) : undefined)
           },
           close: () => '</span>',
         },
@@ -267,9 +271,10 @@ const PdfRef = Mark.create<{ onNavigate: (readerId: string, page: number) => voi
             const ref = (event.target as Element).closest?.('[data-pdf-reader]')
             if (!ref) return false
             const readerId = ref.getAttribute('data-pdf-reader')
+            const bookId   = ref.getAttribute('data-pdf-book') ?? undefined
             const page     = parseInt(ref.getAttribute('data-pdf-page') ?? '1', 10)
             if (!readerId || isNaN(page)) return false
-            this.options.onNavigate(readerId, page)
+            this.options.onNavigate(readerId, bookId, page)
             return true
           },
         },
@@ -330,11 +335,24 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
   const editorGeneratedContent = useRef((d.content ?? '') as string)
 
   // Always-fresh navigation callback for the PdfRef ProseMirror plugin.
-  const navigateRef = useRef<(readerId: string, page: number) => void>(() => {})
-  navigateRef.current = (readerId: string, page: number) => {
+  // bookId is undefined for pre-library links (created before a Reader
+  // widget's single book became a shelf of many) — fall back to whichever
+  // book is currently open, or the first book in the library, since those
+  // old links only ever pointed at "the widget's one and only book".
+  const navigateRef = useRef<(readerId: string, bookId: string | undefined, page: number) => void>(() => {})
+  navigateRef.current = (readerId: string, bookId: string | undefined, page: number) => {
     const rw = allWidgets[readerId]
     if (!rw) return
-    updateWidget(readerId, { data: { ...rw.data, currentPage: page } })
+    const books = (rw.data.books ?? {}) as Record<string, { currentPage: number }>
+    const targetId = bookId ?? rw.data.activeBookId ?? Object.keys(books)[0]
+    if (!targetId || !books[targetId]) return
+    updateWidget(readerId, {
+      data: {
+        ...rw.data,
+        activeBookId: targetId,
+        books: { ...books, [targetId]: { ...books[targetId], currentPage: page } },
+      },
+    })
   }
 
   // Checkboxen auch im Ansichtsmodus abhakbar: Ohne onReadOnlyChecked setzt
@@ -384,7 +402,7 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
     TableHeader,
     TableCell,
     PreventTabEscape,
-    PdfRef.configure({ onNavigate: (r, p) => navigateRef.current(r, p) }),
+    PdfRef.configure({ onNavigate: (r, b, p) => navigateRef.current(r, b, p) }),
   ])
 
   const editor = useEditor({
