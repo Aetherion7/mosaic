@@ -38,6 +38,8 @@ export const de: Record<string, string> = {
   'English': 'Englisch',
   'My palette': 'Meine Palette',
   'Pick color from screen': 'Farbe aus Bildschirm aufnehmen',
+  'Pick color from mosaic': 'Farbe aus mosaic aufnehmen',
+  'Click to pick a color — Esc to cancel': 'Klicken, um eine Farbe aufzunehmen — Esc zum Abbrechen',
   'Turns decorative transitions and effects on or off across the entire app': 'Schaltet dekorative Übergänge und Effekte in der gesamten App ein oder aus',
   'Animations': 'Animationen',
   'Minimap': 'Minimap',

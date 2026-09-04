@@ -140,6 +140,57 @@ section { padding: 88px 0; }
 h2 { font-family: 'Guavine', serif; font-size: clamp(30px, 4vw, 42px); font-weight: 400; letter-spacing: 0; margin-bottom: 14px; }
 .section-sub { font-size: 15.5px; color: var(--text2); max-width: 620px; line-height: 1.7; margin-bottom: 48px; }
 
+/* ── Scroll-reveal ──────────────────────────────────────────────────────────
+   One IntersectionObserver (bottom of page) toggles .in on every .reveal
+   element the first time it enters the viewport — fires once, doesn't
+   re-animate on scroll-back-up. Grid/row children stagger via nth-child
+   animation-delay instead of JS timers, so it stays purely declarative.
+   Deliberately driven by `animation`, not `transition`: .card/.extra-card/
+   .tag/.dl-card etc. each already own a `transition` shorthand for their own
+   hover effects (border-color, lift, ...) — since `transition` is a single
+   property, a second same-specificity rule setting it (ours) would simply
+   lose the cascade to theirs and silently never fire. `animation` is a
+   separate property with no such collision, so it composes cleanly with
+   any hover transition already on the element.
+   Wrapped in prefers-reduced-motion so it never fights a user's OS setting —
+   reduced-motion users get the final state immediately, no animation at all. */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal { opacity: 0; transform: translateY(22px); }
+  /* opacity/transform repeated here (not just left to the animation) so that
+     once JS clears the animation on animationend (s. script — needed so a
+     finished, forwards-filled animation doesn't out-cascade a later :hover
+     rule on the same element, e.g. .extra-card:hover's lift), the element
+     stays put at its resting revealed state instead of springing back. */
+  .reveal.in { animation: revealIn 1.2s cubic-bezier(.16,1,.3,1) forwards; opacity: 1; transform: translateY(0); }
+  @keyframes revealIn { to { opacity: 1; transform: translateY(0); } }
+  .grid .reveal:nth-child(1), .tagcloud .reveal:nth-child(1), .downloads .reveal:nth-child(1), .priv-grid .reveal:nth-child(1), .support .reveal:nth-child(1) { animation-delay: 0ms; }
+  .grid .reveal:nth-child(2), .tagcloud .reveal:nth-child(2), .downloads .reveal:nth-child(2), .priv-grid .reveal:nth-child(2), .support .reveal:nth-child(2) { animation-delay: 90ms; }
+  .grid .reveal:nth-child(3), .tagcloud .reveal:nth-child(3), .downloads .reveal:nth-child(3), .priv-grid .reveal:nth-child(3), .support .reveal:nth-child(3) { animation-delay: 180ms; }
+  .grid .reveal:nth-child(4), .tagcloud .reveal:nth-child(4) { animation-delay: 270ms; }
+  .grid .reveal:nth-child(5), .tagcloud .reveal:nth-child(5) { animation-delay: 360ms; }
+  .grid .reveal:nth-child(6), .tagcloud .reveal:nth-child(6) { animation-delay: 450ms; }
+  .tagcloud .reveal:nth-child(7) { animation-delay: 510ms; }
+  .tagcloud .reveal:nth-child(8) { animation-delay: 570ms; }
+  .tagcloud .reveal:nth-child(9) { animation-delay: 630ms; }
+  .tagcloud .reveal:nth-child(10) { animation-delay: 690ms; }
+  .tagcloud .reveal:nth-child(11) { animation-delay: 750ms; }
+  .tagcloud .reveal:nth-child(12) { animation-delay: 810ms; }
+  .tagcloud .reveal:nth-child(13) { animation-delay: 870ms; }
+  .tagcloud .reveal:nth-child(14) { animation-delay: 930ms; }
+  .tagcloud .reveal:nth-child(15) { animation-delay: 990ms; }
+  .tagcloud .reveal:nth-child(16) { animation-delay: 1050ms; }
+  .tagcloud .reveal:nth-child(17) { animation-delay: 1110ms; }
+
+  /* Hero: plays once on load, not scroll-triggered (it's already in view) */
+  .hero-anim { opacity: 0; transform: translateY(16px); animation: heroIn 1.3s cubic-bezier(.16,1,.3,1) forwards; }
+  .hero .pill.hero-anim       { animation-delay: .08s; }
+  .hero h1.hero-anim          { animation-delay: .22s; }
+  .hero p.sub.hero-anim       { animation-delay: .36s; }
+  .hero .ctas.hero-anim       { animation-delay: .5s; }
+  .hero-shot.hero-anim        { animation-delay: .64s; }
+  @keyframes heroIn { to { opacity: 1; transform: translateY(0); } }
+}
+
 /* Feature grid */
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .card {
@@ -154,47 +205,107 @@ h2 { font-family: 'Guavine', serif; font-size: clamp(30px, 4vw, 42px); font-weig
 .card h3 { font-size: 15.5px; font-weight: 700; margin-bottom: 7px; }
 .card p { font-size: 13.5px; color: var(--text2); line-height: 1.6; }
 
-/* Extras grid — icon-led cards, same visual language as the feature grid
-   above but denser; fluid columns instead of a fixed 3-up so an odd card
-   count never leaves a lone orphan in the last row. */
-.grid-extras { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 14px; }
-.extra-card {
+/* Extras carousel — one detail centered at a time, same icon-led card look
+   as the feature grid. JS (bottom of page) auto-advances every 12s with a
+   swipe transition; the previous/next slide sit at each edge, faded and
+   blurred as if dissolving into the background. Arrow buttons and ←/→ jump
+   directly and restart the 12s dwell. transform/opacity/filter are plain
+   inline styles set per-frame by JS, not classes, so this needs no nth-child
+   stagger bookkeeping the way the static grids above do.
+   .car-viewport's mask-image is what actually sells the "dissolving into the
+   background" read: overflow:hidden alone clips a still-partially-opaque
+   neighbor to a hard rectangular edge the instant it crosses the boundary —
+   the mask fades the whole viewport's own alpha out well before that edge,
+   so nothing is ever visibly cut off, only faded to nothing. */
+.carousel { position: relative; padding: 0 68px; }
+.car-viewport {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 16%, black 84%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 16%, black 84%, transparent 100%);
+}
+.car-track { position: relative; height: 260px; }
+.car-slide, .shot-slide {
+  position: absolute; top: 0; left: 50%;
+  transition: transform 1.1s cubic-bezier(.16,1,.3,1), opacity 1.1s cubic-bezier(.16,1,.3,1), filter 1.1s cubic-bezier(.16,1,.3,1);
+}
+.car-slide {
+  width: min(560px, 100%);
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 22px;
-  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  border-radius: var(--radius); padding: 26px 30px; box-sizing: border-box;
 }
-.extra-card:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
-  box-shadow: 0 14px 32px color-mix(in srgb, var(--accent) 9%, transparent);
+.car-slide .ic {
+  width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); margin-bottom: 15px;
 }
-.extra-card .ic {
-  width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
-  background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); margin-bottom: 14px;
+.car-slide h3 { font-size: 15.5px; font-weight: 700; margin-bottom: 8px; letter-spacing: -.01em; }
+.car-slide p { font-size: 13.5px; color: var(--text2); line-height: 1.65; }
+.car-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 44px; height: 44px; border-radius: 999px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text1);
+  cursor: pointer; transition: background .15s ease, border-color .15s ease, transform .15s ease;
+  z-index: 5;
 }
-.extra-card h3 { font-size: 14.5px; font-weight: 700; margin-bottom: 7px; letter-spacing: -.01em; }
-.extra-card p { font-size: 13px; color: var(--text2); line-height: 1.65; }
+.car-arrow:hover { background: var(--surface3); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+.car-arrow:active { transform: translateY(-50%) scale(.92); }
+.car-prev { left: 0; }
+.car-next { right: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .car-slide, .shot-slide { transition: none; }
+}
+
+/* Screenshot carousel — same centered/faded-neighbor mechanics as the extras
+   carousel above (shared JS factory, s. bottom of page), but the ±1 images
+   sit mostly BEHIND the centered one (small offset, lower z-index) instead
+   of beside it, reading as a rotating stack rather than a strip. */
+.shot-carousel { position: relative; padding: 0 68px; }
+.shot-viewport {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}
+.shot-track { position: relative; height: 500px; }
+.shot-slide {
+  width: min(760px, 100%);
+  border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); background: var(--surface);
+}
+.shot-slide img { display: block; width: 100%; height: 440px; object-fit: cover; object-position: center 20%; cursor: zoom-in; }
+.shot-slide figcaption { padding: 14px 16px; font-size: 12.5px; color: var(--text3); border-top: 1px solid var(--border); }
 
 /* Widget tag cloud */
 .tagcloud { display: flex; flex-wrap: wrap; gap: 9px; }
 .tag {
-  display: inline-flex; align-items: center; gap: 6px;
+  position: relative;
+  display: inline-flex; align-items: center; gap: 7px;
   font-size: 12.5px; font-weight: 600; color: var(--text1);
   background: var(--surface2); border: 1px solid var(--border);
-  padding: 8px 14px; border-radius: 999px;
+  padding: 7px 14px 7px 12px; border-radius: 999px;
+  transition: transform .18s ease, border-color .18s ease, background .18s ease;
 }
-.tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+.tag:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); background: var(--surface3); }
+.tag svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--accent); }
+/* Hover tooltip with a one-line description of the widget, sourced 1:1 from
+   the same copy the in-app tile picker uses. content: attr() on ::after
+   keeps this to a single markup attribute per tag instead of an extra
+   wrapper element, same trick already used for the dot-nav's dot-label. */
+.tag[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute; bottom: 100%; left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  margin-bottom: 10px; width: max-content; max-width: 220px;
+  font-size: 11.5px; font-weight: 500; line-height: 1.4; color: var(--text1); text-align: center;
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 7px 11px; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  opacity: 0; pointer-events: none; z-index: 20;
+  transition: opacity .2s ease, transform .2s ease;
+}
+.tag[data-tip]:hover::after, .tag[data-tip]:focus-visible::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* Screenshot showcase */
-.showcase { display: flex; flex-direction: column; gap: 16px; }
-.showcase .shot { display: flex; flex-direction: column; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); background: var(--surface); }
-.showcase .shot img { display: block; width: 100%; object-fit: cover; }
-.showcase-hero img { height: 440px; object-position: center 20%; }
-.showcase-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.showcase-row .shot img { height: 240px; }
-.shot figcaption { padding: 14px 16px; font-size: 12.5px; color: var(--text3); border-top: 1px solid var(--border); }
-.showcase .shot img, .hero-shot img { cursor: zoom-in; transition: filter .15s; }
-.showcase .shot img:hover, .hero-shot img:hover { filter: brightness(1.08); }
+/* Screenshot showcase (hero shot only — the product-tour screenshots below
+   live in .shot-carousel, s. above) */
+.hero-shot img { cursor: zoom-in; transition: filter .2s; }
+.hero-shot img:hover { filter: brightness(1.08); }
 
 /* Screenshot lightbox */
 .lightbox {
@@ -249,12 +360,21 @@ h2 { font-family: 'Guavine', serif; font-size: clamp(30px, 4vw, 42px); font-weig
   list-style: none; cursor: pointer; user-select: none;
   display: flex; align-items: center; gap: 10px;
   padding: 14px 18px; font-size: 13.5px; font-weight: 700; color: var(--text1);
+  transition: background .2s ease;
 }
 .install-notes summary::-webkit-details-marker { display: none; }
 .install-notes summary .plat-ic-sm { display: flex; align-items: center; flex-shrink: 0; color: var(--text2); }
-.install-notes summary .chev { display: flex; margin-left: auto; color: var(--text3); transition: transform .18s ease; flex-shrink: 0; }
+.install-notes summary .chev { display: flex; margin-left: auto; color: var(--text3); transition: transform .3s cubic-bezier(.16,1,.3,1); flex-shrink: 0; }
 .install-notes details[open] summary .chev { transform: rotate(90deg); }
 .install-notes summary:hover { background: color-mix(in srgb, var(--amber) 5%, transparent); }
+/* Smooth expand/collapse: JS (bottom of page) intercepts the summary click
+   and animates <details>'s own height via the Web Animations API — native
+   [open] is a plain UA-stylesheet display:none/block flip on the body, which
+   can't be transitioned on its own, so this drives the box height instead
+   while still flipping the real `open` attribute (kept for a11y/semantics,
+   and it's what the .chev rotation above keys off). Falls back to instant
+   native toggling under prefers-reduced-motion. */
+.install-notes details { overflow: hidden; }
 .install-body { padding: 0 18px 18px 46px; font-size: 13px; color: var(--text2); line-height: 1.65; }
 .install-body p { margin-bottom: 10px; }
 .install-body p:last-child { margin-bottom: 0; }
@@ -323,11 +443,15 @@ footer .flinks a { font-size: 12.5px; color: var(--text2); text-decoration: none
 footer .flinks a:hover { color: var(--text1); }
 
 @media (max-width: 860px) {
-  .grid, .grid-extras, .showcase-row, .priv-grid, .downloads { grid-template-columns: 1fr; }
-  .showcase-hero img { height: 260px; }
+  .grid, .priv-grid, .downloads { grid-template-columns: 1fr; }
   header nav a:not(.btn) { display: none; }
   .hero { padding: 64px 0 40px; }
   section { padding: 56px 0; }
+  .carousel, .shot-carousel { padding: 0 8px; }
+  .car-arrow { width: 36px; height: 36px; }
+  .car-track { height: 340px; }
+  .shot-track { height: 400px; }
+  .shot-slide img { height: 220px; }
 }
 </style>
 </head>
@@ -363,18 +487,18 @@ footer .flinks a:hover { color: var(--text1); }
 <main>
   <section class="hero" id="hero">
     <div class="wrap">
-      <span class="pill"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="6.5" rx="1.3"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg> Local-first · no account · no server</span>
-      <h1>A personal dashboard<br>you actually <em>own</em>.</h1>
-      <p class="sub">
+      <span class="pill hero-anim"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="6.5" rx="1.3"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg> Local-first · no account · no server</span>
+      <h1 class="hero-anim">A personal dashboard<br>you actually <em>own</em>.</h1>
+      <p class="sub hero-anim">
         Arrange tasks, notes, a calendar, trackers, a reader, and more onto boards that look and work
         exactly the way you want. Everything lives in your browser — nothing to sign up for, nothing
         that can lock you out of your own data.
       </p>
-      <div class="ctas">
+      <div class="ctas hero-anim">
         <a class="btn btn-accent" href="#download"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8"/><polyline points="4.5,7 8,10.5 11.5,7"/><line x1="3" y1="13.5" x2="13" y2="13.5"/></svg> Download for free</a>
         <a class="btn btn-outline" href="https://github.com/Aetherion7/mosaic">View source on GitHub</a>
       </div>
-      <div class="hero-shot">
+      <div class="hero-shot hero-anim">
         <img src="screenshots/board.png" alt="A mosaic board with task, calendar, water tracker, weather, note, clock and chart widgets arranged together" onclick="openLightbox(this)" tabindex="0" role="button" aria-label="Enlarge screenshot">
       </div>
     </div>
@@ -382,14 +506,14 @@ footer .flinks a:hover { color: var(--text1); }
 
   <section id="features">
     <div class="wrap">
-      <div class="eyebrow">What you get</div>
-      <h2>Everything a dashboard should be — nothing it shouldn't.</h2>
-      <p class="section-sub">
+      <div class="eyebrow reveal">What you get</div>
+      <h2 class="reveal">Everything a dashboard should be — nothing it shouldn't.</h2>
+      <p class="section-sub reveal">
         mosaic is built around a simple idea: your dashboard, your rules. No forced layout, no
         subscription, no telemetry.
       </p>
       <div class="grid">
-        <div class="card">
+        <div class="card reveal">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg></div>
           <h3>17 widget types</h3>
           <p>Tasks &amp; habits, notes with custom fonts/color/shadow/outline, calendar, spreadsheet
@@ -397,32 +521,32 @@ footer .flinks a:hover { color: var(--text1); }
           highlighting, charts, weather, map, clock, timer, water &amp; sleep tracking, agenda,
           quicklinks, images, and a sandboxed HTML widget for your own pasted pages.</p>
         </div>
-        <div class="card">
+        <div class="card reveal">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14a6 6 0 1 1 6-6c0 1-.6 2-2 2h-1.3a1 1 0 0 0-.7 1.7 1 1 0 0 1-.7 1.7A6 6 0 0 1 8 14z"/><circle cx="5.2" cy="7" r="0.7" fill="currentColor" stroke="none"/><circle cx="7" cy="4.7" r="0.7" fill="currentColor" stroke="none"/><circle cx="10" cy="5.3" r="0.7" fill="currentColor" stroke="none"/></svg></div>
           <h3>20 themes, endless styling</h3>
           <p>From Deep Space to Soft Light, every theme ships its own accent colors and background
           pattern. Style any widget individually on top — color, gradient, border, shadow, glow.</p>
         </div>
-        <div class="card">
+        <div class="card reveal">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg></div>
           <h3>AI assistant, bring your own key</h3>
           <p>Connect your own Anthropic/OpenAI/Gemini (or any OpenAI-compatible) API key. The
           assistant can build and edit boards with you, or work scoped to a single widget. Fully
           optional — your key never touches anything but your chosen provider.</p>
         </div>
-        <div class="card">
+        <div class="card reveal">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2.5" width="13" height="8.5" rx="1.2"/><line x1="5.5" y1="14" x2="10.5" y2="14"/><line x1="8" y1="11" x2="8" y2="14"/></svg></div>
           <h3>Desktop apps, auto-updating</h3>
           <p>Native builds for Windows, macOS and Linux via Electron, with automatic background
           updates — or just use it straight in the browser, no install required.</p>
         </div>
-        <div class="card">
+        <div class="card reveal">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="6.5" rx="1.3"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg></div>
           <h3>Actually local-first</h3>
           <p>Boards, widgets and settings live in IndexedDB on your device. There is no mosaic
           server — self-host it, run it offline, export a full backup as JSON anytime.</p>
         </div>
-        <div class="card">
+        <div class="card reveal">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><ellipse cx="8" cy="8" rx="2.6" ry="6"/><line x1="2" y1="8" x2="14" y2="8"/><path d="M3 5h10M3 11h10"/></svg></div>
           <h3>Bilingual, undo everywhere</h3>
           <p>Full English/German UI switchable anytime, plus proper undo/redo, board templates,
@@ -434,163 +558,185 @@ footer .flinks a:hover { color: var(--text1); }
 
   <section id="widgets">
     <div class="wrap">
-      <div class="eyebrow">Widget catalog</div>
-      <h2>Mix and match — 17 widgets, one board.</h2>
+      <div class="eyebrow reveal">Widget catalog</div>
+      <h2 class="reveal">Mix and match — 17 widgets, one board.</h2>
       <div class="tagcloud">
-        <span class="tag"><span class="dot"></span>Task &amp; habits</span>
-        <span class="tag"><span class="dot"></span>Calendar</span>
-        <span class="tag"><span class="dot"></span>Notes</span>
-        <span class="tag"><span class="dot"></span>Spreadsheet</span>
-        <span class="tag"><span class="dot"></span>Drawboard</span>
-        <span class="tag"><span class="dot"></span>PDF/EPUB reader</span>
-        <span class="tag"><span class="dot"></span>Charts</span>
-        <span class="tag"><span class="dot"></span>Weather</span>
-        <span class="tag"><span class="dot"></span>Map</span>
-        <span class="tag"><span class="dot"></span>Clock</span>
-        <span class="tag"><span class="dot"></span>Timer</span>
-        <span class="tag"><span class="dot"></span>Water tracker</span>
-        <span class="tag"><span class="dot"></span>Sleep tracker</span>
-        <span class="tag"><span class="dot"></span>Agenda</span>
-        <span class="tag"><span class="dot"></span>Quicklinks</span>
-        <span class="tag"><span class="dot"></span>Image</span>
-        <span class="tag"><span class="dot"></span>HTML</span>
+        <span class="tag reveal" data-tip="Tasks &amp; habit tracking"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><polyline points="5.5,8 7,9.5 10.5,6"/></svg>Task &amp; habits</span>
+        <span class="tag reveal" data-tip="Month view with events"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="11" rx="1.5"/><line x1="2" y1="7" x2="14" y2="7"/><line x1="5.5" y1="1.5" x2="5.5" y2="4.5"/><line x1="10.5" y1="1.5" x2="10.5" y2="4.5"/><rect x="5" y="9" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/><rect x="9" y="9" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/></svg>Calendar</span>
+        <span class="tag reveal" data-tip="Markdown notes with custom fonts, color, shadow &amp; outline"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><polyline points="10,2 10,5 13,5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="9" y2="11"/></svg>Notes</span>
+        <span class="tag reveal" data-tip="Spreadsheet with formulas"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="2" y1="6" x2="14" y2="6"/><line x1="2" y1="10" x2="14" y2="10"/><line x1="6" y1="2" x2="6" y2="14"/><line x1="10" y1="2" x2="10" y2="14"/></svg>Spreadsheet</span>
+        <span class="tag reveal" data-tip="Draw sketches &amp; diagrams"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="13" height="13" rx="2"/><path d="M4 10 Q6 5.5 8.5 8 Q10.5 10 12.5 6"/></svg>Drawboard</span>
+        <span class="tag reveal" data-tip="A library of PDFs and EPUBs, with highlights"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3.4C6.3 2.4 4 2.2 2 2.8v9.6c2-0.6 4.3-0.4 6 0.6"/><path d="M8 3.4c1.7-1 4-1.2 6-0.6v9.6c-2-0.6-4.3-0.4-6 0.6"/><line x1="8" y1="3.4" x2="8" y2="13.4"/></svg>PDF/EPUB reader</span>
+        <span class="tag reveal" data-tip="Bar, line, pie &amp; more"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="13.5" x2="14" y2="13.5"/><rect x="2.5" y="9" width="2.5" height="4.5" rx="0.5" fill="currentColor" stroke="none" opacity="0.5"/><rect x="6.5" y="6.5" width="2.5" height="7" rx="0.5" fill="currentColor" stroke="none" opacity="0.5"/><rect x="10.5" y="10.5" width="2.5" height="3" rx="0.5" fill="currentColor" stroke="none" opacity="0.5"/><polyline points="3.75,7 7.75,4 11.75,8.5" fill="none"/><circle cx="3.75" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="7.75" cy="4" r="1.2" fill="currentColor" stroke="none"/><circle cx="11.75" cy="8.5" r="1.2" fill="currentColor" stroke="none"/></svg>Charts</span>
+        <span class="tag reveal" data-tip="Location &amp; forecast"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13a2.5 2.5 0 0 1 0-5h.3a3.5 3.5 0 0 1 6.8-1A2.5 2.5 0 0 1 13 9.5a2 2 0 0 1-2 3.5H3z"/></svg>Weather</span>
+        <span class="tag reveal" data-tip="OpenStreetMap, markers &amp; routes"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5C5.52 1.5 3.5 3.52 3.5 6c0 3.75 4.5 8.5 4.5 8.5s4.5-4.75 4.5-8.5C12.5 3.52 10.48 1.5 8 1.5z"/><circle cx="8" cy="6" r="1.6" fill="none"/></svg>Map</span>
+        <span class="tag reveal" data-tip="Digital, analog &amp; more"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8.5" r="6"/><polyline points="8,5.5 8,8.5 10.5,10.5"/></svg>Clock</span>
+        <span class="tag reveal" data-tip="Countdown &amp; time tracking"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9.5" r="5.5"/><polyline points="8,6.5 8,9.5 10,11.5"/><line x1="6" y1="1.5" x2="10" y2="1.5"/><line x1="8" y1="1.5" x2="8" y2="4"/></svg>Timer</span>
+        <span class="tag reveal" data-tip="Track daily water intake"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 C8 2 3 8 3 10 a5 5 0 0 0 10 0 C13 8 8 2 8 2Z"/></svg>Water tracker</span>
+        <span class="tag reveal" data-tip="Track daily sleep duration"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 9.8A6 6 0 0 1 6.2 2.5 6 6 0 1 0 13.5 9.8Z"/><line x1="10.5" y1="3" x2="13.5" y2="3"/><line x1="13.5" y1="3" x2="10.5" y2="6"/><line x1="10.5" y1="6" x2="13.5" y2="6"/></svg>Sleep tracker</span>
+        <span class="tag reveal" data-tip="Upcoming events at a glance"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="3" cy="4" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="12" r="1" fill="currentColor" stroke="none"/><line x1="6" y1="4" x2="14" y2="4"/><line x1="6" y1="8" x2="14" y2="8"/><line x1="6" y1="12" x2="11" y2="12"/></svg>Agenda</span>
+        <span class="tag reveal" data-tip="Quick access to websites"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><line x1="10" y1="13" x2="14" y2="9"/><polyline points="11,9 14,9 14,12"/></svg>Quicklinks</span>
+        <span class="tag reveal" data-tip="Embed a photo or graphic"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><circle cx="5.5" cy="6.5" r="1.3" fill="currentColor" stroke="none"/><polyline points="2,12 5,9 8,11 11,7 14,12"/></svg>Image</span>
+        <span class="tag reveal" data-tip="Paste your own HTML page — rendered live"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="5.5,4 1.5,8 5.5,12"/><polyline points="10.5,4 14.5,8 10.5,12"/></svg>HTML</span>
       </div>
     </div>
   </section>
 
   <section id="extras">
     <div class="wrap">
-      <div class="eyebrow">Beyond the basics</div>
-      <h2>The details you don't expect from a dashboard app.</h2>
-      <p class="section-sub">
+      <div class="eyebrow reveal">Beyond the basics</div>
+      <h2 class="reveal">The details you don't expect from a dashboard app.</h2>
+      <p class="section-sub reveal">
         A few things that only show up once you're actually using it.
       </p>
-      <div class="grid-extras">
-        <div class="extra-card">
-          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5l3-3"/><path d="M9 4.5l1-1a2.5 2.5 0 0 1 3.5 3.5l-1 1"/><path d="M7 11.5l-1 1a2.5 2.5 0 0 1-3.5-3.5l1-1"/></svg></div>
-          <h3>Reader ↔ Note highlight linking</h3>
-          <p>Highlight text in any book in the reader's library, link it into any Note widget as a
-          colored reference — click it later and the reader jumps straight back to that book, page,
-          or location. Progress and highlights save automatically, per book.</p>
+      <div class="carousel reveal" id="extrasCarousel">
+        <button type="button" class="car-arrow car-prev" id="carPrev" aria-label="Previous detail">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="10,3 5,8 10,13"/></svg>
+        </button>
+        <div class="car-viewport">
+          <div class="car-track" id="carTrack">
+            <div class="car-slide">
+              <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5l3-3"/><path d="M9 4.5l1-1a2.5 2.5 0 0 1 3.5 3.5l-1 1"/><path d="M7 11.5l-1 1a2.5 2.5 0 0 1-3.5-3.5l1-1"/></svg></div>
+              <h3>Reader ↔ Note highlight linking</h3>
+              <p>Highlight text in any book in the reader's library, link it into any Note widget as a
+              colored reference — click it later and the reader jumps straight back to that book, page,
+              or location. Progress and highlights save automatically, per book.</p>
+            </div>
+            <div class="car-slide">
+              <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1.3" y="5.3" width="5" height="5" rx="1"/><rect x="9.7" y="5.3" width="5" height="5" rx="1"/><path d="M6.8 7.8h2.4M8 6.6l1.2 1.2-1.2 1.2"/></svg></div>
+              <h3>Move or copy a widget to another board</h3>
+              <p>Every widget's toolbar can send it to a different board instantly — pick from a
+              searchable list, size and style intact. No dragging across two windows.</p>
+            </div>
+            <div class="car-slide">
+              <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14.2s5-4.6 5-8.2a5 5 0 0 0-10 0c0 3.6 5 8.2 5 8.2z"/><circle cx="8" cy="6" r="1.7"/></svg></div>
+              <h3>Map markers and hand-drawn routes</h3>
+              <p>Drop colored, labeled pins anywhere, or click out a route point by point with live
+              running distance. Routes are your own waypoints, not an auto-routed path.</p>
+            </div>
+            <div class="car-slide">
+              <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2l1.2 3.3L12.5 6.5l-3.3 1.2L8 11l-1.2-3.3L3.5 6.5l3.3-1.2z"/></svg></div>
+              <h3>Per-widget AI chat, hard-scoped</h3>
+              <p>Pin a mini AI chat to a single widget and it is <em>enforced in code</em> to only
+              touch that widget's id — not a prompt suggestion, a hard rule the assistant can't break.</p>
+            </div>
+            <div class="car-slide">
+              <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg></div>
+              <h3>Focus mode is a real 1:1 mirror</h3>
+              <p>Double-click any widget and it's the exact same component, scaled up — not a preview.
+              Check off a task or drag a calendar event full-screen, fully interactive.</p>
+            </div>
+            <div class="car-slide">
+              <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.8" cy="6.8" r="4.5"/><line x1="10.1" y1="10.1" x2="14" y2="14"/></svg></div>
+              <h3>A minimap that zooms with you</h3>
+              <p>Instead of a static fit-to-bounds overview, the live minimap scales in lockstep with
+              your actual board zoom — like radar, not a thumbnail.</p>
+            </div>
+            <div class="car-slide">
+              <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="13" height="13" rx="1.3"/><line x1="1.5" y1="6" x2="14.5" y2="6"/><line x1="6" y1="6" x2="6" y2="14.5"/><path d="M8.7 9.7l2.6 2.6M11.3 9.7l-2.6 2.6"/></svg></div>
+              <h3>Real spreadsheet formulas, safely evaluated</h3>
+              <p><code class="mono">=SUM()</code>, <code class="mono">IF</code>,
+              <code class="mono">COUNTIF</code> and 40+ more, backed by a hand-written parser — no
+              <code class="mono">eval</code>, safe to open boards you didn't build yourself.</p>
+            </div>
+            <div class="car-slide">
+              <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.3 2.3c-1.5 0-2 1-2 2v1.8c0 .9-.4 1.2-1.1 1.4v.4c.7.2 1.1.5 1.1 1.4V11c0 1 .5 2 2 2M9.7 2.3c1.5 0 2 1 2 2v1.8c0 .9.4 1.2 1.1 1.4v.4c-.7.2-1.1.5-1.1 1.4V11c0 1-.5 2-2 2"/></svg></div>
+              <h3>Themes as editable JSON, migrated smartly</h3>
+              <p>Write your own theme as JSON with live validation. Switching themes only replaces
+              widget styles that matched the old theme's defaults — your manual tweaks stay put.</p>
+            </div>
+            <div class="car-slide">
+              <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 9.3c0-1.2.8-1.8.8-3.3a2.7 2.7 0 0 1 5.4 0c0 1.5.8 2.1.8 3.3z"/><line x1="3.8" y1="9.3" x2="12.2" y2="9.3"/><path d="M6.8 11.7a1.2 1.2 0 0 0 2.4 0"/></svg></div>
+              <h3>Reminders that check your actual progress</h3>
+              <p>Water reminders stop once you've hit today's goal; the sleep reminder only fires if
+              you haven't logged a bedtime yet. Runs in the background, any board.</p>
+            </div>
+            <div class="car-slide">
+              <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5.5,4 2,8 5.5,12"/><polyline points="10.5,4 14,8 10.5,12"/></svg></div>
+              <h3>An HTML widget that needs no hosting</h3>
+              <p>Paste or upload a self-contained <code class="mono">.html</code> file and it renders
+              live in a sandboxed iframe — no URL, no server, no install step. Flip to a code view
+              anytime to see or edit the source, or hit reload to restart it.</p>
+            </div>
+            <div class="car-slide">
+              <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></div>
+              <h3>Pin a widget to your real desktop</h3>
+              <p>Detach any widget into its own small, always-on-top window right on your desktop —
+              a task list or clock outside the app entirely. Still fully live: check something off
+              there and the board updates instantly, not a static snapshot.</p>
+            </div>
+          </div>
         </div>
-        <div class="extra-card">
-          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1.3" y="5.3" width="5" height="5" rx="1"/><rect x="9.7" y="5.3" width="5" height="5" rx="1"/><path d="M6.8 7.8h2.4M8 6.6l1.2 1.2-1.2 1.2"/></svg></div>
-          <h3>Move or copy a widget to another board</h3>
-          <p>Every widget's toolbar can send it to a different board instantly — pick from a
-          searchable list, size and style intact. No dragging across two windows.</p>
-        </div>
-        <div class="extra-card">
-          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14.2s5-4.6 5-8.2a5 5 0 0 0-10 0c0 3.6 5 8.2 5 8.2z"/><circle cx="8" cy="6" r="1.7"/></svg></div>
-          <h3>Map markers and hand-drawn routes</h3>
-          <p>Drop colored, labeled pins anywhere, or click out a route point by point with live
-          running distance. Routes are your own waypoints, not an auto-routed path.</p>
-        </div>
-        <div class="extra-card">
-          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2l1.2 3.3L12.5 6.5l-3.3 1.2L8 11l-1.2-3.3L3.5 6.5l3.3-1.2z"/></svg></div>
-          <h3>Per-widget AI chat, hard-scoped</h3>
-          <p>Pin a mini AI chat to a single widget and it is <em>enforced in code</em> to only
-          touch that widget's id — not a prompt suggestion, a hard rule the assistant can't break.</p>
-        </div>
-        <div class="extra-card">
-          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg></div>
-          <h3>Focus mode is a real 1:1 mirror</h3>
-          <p>Double-click any widget and it's the exact same component, scaled up — not a preview.
-          Check off a task or drag a calendar event full-screen, fully interactive.</p>
-        </div>
-        <div class="extra-card">
-          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.8" cy="6.8" r="4.5"/><line x1="10.1" y1="10.1" x2="14" y2="14"/></svg></div>
-          <h3>A minimap that zooms with you</h3>
-          <p>Instead of a static fit-to-bounds overview, the live minimap scales in lockstep with
-          your actual board zoom — like radar, not a thumbnail.</p>
-        </div>
-        <div class="extra-card">
-          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="13" height="13" rx="1.3"/><line x1="1.5" y1="6" x2="14.5" y2="6"/><line x1="6" y1="6" x2="6" y2="14.5"/><path d="M8.7 9.7l2.6 2.6M11.3 9.7l-2.6 2.6"/></svg></div>
-          <h3>Real spreadsheet formulas, safely evaluated</h3>
-          <p><code class="mono">=SUM()</code>, <code class="mono">IF</code>,
-          <code class="mono">COUNTIF</code> and 40+ more, backed by a hand-written parser — no
-          <code class="mono">eval</code>, safe to open boards you didn't build yourself.</p>
-        </div>
-        <div class="extra-card">
-          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.3 2.3c-1.5 0-2 1-2 2v1.8c0 .9-.4 1.2-1.1 1.4v.4c.7.2 1.1.5 1.1 1.4V11c0 1 .5 2 2 2M9.7 2.3c1.5 0 2 1 2 2v1.8c0 .9.4 1.2 1.1 1.4v.4c-.7.2-1.1.5-1.1 1.4V11c0 1-.5 2-2 2"/></svg></div>
-          <h3>Themes as editable JSON, migrated smartly</h3>
-          <p>Write your own theme as JSON with live validation. Switching themes only replaces
-          widget styles that matched the old theme's defaults — your manual tweaks stay put.</p>
-        </div>
-        <div class="extra-card">
-          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 9.3c0-1.2.8-1.8.8-3.3a2.7 2.7 0 0 1 5.4 0c0 1.5.8 2.1.8 3.3z"/><line x1="3.8" y1="9.3" x2="12.2" y2="9.3"/><path d="M6.8 11.7a1.2 1.2 0 0 0 2.4 0"/></svg></div>
-          <h3>Reminders that check your actual progress</h3>
-          <p>Water reminders stop once you've hit today's goal; the sleep reminder only fires if
-          you haven't logged a bedtime yet. Runs in the background, any board.</p>
-        </div>
-        <div class="extra-card">
-          <div class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5.5,4 2,8 5.5,12"/><polyline points="10.5,4 14,8 10.5,12"/></svg></div>
-          <h3>An HTML widget that needs no hosting</h3>
-          <p>Paste or upload a self-contained <code class="mono">.html</code> file and it renders
-          live in a sandboxed iframe — no URL, no server, no install step. Flip to a code view
-          anytime to see or edit the source, or hit reload to restart it.</p>
-        </div>
-        <div class="extra-card">
-          <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></div>
-          <h3>Pin a widget to your real desktop</h3>
-          <p>Detach any widget into its own small, always-on-top window right on your desktop —
-          a task list or clock outside the app entirely. Still fully live: check something off
-          there and the board updates instantly, not a static snapshot.</p>
-        </div>
+        <button type="button" class="car-arrow car-next" id="carNext" aria-label="Next detail">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,3 11,8 6,13"/></svg>
+        </button>
       </div>
     </div>
   </section>
 
   <section id="screenshots">
     <div class="wrap">
-      <div class="eyebrow">Product tour</div>
-      <h2>A closer look.</h2>
-      <p class="section-sub">Every screenshot on this page comes straight from the running app — no staged mockups.</p>
-      <div class="showcase">
-        <figure class="shot showcase-hero">
-          <img src="screenshots/themes.png" alt="Theme picker showing 20 built-in themes plus background and grid pattern options" onclick="openLightbox(this)" tabindex="0" role="button" aria-label="Enlarge screenshot">
-          <figcaption>20 built-in themes, dark and light, with background and pattern controls</figcaption>
-        </figure>
-        <div class="showcase-row">
-          <figure class="shot">
-            <img src="screenshots/ai-assistant.png" alt="The AI assistant panel, ready to connect a BYOK API key" onclick="openLightbox(this)" tabindex="0" role="button" aria-label="Enlarge screenshot">
-            <figcaption>The AI assistant — bring your own key, fully optional</figcaption>
-          </figure>
-          <figure class="shot">
-            <img src="screenshots/home.png" alt="The board overview page showing a list of boards" onclick="openLightbox(this)" tabindex="0" role="button" aria-label="Enlarge screenshot">
-            <figcaption>Board overview — search, sort, and organize into folders</figcaption>
-          </figure>
+      <div class="eyebrow reveal">Product tour</div>
+      <h2 class="reveal">A closer look.</h2>
+      <p class="section-sub reveal">Every screenshot on this page comes straight from the running app — no staged mockups.</p>
+      <div class="shot-carousel reveal" id="shotCarousel">
+        <button type="button" class="car-arrow car-prev" id="shotPrev" aria-label="Previous screenshot">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="10,3 5,8 10,13"/></svg>
+        </button>
+        <div class="shot-viewport">
+          <div class="shot-track" id="shotTrack">
+            <figure class="shot-slide">
+              <img src="screenshots/board.png" alt="A mosaic board with task, calendar, water tracker, weather, note, clock and chart widgets arranged together" onclick="openLightbox(this)" tabindex="0" role="button" aria-label="Enlarge screenshot">
+              <figcaption>A live board — task, calendar, water tracker, weather, note, clock and chart widgets together</figcaption>
+            </figure>
+            <figure class="shot-slide">
+              <img src="screenshots/themes.png" alt="Theme picker showing 20 built-in themes plus background and grid pattern options" onclick="openLightbox(this)" tabindex="0" role="button" aria-label="Enlarge screenshot">
+              <figcaption>20 built-in themes, dark and light, with background and pattern controls</figcaption>
+            </figure>
+            <figure class="shot-slide">
+              <img src="screenshots/ai-assistant.png" alt="The AI assistant panel, ready to connect a BYOK API key" onclick="openLightbox(this)" tabindex="0" role="button" aria-label="Enlarge screenshot">
+              <figcaption>The AI assistant — bring your own key, fully optional</figcaption>
+            </figure>
+            <figure class="shot-slide">
+              <img src="screenshots/home.png" alt="The board overview page showing a list of boards" onclick="openLightbox(this)" tabindex="0" role="button" aria-label="Enlarge screenshot">
+              <figcaption>Board overview — search, sort, and organize into folders</figcaption>
+            </figure>
+          </div>
         </div>
+        <button type="button" class="car-arrow car-next" id="shotNext" aria-label="Next screenshot">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,3 11,8 6,13"/></svg>
+        </button>
       </div>
     </div>
   </section>
 
   <section id="download">
     <div class="wrap">
-      <div class="eyebrow">Get mosaic</div>
-      <h2>Download, or just run it in your browser.</h2>
-      <p class="section-sub">Native desktop apps update themselves automatically — install once, forget about it.</p>
+      <div class="eyebrow reveal">Get mosaic</div>
+      <h2 class="reveal">Download, or just run it in your browser.</h2>
+      <p class="section-sub reveal">Native desktop apps update themselves automatically — install once, forget about it.</p>
       <div class="downloads">
-        <a class="dl-card" id="dl-win" href="https://github.com/Aetherion7/mosaic/releases/latest">
+        <a class="dl-card reveal" id="dl-win" href="https://github.com/Aetherion7/mosaic/releases/latest">
           <div class="plat-ic"><svg width="30" height="30" viewBox="0 0 16 16" fill="currentColor" style="margin:0 auto"><rect x="1" y="1" width="6.3" height="6.3"/><rect x="8.3" y="1" width="6.3" height="6.3"/><rect x="1" y="8.3" width="6.3" height="6.3"/><rect x="8.3" y="8.3" width="6.3" height="6.3"/></svg></div>
           <div class="plat-name">Windows</div>
           <div class="plat-sub" id="dl-win-sub">.exe installer</div>
         </a>
-        <a class="dl-card" id="dl-mac" href="https://github.com/Aetherion7/mosaic/releases/latest">
+        <a class="dl-card reveal" id="dl-mac" href="https://github.com/Aetherion7/mosaic/releases/latest">
           <div class="plat-ic"><img src="icons/apple.png" alt="" width="26" height="31"></div>
           <div class="plat-name">macOS</div>
           <div class="plat-sub" id="dl-mac-sub">.dmg, Apple Silicon</div>
         </a>
-        <div class="dl-card" style="position:relative">
+        <div class="dl-card reveal" style="position:relative">
           <a id="dl-linux" href="https://github.com/Aetherion7/mosaic/releases/latest" style="position:absolute;inset:0;border-radius:inherit;z-index:0" aria-label="Download mosaic for Linux (.AppImage)"></a>
           <div class="plat-ic"><img src="icons/linux.png" alt="" width="26" height="30"></div>
           <div class="plat-name">Linux</div>
           <div class="plat-sub"><span id="dl-linux-sub">.AppImage</span> — <a id="dl-deb" href="https://github.com/Aetherion7/mosaic/releases/latest" style="position:relative;z-index:1;color:var(--accent2)">.deb instead</a></div>
         </div>
       </div>
-      <div class="install-notes">
+      <div class="install-notes reveal">
         <div class="install-notes-head">
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.3"/><line x1="8" y1="7.3" x2="8" y2="11.2"/><circle cx="8" cy="5.3" r="0.9" fill="currentColor" stroke="none"/></svg>
-          Important information for downloads
+          Installation notes — what those security warnings mean
         </div>
         <details>
           <summary>
@@ -668,11 +814,11 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
 
   <section id="privacy">
     <div class="wrap">
-      <div class="eyebrow">Privacy</div>
-      <h2>Local by default, honest about the exceptions.</h2>
-      <p class="section-sub">No tracking, no analytics, no ads — ever. Here's exactly what stays on your device and what doesn't.</p>
+      <div class="eyebrow reveal">Privacy</div>
+      <h2 class="reveal">Local by default, honest about the exceptions.</h2>
+      <p class="section-sub reveal">No tracking, no analytics, no ads — ever. Here's exactly what stays on your device and what doesn't.</p>
       <div class="priv-grid">
-        <div class="priv-card ok">
+        <div class="priv-card ok reveal">
           <h3><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="6.5" rx="1.3"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg> Always local</h3>
           <ul>
             <li>Boards, widgets and layout (IndexedDB)</li>
@@ -681,7 +827,7 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
             <li>Works fully offline for all of the above</li>
           </ul>
         </div>
-        <div class="priv-card">
+        <div class="priv-card reveal">
           <h3><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><ellipse cx="8" cy="8" rx="2.6" ry="6"/><line x1="2" y1="8" x2="14" y2="8"/><path d="M3 5h10M3 11h10"/></svg> Only when you use them</h3>
           <ul>
             <li>Map &amp; weather widgets — OpenStreetMap / Open-Meteo</li>
@@ -698,20 +844,20 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
   <section id="support">
     <div class="support-glow"></div>
     <div class="wrap" style="text-align:center">
-      <div class="eyebrow">Support</div>
-      <h2>Free to use. Free to stay that way.</h2>
-      <p class="section-sub" style="margin-left:auto;margin-right:auto;text-align:center">
+      <div class="eyebrow reveal">Support</div>
+      <h2 class="reveal">Free to use. Free to stay that way.</h2>
+      <p class="section-sub reveal" style="margin-left:auto;margin-right:auto;text-align:center">
         mosaic will always be free for personal use. If it's useful to you, a donation helps — but
         using it, starring the repo, or reporting a bug is just as appreciated.
       </p>
       <div class="support">
-        <a class="support-card" href="https://ko-fi.com/mosaicboard">
+        <a class="support-card reveal" href="https://ko-fi.com/mosaicboard">
           <div class="emoji"><img src="badges/kofi.png" alt="Ko-fi" style="height:34px;width:auto"></div>
           <!-- leeres h3 statt keinem: hält dieselbe Zeilenhöhe wie bei den anderen zwei Karten, sonst rutscht der Text darunter nach oben -->
           <h3>&nbsp;</h3>
           <p>One-time or monthly</p>
         </a>
-        <a class="support-card" href="https://github.com/Aetherion7/mosaic">
+        <a class="support-card reveal" href="https://github.com/Aetherion7/mosaic">
           <div class="emoji"><img src="badges/github-star.webp" alt="" style="height:34px;width:auto"></div>
           <h3>Star on GitHub</h3>
           <p>Costs nothing, helps a lot</p>
@@ -722,7 +868,7 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
 
   <section id="license">
     <div class="wrap">
-      <div class="license-strip">
+      <div class="license-strip reveal">
         <p>
           <strong>Source-available, not commercial.</strong> mosaic is published under the
           PolyForm Noncommercial License 1.0.0 — free to use, modify and self-host for personal,
@@ -769,7 +915,7 @@ function closeLightbox() {
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') closeLightbox();
 });
-document.querySelectorAll('.showcase .shot img, .hero-shot img').forEach(function (img) {
+document.querySelectorAll('.shot-slide img, .hero-shot img').forEach(function (img) {
   img.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(img); }
   });
@@ -826,6 +972,13 @@ document.querySelectorAll('.showcase .shot img, .hero-shot img').forEach(functio
 // driven by an IntersectionObserver watching a thin band around the
 // viewport's vertical center, so it stays correct regardless of how tall
 // each section is instead of relying on manual scroll-position math.
+// That band alone isn't enough for the very last section though: once the
+// page is scrolled as far as it goes, the footer below #license eats into
+// the viewport and can push #license's own bounds entirely above the
+// center band, so it never registers as "intersecting" and the previous
+// dot is stuck active forever at the bottom of the page. Fixed with an
+// explicit "am I at the bottom of the page" check that overrides the
+// band result and forces the last dot active whenever it's true.
 (function () {
   var links = Array.prototype.slice.call(document.querySelectorAll('.dotnav a'));
   var sections = links.map(function (a) {
@@ -842,14 +995,239 @@ document.querySelectorAll('.showcase .shot img, .hero-shot img').forEach(functio
   });
 
   if (!('IntersectionObserver' in window)) return;
+  var intersecting = sections.map(function () { return false; });
+
+  function render() {
+    var atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+    links.forEach(function (a, i) {
+      a.classList.toggle('active', atBottom ? i === links.length - 1 : intersecting[i]);
+    });
+  }
+
   var observer = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
       var idx = sections.indexOf(entry.target);
       if (idx === -1) return;
-      links[idx].classList.toggle('active', entry.isIntersecting);
+      intersecting[idx] = entry.isIntersecting;
     });
+    render();
   }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
   sections.forEach(function (s) { observer.observe(s); });
+
+  window.addEventListener('scroll', render, { passive: true });
+  window.addEventListener('resize', render);
+})();
+</script>
+
+<script>
+// Scroll-reveal: fades/slides in every .reveal element the first time it
+// enters the viewport, then stops watching it — one-shot, not re-triggered
+// on scroll-back-up. The actual motion lives in CSS (.reveal.in, s. head);
+// this just flips the class at the right moment. Skipped entirely when
+// prefers-reduced-motion is set, so those elements stay at their default,
+// fully-visible non-.reveal state (see the CSS block's media query) instead
+// of getting silently stuck at opacity:0 with no observer to reveal them.
+(function () {
+  if (!('IntersectionObserver' in window)) {
+    document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+    return;
+  }
+  if (window.matchMedia && !window.matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+    document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+    return;
+  }
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) return;
+      var el = entry.target;
+      el.classList.add('in');
+      observer.unobserve(el);
+      // Once the entrance animation finishes, drop it (inline style beats any
+      // stylesheet rule) so a forwards-filled animation doesn't keep
+      // out-cascading normal-priority rules on the same properties forever —
+      // e.g. .extra-card:hover / .tag:hover's own transform lift, which would
+      // otherwise never be able to apply again after this fires once.
+      el.addEventListener('animationend', function () { el.style.animation = 'none'; }, { once: true });
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(function (el) { observer.observe(el); });
+})();
+</script>
+
+<script>
+// Shared carousel engine for both the extras carousel and the screenshot
+// carousel below: position/opacity/blur for every slide are recomputed on
+// each move as plain inline styles (delta = slide index vs. the active one,
+// shortest-path wrapped so slides loop both ways) rather than toggled
+// classes — keeps the "how far from center" math in one place instead of
+// spread across nth-child rules, and lets the two carousels share every bit
+// of nav/timer/keyboard/resize behavior while only differing in how a slide
+// at a given delta is actually positioned (opts.layoutSlide).
+// Auto-advances every 12s; the arrows and ←/→ (only while that particular
+// carousel is actually on screen, so this never hijacks arrow-key scrolling
+// elsewhere on the page, and two carousels on the same page don't fight over
+// which one the keys apply to) jump directly and restart that 12s dwell.
+// Auto-advance itself is skipped under prefers-reduced-motion (manual nav
+// still works) — an auto-updating carousel is exactly the kind of motion
+// that setting exists to opt out of.
+function initCarousel(opts) {
+  var container = opts.container, track = opts.track, prevBtn = opts.prevBtn, nextBtn = opts.nextBtn;
+  if (!container || !track || !prevBtn || !nextBtn) return;
+  var slides = Array.prototype.slice.call(track.children);
+  if (!slides.length) return;
+
+  var current = 0;
+  var timer = null;
+  var inView = false;
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function layout() {
+    var w = slides[0].getBoundingClientRect().width || slides[0].offsetWidth;
+    slides.forEach(function (slide, i) {
+      var delta = i - current;
+      if (delta > slides.length / 2) delta -= slides.length;
+      if (delta < -slides.length / 2) delta += slides.length;
+      opts.layoutSlide(slide, delta, Math.abs(delta), w);
+    });
+  }
+
+  function goTo(i) {
+    current = ((i % slides.length) + slides.length) % slides.length;
+    layout();
+  }
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+
+  function restartTimer() {
+    if (timer) clearInterval(timer);
+    if (reduceMotion) return;
+    timer = setInterval(next, 12000);
+  }
+
+  prevBtn.addEventListener('click', function () { prev(); restartTimer(); });
+  nextBtn.addEventListener('click', function () { next(); restartTimer(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (!inView) return;
+    if (e.key === 'ArrowLeft') { prev(); restartTimer(); }
+    else if (e.key === 'ArrowRight') { next(); restartTimer(); }
+  });
+
+  window.addEventListener('resize', layout);
+
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) { inView = entry.isIntersecting; });
+    }, { threshold: 0.3 }).observe(container);
+  } else {
+    inView = true;
+  }
+
+  layout();
+  restartTimer();
+}
+
+function layoutSideBySide(slide, delta, abs, w) {
+  var shift = w * 0.7;
+  var tx = delta * shift;
+  var opacity, scale, blur, z, pe;
+  if (abs === 0) { opacity = 1; scale = 1; blur = 0; z = 3; pe = 'auto'; }
+  else if (abs === 1) { opacity = 0.35; scale = 0.9; blur = 3; z = 2; pe = 'none'; }
+  else { opacity = 0; scale = 0.82; blur = 6; z = 1; pe = 'none'; tx = (delta > 0 ? 1 : -1) * shift * 1.6; }
+  slide.style.transform = 'translateX(calc(-50% + ' + tx + 'px)) scale(' + scale + ')';
+  slide.style.opacity = String(opacity);
+  slide.style.filter = blur ? 'blur(' + blur + 'px)' : 'none';
+  slide.style.zIndex = String(z);
+  slide.style.pointerEvents = pe;
+}
+
+// Same idea, but the ±1 neighbors sit mostly BEHIND the centered slide
+// (small offset, lower z-index than the center) instead of beside it, so it
+// reads as a rotating stack rather than a strip.
+function layoutStacked(slide, delta, abs, w) {
+  var shift = w * 0.22;
+  var tx = delta * shift;
+  var opacity, scale, blur, z, pe;
+  if (abs === 0) { opacity = 1; scale = 1; blur = 0; z = 3; pe = 'auto'; }
+  else if (abs === 1) { opacity = 0.4; scale = 0.84; blur = 2; z = 1; pe = 'none'; }
+  else { opacity = 0; scale = 0.76; blur = 4; z = 0; pe = 'none'; tx = (delta > 0 ? 1 : -1) * shift * 1.5; }
+  slide.style.transform = 'translateX(calc(-50% + ' + tx + 'px)) scale(' + scale + ')';
+  slide.style.opacity = String(opacity);
+  slide.style.filter = blur ? 'blur(' + blur + 'px)' : 'none';
+  slide.style.zIndex = String(z);
+  slide.style.pointerEvents = pe;
+}
+
+initCarousel({
+  container: document.getElementById('extrasCarousel'),
+  track: document.getElementById('carTrack'),
+  prevBtn: document.getElementById('carPrev'),
+  nextBtn: document.getElementById('carNext'),
+  layoutSlide: layoutSideBySide,
+});
+
+initCarousel({
+  container: document.getElementById('shotCarousel'),
+  track: document.getElementById('shotTrack'),
+  prevBtn: document.getElementById('shotPrev'),
+  nextBtn: document.getElementById('shotNext'),
+  layoutSlide: layoutStacked,
+});
+</script>
+
+<script>
+// Smooth expand/collapse for the Installation notes accordion (s. CSS above
+// for why this can't just be a plain `transition`). Skipped entirely under
+// prefers-reduced-motion — native <details> toggling still works instantly,
+// just unanimated.
+(function () {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (!('animate' in document.documentElement)) return;
+
+  document.querySelectorAll('.install-notes details').forEach(function (details) {
+    var summary = details.querySelector('summary');
+    var body = details.querySelector('.install-body');
+    if (!summary || !body) return;
+    var anim = null;
+    var busy = false;
+
+    summary.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (busy) return;
+      details.open ? closeIt() : openIt();
+    });
+
+    function openIt() {
+      var startHeight = details.offsetHeight;
+      details.open = true;
+      busy = true;
+      requestAnimationFrame(function () {
+        var endHeight = summary.offsetHeight + body.offsetHeight;
+        run(startHeight, endHeight, true);
+      });
+    }
+
+    function closeIt() {
+      var startHeight = details.offsetHeight;
+      var endHeight = summary.offsetHeight;
+      busy = true;
+      run(startHeight, endHeight, false);
+    }
+
+    function run(from, to, endOpen) {
+      if (anim) anim.cancel();
+      anim = details.animate(
+        { height: [from + 'px', to + 'px'] },
+        { duration: 420, easing: 'cubic-bezier(.16,1,.3,1)' }
+      );
+      anim.onfinish = function () {
+        details.open = endOpen;
+        details.style.height = '';
+        anim = null;
+        busy = false;
+      };
+    }
+  });
 })();
 </script>
 

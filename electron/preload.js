@@ -8,6 +8,9 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('mosaicDesktop', {
+  // So the renderer can gate Linux-only resize handling (s.
+  // widget:resize-move below) without a round trip.
+  platform: process.platform,
   setLaunchAtLogin:    (enabled) => ipcRenderer.invoke('desktop:set-launch-at-login', enabled),
   setKeepInBackground: (enabled) => ipcRenderer.invoke('desktop:set-keep-in-background', enabled),
   setAutoUpdateEnabled: (enabled) => ipcRenderer.invoke('desktop:set-auto-update-enabled', enabled),
@@ -30,6 +33,9 @@ contextBridge.exposeInMainWorld('mosaicDesktop', {
   },
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
   installUpdate: () => ipcRenderer.invoke('update:install'),
+  // In-app color picker (s. main.js window:capture-page + ColorSwatch.tsx) —
+  // captures only this window's own content, nothing OS-level.
+  capturePage: () => ipcRenderer.invoke('window:capture-page'),
   // Feuert einmal je Sitzung, sobald das Fenster wegen Hintergrundbetrieb
   // versteckt statt geschlossen wird (s. main.js) — der Renderer feuert
   // daraufhin selbst eine übersetzte Web-Notification (ElectronBridge.tsx).
@@ -50,4 +56,9 @@ contextBridge.exposeInMainWorld('mosaicDesktop', {
     ipcRenderer.on('widget:pinned-changed', listener)
     return () => ipcRenderer.removeListener('widget:pinned-changed', listener)
   },
+  // Manual resize for pinned widget windows on Linux (s. main.js
+  // widget:resize-move) — fire-and-forget send, not invoke, since this
+  // streams on every mousemove during a drag rather than individual
+  // request/response calls.
+  resizeWidgetWindowMove: (edge, dx, dy) => ipcRenderer.send('widget:resize-move', { edge, dx, dy }),
 })

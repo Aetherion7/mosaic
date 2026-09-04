@@ -28,6 +28,17 @@ const http = require('http')
 // macOS/Windows brauchen das nicht, deshalb nur unter Linux gesetzt.
 if (process.platform === 'linux') {
   app.commandLine.appendSwitch('enable-transparent-visuals')
+  // Web-EyeDropper-API (Farbpipette im ColorSwatch-Picker): auf Linux/Wayland
+  // baut Chromiums eigene Implementierung auf dessen Desktop-Capture-Stack
+  // auf (X11 kann den Bildschirm direkt lesen und braucht das nicht) — ohne
+  // dieses Feature versucht Chromium erst gar nicht, eine PipeWire-Aufnahme
+  // über xdg-desktop-portal auszuhandeln: das Vorschau-Fenster öffnet sich
+  // kurz und schließt sich sofort wieder, ohne je eine Farbe liefern zu
+  // können (genau das gemeldete Verhalten). Setzt nur das Chromium-Feature —
+  // xdg-desktop-portal + PipeWire müssen weiterhin auf dem System vorhanden
+  // sein (praktisch auf jedem modernen Wayland-Desktop der Fall); ohne sie
+  // bricht der Portal-Dialog selbst ab, statt dass es an dieser Stelle liegt.
+  app.commandLine.appendSwitch('enable-features', 'WebRTCPipeWireCapturer')
 }
 
 const isDev = !app.isPackaged
@@ -351,7 +362,24 @@ async function createWidgetWindow(boardId, widgetId, bounds) {
     transparent: true,
     backgroundColor: '#00000000', // explizit voll-transparent statt Electron-Default
     hasShadow: false,
-    resizable: true,
+    // On Windows/macOS this stays native-resizable — DWM/Cocoa give
+    // frameless windows a working (invisible) resize border on their own.
+    // On Linux this is handled entirely by hand instead (see
+    // LinuxResizeEdges in widget/[boardId]/[widgetId]/page.tsx +
+    // widget:resize-move below) — confirmed via ground-truth compositor
+    // geometry (KWin's own scripting interface, independent of Electron's
+    // self-reported getBounds/setBounds, which turned out to be unreliable
+    // here) that (a) BrowserWindow.setBounds()/setPosition() can never
+    // change a window's POSITION on this Wayland session, only its size —
+    // not a KWin quirk, Wayland's xdg_toplevel protocol has no "set
+    // position" request for a client to make, ever, for any window — and
+    // (b) KWin, unlike Windows' DWM, does not provide any native resize
+    // affordance for undecorated (frame:false) windows either (confirmed:
+    // no resize cursor appears on hover with resizable:true and no custom
+    // handles in the way). With no way to move the window at all, the only
+    // thing that can genuinely work is resizing from a FIXED top-left
+    // origin — width/height change, x/y never do, on every edge alike.
+    resizable: process.platform !== 'linux',
     skipTaskbar: true,
     show: false,
     webPreferences: {
@@ -491,6 +519,20 @@ ipcMain.handle('desktop:set-keep-in-background', (_e, enabled) => {
 ipcMain.handle('desktop:set-auto-update-enabled', (_e, enabled) => {
   autoUpdateEnabled = !!enabled
 })
+// In-app color picker (s. ColorSwatch.tsx): captures ONLY this window's own
+// rendered content, not the screen or any other app — entirely in-process,
+// no OS permission dialog, no portal/PipeWire negotiation of any kind. This
+// replaces the Web EyeDropper API on desktop, which picks from the whole
+// screen and (s. the earlier WebRTCPipeWireCapturer fix, which did not fully
+// resolve it either) depends on Wayland screen-capture plumbing that isn't
+// reliable on every compositor. toDataURL() runs off the main thread inside
+// Chromium, cheap enough to call on every pick.
+ipcMain.handle('window:capture-page', async (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  if (!win) return null
+  const image = await win.webContents.capturePage()
+  return { dataUrl: image.toDataURL(), size: image.getSize() }
+})
 ipcMain.handle('update:install', () => {
   // isQuitting muss hier NICHT gesetzt werden — quitAndInstall() beendet die
   // App direkt selbst und startet die neue Version, umgeht also ohnehin den
@@ -517,6 +559,27 @@ ipcMain.handle('widget:unpin', (_e, { boardId, widgetId }) => {
   widgetWindows.get(key)?.close()
 })
 ipcMain.handle('widget:list-pinned', () => loadPinnedWidgets().map(({ boardId, widgetId }) => ({ boardId, widgetId })))
+
+// Manual resize for pinned widget windows on Linux (s. resizable:false above
+// for why) — width/height only, from a fixed top-left origin. x/y are never
+// touched: proven (via KWin's own scripting interface, ground truth
+// independent of Electron's self-reported bounds) that this compositor
+// cannot reposition a window via any client API at all, so every edge
+// resizes the same way east/south already correctly do — dragging the
+// west/north handles grows/shrinks the SAME width/height east/south control,
+// just triggered from the opposite side, rather than tracking the cursor on
+// that side (which would require moving x/y, which is impossible here).
+// `send`/`on` rather than `invoke`/`handle`: fires on every mousemove during
+// a drag, a fire-and-forget stream of deltas, not a request/response pair.
+ipcMain.on('widget:resize-move', (event, { edge, dx, dy }) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  if (!win) return
+  const minW = 120, minH = 90
+  const { x, y, width, height } = win.getBounds()
+  const newWidth  = (edge.includes('e') || edge.includes('w')) ? Math.max(minW, width + dx) : width
+  const newHeight = (edge.includes('n') || edge.includes('s')) ? Math.max(minH, height + dy) : height
+  win.setBounds({ x, y, width: newWidth, height: newHeight })
+})
 
 // ── App-Menü ─────────────────────────────────────────────────────────────
 // mosaic hat seine eigene Oberfläche (TopBar, Einstellungen-Panel mit GitHub-

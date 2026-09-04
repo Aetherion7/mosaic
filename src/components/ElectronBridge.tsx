@@ -10,6 +10,9 @@ declare global {
     // Nur im Electron-Build vorhanden (s. electron/preload.js) — im Browser
     // schlicht undefined, jeder Aufruf unten also folgenlos.
     mosaicDesktop?: {
+      // process.platform, gespiegelt (s. preload.js) — z.B. für den manuellen
+      // Resize-Rand pinnter Widget-Fenster, der nur auf Linux gebraucht wird.
+      platform: 'darwin' | 'win32' | 'linux' | string
       setLaunchAtLogin:     (enabled: boolean) => Promise<void>
       setKeepInBackground:  (enabled: boolean) => Promise<void>
       setAutoUpdateEnabled: (enabled: boolean) => Promise<void>
@@ -19,6 +22,9 @@ declare global {
       onUpdateStatus: (callback: (info: { status: 'checking' | 'not-available' | 'error' }) => void) => () => void
       checkForUpdates: () => Promise<void>
       installUpdate: () => Promise<void>
+      // In-app color picker (s. main.js + ColorSwatch.tsx) — captures only
+      // this window's own rendered content, nothing OS/screen-level.
+      capturePage: () => Promise<{ dataUrl: string; size: { width: number; height: number } } | null>
       // s. main.js — feuert einmal je Sitzung, wenn das Fenster wegen
       // Hintergrundbetrieb versteckt statt geschlossen wird
       onHiddenToBackground: (callback: () => void) => () => void
@@ -30,6 +36,8 @@ declare global {
       unpinWidgetFromDesktop: (boardId: string, widgetId: string) => Promise<void>
       getPinnedWidgets:       () => Promise<{ boardId: string; widgetId: string }[]>
       onPinnedWidgetsChanged: (callback: (list: { boardId: string; widgetId: string }[]) => void) => () => void
+      // s. widget/[boardId]/[widgetId]/page.tsx's manuelle Resize-Ränder (Linux)
+      resizeWidgetWindowMove: (edge: string, dx: number, dy: number) => void
     }
   }
 }

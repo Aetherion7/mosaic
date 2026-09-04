@@ -690,6 +690,17 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
     addCalendarEvent(widget.id, { ...ev, id: uid(), recurrence: undefined, timeStart, timeEnd, copyShadow: true })
   }
 
+  // Copy for a multi-day bar (the strip spanning several days above the
+  // hour grid, s. multiDayBarLayout): unlike copyEvent above, there's no
+  // time axis to offset the copy along — date/dateEnd stay identical to the
+  // original. multiDayBarLayout's own row-stacking then places the copy in
+  // the next free row automatically, since two entries with the same
+  // colStart can never share a row — it lands directly under the original
+  // without needing any placement math here.
+  function copyBarEvent(ev: CalendarEvent) {
+    addCalendarEvent(widget.id, { ...ev, id: uid(), recurrence: undefined, copyShadow: true })
+  }
+
   // ─── ICS import ──────────────────────────────────────────────────────────
   function showToast(msg: string) {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
@@ -1190,6 +1201,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
                       </span>
                       {mode === 'edit' && (
                         <div data-nomove="true" style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                          <button onClick={e => { e.stopPropagation(); copyBarEvent(ev) }} style={barEvBtn} title={t('Copy event')}><IconCopySmall /></button>
                           <button onClick={e => { e.stopPropagation(); openEditPopup(ev) }} style={barEvBtn} title={t('Edit')}><IconEdit size={8} /></button>
                           <button onClick={e => { e.stopPropagation(); deleteCalendarEvent(widget.id, ev.id) }} style={barEvBtn} title={t('Delete')}><IconX size={8} /></button>
                         </div>

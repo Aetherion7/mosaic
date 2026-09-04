@@ -34,6 +34,114 @@ export function hsvToHex(h: number, s: number, v: number): string {
   return '#'+[r,g,b].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join('')
 }
 
+// ── In-app eyedropper (Electron desktop) ────────────────────────────────────
+// Samples a pixel from a screenshot of mosaic's OWN window (captured via
+// main.js's window:capture-page, entirely in-process) instead of the native
+// Web EyeDropper API, which picks from the whole screen and depends on
+// Wayland's screen-capture/portal plumbing — unreliable on some compositors
+// even with the WebRTCPipeWireCapturer feature flag enabled (main.js), where
+// its picker window opens and immediately closes without ever returning a
+// color. This can only ever pick colors visible within mosaic itself, which
+// is the explicitly requested behavior, not just a fallback.
+function InAppEyeDropper({ capture, onPick, onCancel }: {
+  capture: { dataUrl: string; size: { width: number; height: number } }
+  onPick: (hex: string) => void
+  onCancel: () => void
+}) {
+  const t = useT()
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const [ready, setReady] = useState(false)
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+  const [hoverHex, setHoverHex] = useState('#000000')
+
+  useEffect(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = capture.size.width
+    canvas.height = capture.size.height
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+    img.onload = () => {
+      ctx?.drawImage(img, 0, 0)
+      canvasRef.current = canvas
+      setReady(true)
+    }
+    img.src = capture.dataUrl
+  }, [capture])
+
+  function sampleAt(clientX: number, clientY: number): string | null {
+    const canvas = canvasRef.current
+    if (!canvas) return null
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    // CSS pixels -> captured-image pixels: the capture is the window's own
+    // content at its actual (possibly HiDPI-scaled) pixel size, which
+    // doesn't necessarily match window.innerWidth/Height 1:1.
+    const ix = Math.min(canvas.width  - 1, Math.max(0, Math.round(clientX * (canvas.width  / window.innerWidth))))
+    const iy = Math.min(canvas.height - 1, Math.max(0, Math.round(clientY * (canvas.height / window.innerHeight))))
+    const [r, g, b] = ctx.getImageData(ix, iy, 1, 1).data
+    return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')
+  }
+
+  useEffect(() => {
+    function onMove(e: MouseEvent) {
+      setPos({ x: e.clientX, y: e.clientY })
+      const hex = sampleAt(e.clientX, e.clientY)
+      if (hex) setHoverHex(hex)
+    }
+    // Capture phase + stopPropagation: the parent ColorSwatch popup has its
+    // own bubble-phase mousedown listener that closes it on any outside
+    // click — without this, that would fire first and close the whole
+    // color popup out from under the pick instead of just committing it.
+    function onMouseDown(e: MouseEvent) {
+      e.stopPropagation()
+      const hex = sampleAt(e.clientX, e.clientY)
+      if (hex) onPick(hex)
+    }
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onCancel() }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mousedown', onMouseDown, true)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mousedown', onMouseDown, true)
+      window.removeEventListener('keydown', onKey)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready])
+
+  return createPortal(
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 100000, cursor: 'crosshair',
+        backgroundImage: `url(${capture.dataUrl})`,
+        backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+        opacity: ready ? 1 : 0,
+      }}
+    >
+      {pos && ready && (
+        <div style={{
+          position: 'fixed', left: pos.x + 16, top: pos.y + 16, zIndex: 100001,
+          pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 6,
+          background: 'rgba(20,20,20,0.85)', backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8,
+          padding: '4px 8px', boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+        }}>
+          <div style={{ width: 16, height: 16, borderRadius: 4, background: hoverHex, border: '1px solid rgba(255,255,255,0.4)', flexShrink: 0 }} />
+          <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'white' }}>{hoverHex}</span>
+        </div>
+      )}
+      <div style={{
+        position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 100001,
+        fontSize: 11, color: 'white', background: 'rgba(20,20,20,0.85)', backdropFilter: 'blur(8px)',
+        border: '1px solid rgba(255,255,255,0.2)', borderRadius: 999, padding: '5px 12px',
+      }}>
+        {t('Click to pick a color — Esc to cancel')}
+      </div>
+    </div>,
+    document.body
+  )
+}
+
 const PICKER_PRESETS = [
   '#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6','#8b5cf6','#ec4899',
   '#f8fafc','#94a3b8','#334155','#020617',
@@ -92,7 +200,8 @@ export function ColorSwatch({
   const [popPos, setPopPos] = useState({ x: 0, y: 0 })
   const [popReady, setPopReady] = useState(false)
   const [hasEyeDropper, setHasEyeDropper] = useState(false)
-  useEffect(() => { setHasEyeDropper('EyeDropper' in window) }, [])
+  useEffect(() => { setHasEyeDropper('EyeDropper' in window || !!window.mosaicDesktop?.capturePage) }, [])
+  const [pickerCapture, setPickerCapture] = useState<{ dataUrl: string; size: { width: number; height: number } } | null>(null)
   const lastEmitted = useRef(safe)
   const btnRef = useRef<HTMLDivElement>(null)
   const popRef = useRef<HTMLDivElement>(null)
@@ -277,8 +386,16 @@ export function ColorSwatch({
             />
             {hasEyeDropper && (
               <button
-                title={t('Pick color from screen')}
+                title={t(window.mosaicDesktop?.capturePage ? 'Pick color from mosaic' : 'Pick color from screen')}
                 onClick={async () => {
+                  // Prefer the in-app picker whenever running in Electron —
+                  // s. InAppEyeDropper above for why (the OS-level EyeDropper
+                  // API isn't reliable on every Linux/Wayland compositor).
+                  if (window.mosaicDesktop?.capturePage) {
+                    const result = await window.mosaicDesktop.capturePage()
+                    if (result) setPickerCapture(result)
+                    return
+                  }
                   try {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const result = await new (window as any).EyeDropper().open()
@@ -377,6 +494,19 @@ export function ColorSwatch({
           </div>
         </div>,
         document.body
+      )}
+
+      {pickerCapture && (
+        <InAppEyeDropper
+          capture={pickerCapture}
+          onPick={hex => {
+            setPickerCapture(null)
+            const [nh, ns, nv] = hexToHsv(hex)
+            setH(nh); setS(ns); setV(nv); setHexStr(hex)
+            lastEmitted.current = hex; onChange(hex)
+          }}
+          onCancel={() => setPickerCapture(null)}
+        />
       )}
     </>
   )

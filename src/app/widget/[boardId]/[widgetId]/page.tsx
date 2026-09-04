@@ -1,5 +1,5 @@
 'use client'
-import { use, useEffect, useState } from 'react'
+import { use, useEffect, useRef, useState } from 'react'
 import { useBoardStore, setActiveBoardOverride } from '@/store/boardStore'
 import { useSettings } from '@/store/settingsStore'
 import { getTheme } from '@/lib/themes'
@@ -7,6 +7,74 @@ import { getFontStack } from '@/lib/fonts'
 import { useT } from '@/hooks/useT'
 import { TileContent, buildStyle, widgetTypeIcon, TYPE_LABELS } from '@/components/board/TileWrapper'
 import WidgetErrorBoundary from '@/components/board/WidgetErrorBoundary'
+
+// ── Manual resize border (Linux only) ───────────────────────────────────────
+// This window is frameless (frame:false, s. electron/main.js
+// createWidgetWindow) so there's no OS-drawn border to grab, and — confirmed
+// directly on this exact setup, not assumed — KWin doesn't add one of its
+// own for undecorated windows either (no resize cursor appears on hover at
+// all without this). Separately confirmed (via KWin's own scripting
+// interface, ground truth independent of Electron's self-reported bounds)
+// that no client API can reposition a window on Wayland at all — Wayland's
+// xdg_toplevel protocol simply has no "set position" request. With no way
+// to move the window, every edge here resizes the SAME way — width/height
+// change from a fixed top-left origin, same as east/south already do
+// correctly — rather than trying to make west/north track the cursor
+// directly, which would require moving x/y and can't work. Windows/macOS
+// don't render any of this; their OS already gives frameless windows a
+// working resize border for free.
+const EDGES: { edge: string; cursor: string; style: React.CSSProperties }[] = [
+  { edge: 'n',  cursor: 'ns-resize',  style: { top: 0, left: 6, right: 6, height: 4 } },
+  { edge: 's',  cursor: 'ns-resize',  style: { bottom: 0, left: 6, right: 6, height: 4 } },
+  { edge: 'w',  cursor: 'ew-resize',  style: { left: 0, top: 6, bottom: 6, width: 4 } },
+  { edge: 'e',  cursor: 'ew-resize',  style: { right: 0, top: 6, bottom: 6, width: 4 } },
+  { edge: 'nw', cursor: 'nwse-resize', style: { top: 0, left: 0, width: 8, height: 8 } },
+  { edge: 'se', cursor: 'nwse-resize', style: { bottom: 0, right: 0, width: 8, height: 8 } },
+  { edge: 'ne', cursor: 'nesw-resize', style: { top: 0, right: 0, width: 8, height: 8 } },
+  { edge: 'sw', cursor: 'nesw-resize', style: { bottom: 0, left: 0, width: 8, height: 8 } },
+]
+
+function LinuxResizeEdges() {
+  const dragEdgeRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    function onMove(e: MouseEvent) {
+      const edge = dragEdgeRef.current
+      if (!edge) return
+      // movementX/Y: raw relative pointer delta, not derived from
+      // screenX/screenY (which Wayland doesn't give clients reliably).
+      const dx = e.movementX
+      const dy = e.movementY
+      if (dx || dy) window.mosaicDesktop?.resizeWidgetWindowMove(edge, dx, dy)
+    }
+    function onUp() { dragEdgeRef.current = null }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+  }, [])
+
+  return (
+    <>
+      {EDGES.map(({ edge, cursor, style }) => (
+        <div
+          key={edge}
+          onMouseDown={e => {
+            e.preventDefault()
+            dragEdgeRef.current = edge
+          }}
+          style={{
+            position: 'fixed', cursor, zIndex: 1000,
+            WebkitAppRegion: 'no-drag',
+            ...style,
+          } as React.CSSProperties}
+        />
+      ))}
+    </>
+  )
+}
 
 // Standalone render of exactly ONE widget, outside any board grid — the page
 // a pinned "desktop widget" Electron window loads (see electron/main.js's
@@ -110,6 +178,7 @@ export default function WidgetPage({ params }: { params: Promise<{ boardId: stri
         ...buildStyle(effectiveStyle, false),
       }}
     >
+      {typeof window !== 'undefined' && window.mosaicDesktop?.platform === 'linux' && <LinuxResizeEdges />}
       <div
         style={{
           display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
