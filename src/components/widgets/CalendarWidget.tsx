@@ -1058,7 +1058,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
                 cursor: mode === 'view' ? 'default' : 'pointer',
                 outline: isSel && !isToday ? '1px solid var(--accent)' : 'none', minHeight: 28,
               }}>
-                <span style={{ fontSize: 11, fontWeight: isToday ? 700 : 400, color: isToday ? 'white' : 'var(--text1)', lineHeight: 1 }}>{day}</span>
+                <span style={{ fontSize: 11, fontWeight: isToday ? 700 : 400, color: isToday ? 'var(--on-accent, white)' : 'var(--text1)', lineHeight: 1 }}>{day}</span>
                 {dots.length > 0 && (
                   <div style={{ display: 'flex', gap: 2, marginTop: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
                     {dots.slice(0,3).map(e => (
@@ -1118,7 +1118,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
                   <div style={{ fontSize: 9, color: 'var(--text3)', fontWeight: 600 }}>{t(DAY_NAMES[i])}</div>
                   <div style={{
                     fontSize: 12, fontWeight: 700,
-                    color: isToday ? 'white' : 'var(--text1)',
+                    color: isToday ? 'var(--on-accent, white)' : 'var(--text1)',
                     background: isToday ? 'var(--accent)' : 'transparent',
                     borderRadius: '50%', width: 20, height: 20,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1612,7 +1612,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
               <button onClick={closePopup} style={{ fontSize: 11, padding: '6px 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
                 {t('Cancel')}
               </button>
-              <button onClick={submitPopupEvent} style={{ fontSize: 11, padding: '6px 16px', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer', fontWeight: 700, opacity: popupTitle.trim() ? 1 : 0.45 }}>
+              <button onClick={submitPopupEvent} style={{ fontSize: 11, padding: '6px 16px', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer', fontWeight: 700, opacity: popupTitle.trim() ? 1 : 0.45 }}>
                 {t('Save')}
               </button>
             </div>

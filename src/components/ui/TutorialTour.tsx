@@ -48,7 +48,7 @@ function MiniModeToggle() {
         <div key={i} style={{
           width: 28, height: 28, borderRadius: 999, position: 'relative',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: active === i ? 'white' : 'var(--text3)', transition: 'color 0.25s',
+          color: active === i ? 'var(--on-accent, white)' : 'var(--text3)', transition: 'color 0.25s',
         }}>
           {icon}
         </div>
@@ -596,7 +596,7 @@ export default function TutorialTour() {
         ) : (
           <button onClick={() => isLast ? setShowDonate(true) : setIdx(i => i + 1)} style={{
             fontSize: 13, fontWeight: 700, padding: '9px 22px', borderRadius: 999,
-            border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer',
+            border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
             boxShadow: '0 4px 18px color-mix(in srgb, var(--accent) 45%, transparent)',
           }}>
             {idx === 0 ? t('Let’s go') : isLast ? t('Finish tour') : t('Next')}

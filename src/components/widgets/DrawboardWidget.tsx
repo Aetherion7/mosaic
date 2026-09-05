@@ -966,7 +966,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
   const cursor  = tool === 'pen' ? 'none' : tool === 'select' ? 'default' : tool === 'eraser' ? 'cell' : tool === 'text' ? 'text' : tool === 'fill' ? 'crosshair' : 'crosshair'
 
   function tb(active: boolean) {
-    return { ...BTN, background: active ? 'var(--accent)' : 'var(--surface2)', color: active ? 'white' : 'var(--text2)' }
+    return { ...BTN, background: active ? 'var(--accent)' : 'var(--surface2)', color: active ? 'var(--on-accent, white)' : 'var(--text2)' }
   }
 
   // ── Format panels ─────────────────────────────────────────────────────────
@@ -995,7 +995,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
               padding: '4px 8px', borderRadius: 7, cursor: 'pointer',
               border: '1px solid var(--border)',
               background: brushType === b.id ? 'var(--accent)' : 'var(--surface2)',
-              color: brushType === b.id ? 'white' : 'var(--text2)',
+              color: brushType === b.id ? 'var(--on-accent, white)' : 'var(--text2)',
             }}>
             <div style={{ flex: 1, minWidth: 0 }}>{b.preview}</div>
             <span style={{ fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>{t(b.label)}</span>
@@ -1029,12 +1029,12 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
       <div style={{ display: 'flex', gap: 5 }}>
         {(Object.entries(SHAPE_LABELS) as [ShapeTool, string][]).map(([st, label]) => (
           <button key={st} title={t(label)} onClick={() => { setTool(st); setShowFormat(false) }}
-            style={{ ...BTN, flex: 1, background: tool === st ? 'var(--accent)' : 'var(--surface2)', color: tool === st ? 'white' : 'var(--text2)' }}>
+            style={{ ...BTN, flex: 1, background: tool === st ? 'var(--accent)' : 'var(--surface2)', color: tool === st ? 'var(--on-accent, white)' : 'var(--text2)' }}>
             {SHAPE_ICONS[st]}
           </button>
         ))}
       </div>
-      <button onClick={() => setFilled(f => !f)} style={{ ...BTN, width: 'auto', padding: '0 8px', gap: 5, fontSize: 10, fontWeight: 600, background: filled ? 'var(--accent)' : 'var(--surface2)', color: filled ? 'white' : 'var(--text2)' }}>
+      <button onClick={() => setFilled(f => !f)} style={{ ...BTN, width: 'auto', padding: '0 8px', gap: 5, fontSize: 10, fontWeight: 600, background: filled ? 'var(--accent)' : 'var(--surface2)', color: filled ? 'var(--on-accent, white)' : 'var(--text2)' }}>
         <svg width="12" height="12" viewBox="0 0 16 16" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="12" height="12" rx="1.5"/></svg>
         {t('Fill on/off')}
       </button>

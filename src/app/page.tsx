@@ -1269,7 +1269,7 @@ export default function HomePage() {
                     <button onClick={createFolder} disabled={!newFolderName.trim()}
                       style={{
                         padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 999, border: 'none',
-                        background: 'var(--accent)', color: 'white',
+                        background: 'var(--accent)', color: 'var(--on-accent, white)',
                         cursor: newFolderName.trim() ? 'pointer' : 'default', opacity: newFolderName.trim() ? 1 : 0.4,
                       }}
                     >{t('Create')}</button>
@@ -1390,7 +1390,7 @@ export default function HomePage() {
                     onClick={handleCreate}
                     style={{
                       flex: 1, padding: '8px', fontSize: 13, fontWeight: 600,
-                      borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer',
+                      borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
                     }}
                   >{t('Create')}</button>
                   <button
@@ -1572,7 +1572,7 @@ export default function HomePage() {
                         onClick={() => restoreBoard(entry.board.id)}
                         style={{
                           flexShrink: 0, fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 999,
-                          border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer',
+                          border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
                         }}
                       >{t('Restore')}</button>
                       <button
@@ -1764,7 +1764,7 @@ export default function HomePage() {
                   disabled={!renameFolderValue.trim() || (renameFolderValue.trim() !== renamingFolder && folderNames.includes(renameFolderValue.trim().slice(0, 30)))}
                   style={{
                     padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 999, border: 'none',
-                    background: 'var(--accent)', color: 'white',
+                    background: 'var(--accent)', color: 'var(--on-accent, white)',
                     cursor: renameFolderValue.trim() ? 'pointer' : 'default',
                     opacity: (!renameFolderValue.trim() || (renameFolderValue.trim() !== renamingFolder && folderNames.includes(renameFolderValue.trim().slice(0, 30)))) ? 0.4 : 1,
                   }}

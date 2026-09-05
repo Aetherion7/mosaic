@@ -51,7 +51,7 @@ export default function SlidingTabs<T extends string>({
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
             border: 'none', background: 'none', cursor: 'pointer', borderRadius: radius,
             fontSize, fontWeight: 700, padding: 0,
-            color: value === o.value ? (soft ? 'var(--accent)' : 'white') : 'var(--text3)',
+            color: value === o.value ? (soft ? 'var(--accent)' : 'var(--on-accent, white)') : 'var(--text3)',
             transition: 'color 0.15s',
           }}
         >

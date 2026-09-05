@@ -142,7 +142,7 @@ export default function ThemePanel() {
                       <button key={d.value} onClick={() => setBackground({ gradientDir: d.value })} style={{
                         width: 26, height: 26, borderRadius: 7, border: '1px solid var(--border)',
                         background: bg.gradientDir === d.value ? 'var(--accent)' : 'var(--surface2)',
-                        color: bg.gradientDir === d.value ? 'white' : 'var(--text2)',
+                        color: bg.gradientDir === d.value ? 'var(--on-accent, white)' : 'var(--text2)',
                         fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>{d.label}</button>
                     ))}
@@ -423,7 +423,7 @@ const tabBtn = (active: boolean): React.CSSProperties => ({
   padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 50,
   border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
   background: active ? 'var(--accent)' : 'var(--surface2)',
-  color: active ? 'white' : 'var(--text2)',
+  color: active ? 'var(--on-accent, white)' : 'var(--text2)',
   cursor: 'pointer', transition: 'all 0.12s',
 })
 

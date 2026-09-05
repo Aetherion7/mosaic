@@ -7,7 +7,8 @@ import type { CustomFont } from '@/store/settingsStore'
 import { FONT_OPTIONS, customFontStack, type FontOption } from '@/lib/fonts'
 import { saveBlob, deleteBlob } from '@/lib/blobStore'
 import { useT } from '@/hooks/useT'
-import { SectionTitle, HeaderStyleCard, AddCardButton, TemplateBox, THEME_JSON_TEMPLATE, Row } from './shared'
+import { SectionTitle, HeaderStyleCard, AddCardButton, Row } from './shared'
+import ThemeEditorModal from './ThemeEditorModal'
 
 export default function ErscheinungsbildPanel() {
   const headerStyle    = useSettings(s => s.headerStyle)
@@ -109,70 +110,13 @@ export default function ErscheinungsbildPanel() {
 }
 
 function CustomThemesSection() {
-  const customThemes     = useSettings(s => s.customThemes)
-  const addCustomTheme   = useSettings(s => s.addCustomTheme)
+  const customThemes      = useSettings(s => s.customThemes)
   const removeCustomTheme = useSettings(s => s.removeCustomTheme)
   const t = useT()
 
-  const [showForm,  setShowForm]  = useState(false)
-  const [jsonInput, setJsonInput] = useState('')
-  const [error,     setError]     = useState<string | null>(null)
-  const [preview,   setPreview]   = useState<CustomTheme | null>(null)
-  // Gesetzt, während ein bereits vorhandenes Theme bearbeitet wird (statt ein
-  // neues hinzuzufügen) — addCustomTheme() ersetzt intern per ID, das Formular
-  // muss also nur mit derselben ID erneut absenden, damit "Speichern" statt
-  // eines Duplikats das bestehende Theme aktualisiert.
-  const [editingId, setEditingId] = useState<string | null>(null)
-
-  function handleChange(val: string) {
-    setJsonInput(val)
-    setError(null)
-    setPreview(null)
-    if (!val.trim()) return
-    try {
-      const obj = JSON.parse(val)
-      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('object expected')
-      if (typeof obj.name !== 'string' || !obj.name.trim()) { setError(t('Field "name" (text) is missing')); return }
-      if (!obj.cssVars || typeof obj.cssVars !== 'object' || Array.isArray(obj.cssVars)) { setError(t('Field "cssVars" (object) is missing')); return }
-      const vars: Record<string, string> = {}
-      for (const [k, v] of Object.entries(obj.cssVars)) {
-        if (typeof v !== 'string') { setError(`cssVars["${k}"] ${t('must be text')}`); return }
-        vars[k.startsWith('--') ? k : `--${k}`] = v
-      }
-      if (Object.keys(vars).length === 0) { setError(t('cssVars is empty')); return }
-      setPreview({
-        id:      typeof obj.id === 'string' && obj.id.trim() ? `custom_${obj.id.trim()}` : `custom_${Date.now()}`,
-        name:    obj.name.trim().slice(0, 40),
-        cssVars: vars,
-        bg:          obj.bg && typeof obj.bg === 'object' ? obj.bg : undefined,
-        widgetStyle: obj.widgetStyle && typeof obj.widgetStyle === 'object' ? obj.widgetStyle : undefined,
-      })
-    } catch {
-      setError(t('Invalid JSON'))
-    }
-  }
-
-  function install() {
-    if (!preview) return
-    addCustomTheme(preview)
-    setJsonInput(''); setPreview(null); setShowForm(false); setEditingId(null)
-  }
-
-  function startEdit(theme: CustomTheme) {
-    setEditingId(theme.id)
-    handleChange(JSON.stringify({
-      id:      theme.id.replace(/^custom_/, ''),
-      name:    theme.name,
-      cssVars: theme.cssVars,
-      ...(theme.bg          ? { bg: theme.bg }                   : {}),
-      ...(theme.widgetStyle ? { widgetStyle: theme.widgetStyle } : {}),
-    }, null, 2))
-    setShowForm(true)
-  }
-
-  function closeForm() {
-    setShowForm(false); setJsonInput(''); setError(null); setPreview(null); setEditingId(null)
-  }
+  // 'new' = Editor ohne Vorbelegung (neues Theme); ein CustomTheme-Objekt =
+  // Editor mit dessen Werten vorausgefüllt (Bearbeiten); null = geschlossen.
+  const [editorTarget, setEditorTarget] = useState<CustomTheme | 'new' | null>(null)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -190,7 +134,7 @@ function CustomThemesSection() {
               ))}
             </div>
             <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ct.name}</span>
-            <button onClick={() => startEdit(ct)} title={t('Edit theme')}
+            <button onClick={() => setEditorTarget(ct)} title={t('Edit theme')}
               style={{ width: 20, height: 20, borderRadius: 6, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>
@@ -201,86 +145,28 @@ function CustomThemesSection() {
           </div>
         )
       })}
-      {customThemes.length === 0 && !showForm && (
+      {customThemes.length === 0 && (
         <div style={{ fontSize: 11, color: 'var(--text3)', padding: '2px 0 4px' }}>
           {t('No custom themes yet — they appear in the theme panel under "Custom" after adding one.')}
         </div>
       )}
 
-      {/* Add form */}
-      {showForm ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 12, borderRadius: 12, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-              background: 'color-mix(in srgb, var(--accent) 14%, var(--surface))',
-              border: '1px solid color-mix(in srgb, var(--accent) 32%, transparent)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)',
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/>
-                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.68-.75 1.68-1.68 0-.44-.17-.83-.44-1.13-.27-.29-.43-.68-.43-1.11 0-.93.75-1.68 1.68-1.68H16c3.31 0 6-2.69 6-6 0-4.97-4.5-8.4-10-8.4z"/>
-              </svg>
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text1)' }}>{editingId ? t('Edit theme') : t('Add theme from JSON')}</div>
-              <div style={{ fontSize: 10, color: 'var(--text3)', lineHeight: 1.4 }}>
-                {t('Only "name" + "cssVars" are required — the rest falls back to Deep Space. Optional: "bg", "widgetStyle".')}
-              </div>
-            </div>
-            <button onClick={closeForm} title={t('Close')}
-              style={{ width: 22, height: 22, borderRadius: 6, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
-            </button>
-          </div>
-          <TemplateBox json={THEME_JSON_TEMPLATE} filename="mosaic-theme-template.json" onInsert={() => handleChange(THEME_JSON_TEMPLATE)} />
-          <textarea
-            value={jsonInput}
-            onChange={e => handleChange(e.target.value)}
-            placeholder={t('Paste JSON here — see the template above for the structure …')}
-            rows={10}
-            spellCheck={false}
-            style={{
-              fontSize: 10.5, fontFamily: 'monospace', lineHeight: 1.6,
-              background: 'var(--surface)', color: 'var(--text1)',
-              border: `1px solid ${error ? 'var(--danger)' : 'var(--border)'}`, borderRadius: 8, padding: '8px 10px',
-              resize: 'vertical', outline: 'none',
-            }}
-          />
-          {error && <div style={{ fontSize: 11, color: 'var(--danger)' }}>{error}</div>}
-          {preview && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 8, background: preview.cssVars['--bg'] ?? '#0d0d14', border: '1px solid var(--border)' }}>
-              <div style={{ display: 'flex', gap: 3 }}>
-                {[preview.cssVars['--surface'], preview.cssVars['--accent'], preview.cssVars['--accent2']].map((c, i) => (
-                  <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: c ?? '#333' }} />
-                ))}
-              </div>
-              <span style={{ fontSize: 11, fontWeight: 700, color: preview.cssVars['--text1'] ?? '#fff' }}>{preview.name}</span>
-              <span style={{ fontSize: 9, color: preview.cssVars['--text3'] ?? '#888', marginLeft: 'auto' }}>{t('Preview')}</span>
-            </div>
-          )}
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button onClick={closeForm}
-              style={{ fontSize: 11, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
-              {t('Cancel')}
-            </button>
-            <button onClick={install} disabled={!preview}
-              style={{ fontSize: 11, fontWeight: 700, padding: '6px 14px', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'white', cursor: preview ? 'pointer' : 'default', opacity: preview ? 1 : 0.4 }}>
-              {editingId ? t('Save changes') : t('Add theme')}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <AddCardButton
-          title={t('Add theme')}
-          desc={t('Add your own theme as JSON — template included')}
-          onClick={() => setShowForm(true)}
-          icon={
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/>
-              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.68-.75 1.68-1.68 0-.44-.17-.83-.44-1.13-.27-.29-.43-.68-.43-1.11 0-.93.75-1.68 1.68-1.68H16c3.31 0 6-2.69 6-6 0-4.97-4.5-8.4-10-8.4z"/>
-            </svg>
-          }
+      <AddCardButton
+        title={t('Create theme')}
+        desc={t('Open the interactive editor with a live preview')}
+        onClick={() => setEditorTarget('new')}
+        icon={
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/>
+            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.68-.75 1.68-1.68 0-.44-.17-.83-.44-1.13-.27-.29-.43-.68-.43-1.11 0-.93.75-1.68 1.68-1.68H16c3.31 0 6-2.69 6-6 0-4.97-4.5-8.4-10-8.4z"/>
+          </svg>
+        }
+      />
+
+      {editorTarget && (
+        <ThemeEditorModal
+          initial={editorTarget === 'new' ? undefined : editorTarget}
+          onClose={() => setEditorTarget(null)}
         />
       )}
     </div>

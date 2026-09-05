@@ -149,7 +149,7 @@ export default function AiPanel() {
               </div>
               <button
                 onClick={() => setSetupOpen(true)}
-                style={{ padding: '8px 18px', fontSize: 12, fontWeight: 600, borderRadius: 9, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer' }}
+                style={{ padding: '8px 18px', fontSize: 12, fontWeight: 600, borderRadius: 9, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer' }}
               >
                 {t('Set up AI assistant')}
               </button>
@@ -190,7 +190,7 @@ export default function AiPanel() {
                       alignSelf: isUser ? 'flex-end' : 'flex-start',
                       maxWidth: '88%',
                       fontSize: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                      color: isUser ? 'white' : 'var(--text1)',
+                      color: isUser ? 'var(--on-accent, white)' : 'var(--text1)',
                       background: isUser ? 'var(--accent)' : 'var(--surface2)',
                       border: isUser ? 'none' : '1px solid var(--border)',
                       borderRadius: isUser ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
@@ -235,7 +235,7 @@ export default function AiPanel() {
                   style={{
                     width: 34, height: 34, borderRadius: 10, border: 'none', flexShrink: 0,
                     background: running ? 'var(--accent)' : (!input.trim() ? 'var(--surface2)' : 'var(--accent)'),
-                    color: running ? 'white' : (!input.trim() ? 'var(--text3)' : 'white'),
+                    color: running ? 'var(--on-accent, white)' : (!input.trim() ? 'var(--text3)' : 'var(--on-accent, white)'),
                     cursor: running || input.trim() ? 'pointer' : 'default',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}

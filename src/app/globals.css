@@ -159,7 +159,7 @@ input[type=number] { -moz-appearance: textfield; }
 /* Skip-to-content link for keyboard navigation */
 .skip-link {
   position: fixed; top: -100%; left: 8px; z-index: 9999;
-  padding: 6px 14px; background: var(--accent); color: white;
+  padding: 6px 14px; background: var(--accent); color: var(--on-accent, white);
   border-radius: 0 0 8px 8px; font-size: 13px; font-weight: 600;
   text-decoration: none; transition: top 0.1s;
 }

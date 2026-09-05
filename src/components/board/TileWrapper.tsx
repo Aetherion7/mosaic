@@ -943,7 +943,7 @@ function IconBtn({ children, onClick, title, danger, active, id }: {
       style={{
         width: 24, height: 24, borderRadius: 8, border: 'none', fontSize: 12,
         background: active ? 'var(--accent)' : 'var(--surface2)',
-        color: danger ? 'var(--danger)' : active ? 'white' : 'var(--text2)',
+        color: danger ? 'var(--danger)' : active ? 'var(--on-accent, white)' : 'var(--text2)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         cursor: 'pointer',
       }}

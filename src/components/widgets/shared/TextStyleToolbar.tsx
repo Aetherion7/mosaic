@@ -515,7 +515,7 @@ function FontOption({ label, css, active, onSelect }: {
         fontFamily: css, fontSize: 13,
         padding: '5px 10px', cursor: 'pointer', border: 'none',
         background: active ? 'var(--accent)' : hover ? 'var(--surface2)' : 'transparent',
-        color: active ? 'white' : 'var(--text1)',
+        color: active ? 'var(--on-accent, white)' : 'var(--text1)',
         transition: 'background 0.08s',
       }}
     >
@@ -581,7 +581,7 @@ export function ToolBtn({ children, active, onClick, title }: {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '2px 5px', borderRadius: 5, border: 'none',
         background: active ? 'var(--accent)' : 'transparent',
-        color: active ? 'white' : 'var(--text2)',
+        color: active ? 'var(--on-accent, white)' : 'var(--text2)',
         cursor: 'pointer', minWidth: 22, height: 22,
         transition: 'all 0.12s',
       }}

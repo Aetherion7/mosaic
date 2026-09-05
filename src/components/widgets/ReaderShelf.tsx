@@ -665,7 +665,7 @@ function pillStyle(active: boolean): React.CSSProperties {
     fontSize: 10.5, fontWeight: 600, padding: '4px 10px', borderRadius: 999,
     border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
     background: active ? 'var(--accent)' : 'var(--surface2)',
-    color: active ? 'white' : 'var(--text2)',
+    color: active ? 'var(--on-accent, white)' : 'var(--text2)',
     cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
   }
 }

@@ -428,7 +428,7 @@ function IconCircleBtn({ children, onClick, active, accent, title, id }: {
         width: 36, height: 36, borderRadius: 50,
         border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
         background: active ? (accent ? 'var(--accent)' : 'var(--surface2)') : accent ? 'var(--accent)' : 'var(--surface)',
-        color: accent ? 'white' : active ? 'var(--accent)' : 'var(--text2)',
+        color: accent ? 'var(--on-accent, white)' : active ? 'var(--accent)' : 'var(--text2)',
         cursor: 'pointer', transition: 'all 0.15s',
       }}
     >{children}</button>

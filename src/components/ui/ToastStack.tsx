@@ -58,7 +58,7 @@ export default function ToastStack() {
                   }}
                   style={{
                     padding: '5px 14px', borderRadius: 9, border: 'none',
-                    background: 'var(--accent)', color: 'white',
+                    background: 'var(--accent)', color: 'var(--on-accent, white)',
                     fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0,
                   }}
                 >

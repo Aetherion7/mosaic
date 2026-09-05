@@ -1409,7 +1409,7 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
               title={fileType === 'pdf'
                 ? (showPagePanel ? t('Hide page preview') : t('Show page preview'))
                 : (showPagePanel ? t('Hide chapters') : t('Show chapters'))}
-              style={{ ...iconBtnStyle, flexShrink: 0, background: showPagePanel ? 'var(--accent)' : 'var(--surface2)', color: showPagePanel ? 'white' : 'var(--text2)', borderColor: showPagePanel ? 'var(--accent)' : 'var(--border)' }}
+              style={{ ...iconBtnStyle, flexShrink: 0, background: showPagePanel ? 'var(--accent)' : 'var(--surface2)', color: showPagePanel ? 'var(--on-accent, white)' : 'var(--text2)', borderColor: showPagePanel ? 'var(--accent)' : 'var(--border)' }}
             >
               <IcoBurger />
             </button>
@@ -1467,7 +1467,7 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
           <button
             onClick={() => setShowSidebar(s => !s)}
             title={showSidebar ? t('Hide highlights') : t('Show highlights')}
-            style={{ ...iconBtnStyle, background: showSidebar ? 'var(--accent)' : 'var(--surface2)', color: showSidebar ? 'white' : 'var(--text2)', borderColor: showSidebar ? 'var(--accent)' : 'var(--border)' }}
+            style={{ ...iconBtnStyle, background: showSidebar ? 'var(--accent)' : 'var(--surface2)', color: showSidebar ? 'var(--on-accent, white)' : 'var(--text2)', borderColor: showSidebar ? 'var(--accent)' : 'var(--border)' }}
           >
             <IcoHighlight />
           </button>
@@ -1578,7 +1578,7 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
               <button
                 onClick={toggleTwoPageSpread}
                 title={twoPageSpread ? t('Switch to single page') : t('Switch to two-page spread')}
-                style={{ ...iconBtnStyle, background: twoPageSpread ? 'var(--accent)' : 'var(--surface2)', color: twoPageSpread ? 'white' : 'var(--text2)', borderColor: twoPageSpread ? 'var(--accent)' : 'var(--border)' }}
+                style={{ ...iconBtnStyle, background: twoPageSpread ? 'var(--accent)' : 'var(--surface2)', color: twoPageSpread ? 'var(--on-accent, white)' : 'var(--text2)', borderColor: twoPageSpread ? 'var(--accent)' : 'var(--border)' }}
               >
                 <IcoSpread />
               </button>
@@ -1747,7 +1747,7 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
                             <button
                               onClick={e => { e.stopPropagation(); setLinkingHighlightId(linkingHighlightId === h.id ? null : h.id) }}
                               title={t('Link to note')}
-                              style={{ width: 14, height: 14, borderRadius: 4, background: linkingHighlightId === h.id ? 'var(--accent)' : 'none', border: 'none', color: linkingHighlightId === h.id ? 'white' : 'var(--text3)', fontSize: 9, lineHeight: 1, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              style={{ width: 14, height: 14, borderRadius: 4, background: linkingHighlightId === h.id ? 'var(--accent)' : 'none', border: 'none', color: linkingHighlightId === h.id ? 'var(--on-accent, white)' : 'var(--text3)', fontSize: 9, lineHeight: 1, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
                               <IcoLink />
                             </button>

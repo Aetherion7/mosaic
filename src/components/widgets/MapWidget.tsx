@@ -767,7 +767,7 @@ export default function MapWidget({ widget }: { widget: Widget }) {
             }}
           />
           <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-            <button onClick={saveMarkerLabel} style={{ flex: 1, fontSize: 11, fontWeight: 700, padding: '5px 0', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer' }}>
+            <button onClick={saveMarkerLabel} style={{ flex: 1, fontSize: 11, fontWeight: 700, padding: '5px 0', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer' }}>
               {t('Save')}
             </button>
             <button onClick={() => deleteMarker(markerPanel.id)} style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, border: '1px solid rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.1)', color: '#ef4444', cursor: 'pointer' }}>
@@ -802,7 +802,7 @@ export default function MapWidget({ widget }: { widget: Widget }) {
             </button>
           )}
           {routePts.length >= 2 && (
-            <button onClick={commitRoute} style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer' }}>
+            <button onClick={commitRoute} style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer' }}>
               {t('Save')}
             </button>
           )}
@@ -818,7 +818,7 @@ export default function MapWidget({ widget }: { widget: Widget }) {
       {tool !== 'none' && isEdit && (
         <div style={{
           position: 'absolute', bottom: 10, right: 8, zIndex: 1000,
-          background: 'var(--accent)', color: 'white',
+          background: 'var(--accent)', color: 'var(--on-accent, white)',
           fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
           pointerEvents: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
         }}>
@@ -858,7 +858,7 @@ function ToolBtn({ children, onClick, active, title, disabled, danger }: {
         borderRadius: 6,
         border: active ? '1.5px solid var(--accent)' : '1px solid var(--border)',
         background: active ? 'var(--accent)' : 'var(--surface2)',
-        color: active ? 'white' : danger ? '#ef4444' : 'var(--text2)',
+        color: active ? 'var(--on-accent, white)' : danger ? '#ef4444' : 'var(--text2)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.3 : 1,

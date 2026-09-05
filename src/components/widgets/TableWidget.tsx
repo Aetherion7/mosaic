@@ -1065,7 +1065,7 @@ export default function TableWidget({ widget }: { widget: Widget }) {
                           const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
                           setFilterDrop({ col: c, x: rect.left, y: rect.bottom + 2 })
                         }}
-                        style={{ position:'absolute', right:2, top:'50%', transform:'translateY(-50%)', background: activeFilters[c] ? 'var(--accent)' : 'var(--surface)', border:'none', borderRadius:3, padding:'1px 2px', cursor:'pointer', color: activeFilters[c] ? 'white' : 'var(--text3)', display:'flex', alignItems:'center' }}
+                        style={{ position:'absolute', right:2, top:'50%', transform:'translateY(-50%)', background: activeFilters[c] ? 'var(--accent)' : 'var(--surface)', border:'none', borderRadius:3, padding:'1px 2px', cursor:'pointer', color: activeFilters[c] ? 'var(--on-accent, white)' : 'var(--text3)', display:'flex', alignItems:'center' }}
                         title={activeFilters[c] ? `${t('Active filter')}: ${activeFilters[c]}` : t('Filter column')}
                       >
                         <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><path d="M0 1h8L5 5v3L3 7V5L0 1z"/></svg>
@@ -1233,7 +1233,7 @@ function TBtn({ active, onClick, children, title, small }: {
       padding: small ? '2px 4px' : '2px 5px', borderRadius:5, border:'none',
       height:22, minWidth: small ? 20 : 22, fontSize:11,
       background: active ? 'var(--accent)' : 'transparent',
-      color: active ? 'white' : 'var(--text2)',
+      color: active ? 'var(--on-accent, white)' : 'var(--text2)',
       cursor:'pointer', flexShrink:0,
     }}>{children}</button>
   )

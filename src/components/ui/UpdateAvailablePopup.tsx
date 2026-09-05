@@ -100,7 +100,7 @@ export default function UpdateAvailablePopup() {
             </a>
             <button onClick={installNow} style={{
               fontSize: 11.5, fontWeight: 700, padding: '9px 18px', borderRadius: 999, whiteSpace: 'nowrap', flexShrink: 0,
-              border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer',
+              border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
               boxShadow: '0 4px 18px color-mix(in srgb, var(--accent) 45%, transparent)',
             }}>
               {t('Update now')}

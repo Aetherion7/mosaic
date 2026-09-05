@@ -162,7 +162,7 @@ export default function WidgetStylePanel() {
                         width: 24, height: 24, borderRadius: 6,
                         border: '1px solid var(--border)',
                         background: s.gradientDir === d.value ? 'var(--accent)' : 'var(--surface2)',
-                        color: s.gradientDir === d.value ? 'white' : 'var(--text2)',
+                        color: s.gradientDir === d.value ? 'var(--on-accent, white)' : 'var(--text2)',
                         fontSize: 11, cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>{d.label}</button>
@@ -210,7 +210,7 @@ export default function WidgetStylePanel() {
                   flex: 1, padding: '5px 0', fontSize: 10, fontWeight: 600, borderRadius: 8,
                   border: `1px solid ${s.shadow === sh ? 'var(--accent)' : 'var(--border)'}`,
                   background: s.shadow === sh ? 'var(--accent)' : 'var(--surface2)',
-                  color: s.shadow === sh ? 'white' : 'var(--text3)',
+                  color: s.shadow === sh ? 'var(--on-accent, white)' : 'var(--text3)',
                   cursor: 'pointer', transition: 'all 0.12s',
                 }}>{sh === 'none' ? '—' : sh.toUpperCase()}</button>
               ))}
@@ -450,6 +450,6 @@ const tabBtn = (active: boolean): React.CSSProperties => ({
   padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 50,
   border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
   background: active ? 'var(--accent)' : 'var(--surface2)',
-  color: active ? 'white' : 'var(--text2)',
+  color: active ? 'var(--on-accent, white)' : 'var(--text2)',
   cursor: 'pointer', transition: 'all 0.12s',
 })

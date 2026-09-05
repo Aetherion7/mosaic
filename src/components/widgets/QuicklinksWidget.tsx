@@ -146,7 +146,7 @@ export default function QuicklinksWidget({ widget }: { widget: Widget }) {
             title={t('Add link')}
             style={{
               flexShrink: 0, width: 32, height: 25, borderRadius: 7,
-              border: 'none', background: 'var(--accent)', color: 'white',
+              border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)',
               cursor: domainOf(normalizeUrl(urlInput)) ? 'pointer' : 'default',
               opacity: domainOf(normalizeUrl(urlInput)) ? 1 : 0.4,
               display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,

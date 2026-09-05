@@ -241,14 +241,15 @@ h2 { font-family: 'Guavine', serif; font-size: clamp(30px, 4vw, 42px); font-weig
 .car-slide p { font-size: 13.5px; color: var(--text2); line-height: 1.65; }
 .car-arrow {
   position: absolute; top: 50%; transform: translateY(-50%);
-  width: 44px; height: 44px; border-radius: 999px; padding: 0;
+  width: 32px; height: 44px; padding: 0;
   display: flex; align-items: center; justify-content: center;
-  background: var(--surface2); border: 1px solid var(--border); color: var(--text1);
-  cursor: pointer; transition: background .15s ease, border-color .15s ease, transform .15s ease;
+  background: none; border: none; color: var(--text2);
+  cursor: pointer; transition: color .15s ease, transform .15s ease;
   z-index: 5;
 }
-.car-arrow:hover { background: var(--surface3); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
-.car-arrow:active { transform: translateY(-50%) scale(.92); }
+.car-arrow svg { width: 22px; height: 22px; stroke-width: 2; }
+.car-arrow:hover { color: var(--accent); }
+.car-arrow:active { transform: translateY(-50%) scale(.85); }
 .car-prev { left: 0; }
 .car-next { right: 0; }
 @media (prefers-reduced-motion: reduce) {
@@ -447,11 +448,30 @@ footer .flinks a:hover { color: var(--text1); }
   header nav a:not(.btn) { display: none; }
   .hero { padding: 64px 0 40px; }
   section { padding: 56px 0; }
-  .carousel, .shot-carousel { padding: 0 8px; }
-  .car-arrow { width: 36px; height: 36px; }
-  .car-track { height: 340px; }
+  /* Side padding must clear the arrow's own width or it sits on top of the
+     card text instead of beside it — the old 8px was sized for the previous
+     circular arrow buttons' hit-testing quirks, not for how wide the arrow
+     itself actually is, and never accounted for bare (backgroundless)
+     arrows overlapping the slide underneath them. Card padding also needs
+     its own mobile value: 30px a side is fine on a 560px desktop card, but
+     left unchanged it eats a third of a ~300px mobile card's width on top
+     of the outer padding, squeezing body text into a narrow, heavily-
+     wrapped column that reads as cramped even with zero actual overlap. */
+  .carousel, .shot-carousel { padding: 0 26px; }
+  .car-arrow { width: 22px; }
+  .car-arrow svg { width: 18px; height: 18px; }
+  .car-slide { padding: 20px 18px; }
+  .car-track { height: 380px; }
+  .shot-track { height: 420px; }
+  .shot-slide img { height: 190px; }
+}
+
+@media (max-width: 480px) {
+  .carousel, .shot-carousel { padding: 0 20px; }
+  .car-slide { padding: 18px 16px; }
+  .car-track { height: 400px; }
   .shot-track { height: 400px; }
-  .shot-slide img { height: 220px; }
+  .shot-slide img { height: 170px; }
 }
 </style>
 </head>
@@ -487,7 +507,7 @@ footer .flinks a:hover { color: var(--text1); }
 <main>
   <section class="hero" id="hero">
     <div class="wrap">
-      <span class="pill hero-anim"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="6.5" rx="1.3"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg> Local-first · no account · no server</span>
+      <span class="pill hero-anim"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="6.5" rx="1.3"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg> Open-source · Local-first · no account · no server</span>
       <h1 class="hero-anim">A personal dashboard<br>you actually <em>own</em>.</h1>
       <p class="sub hero-anim">
         Arrange tasks, notes, a calendar, trackers, a reader, and more onto boards that look and work
