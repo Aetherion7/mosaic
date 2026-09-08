@@ -369,7 +369,7 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
   onDeleteBook: () => void
 }) {
   const t = useT()
-  const d = book as ReaderBook & { scrollDir?: ScrollDir }
+  const d = book
   const updateWidget = useBoardStore(s => s.updateWidget)
   const mode         = useUIStore(s => s.mode)
   // Das Board wird per CSS transform:scale gezoomt (InfiniteCanvas.tsx) — anders
@@ -558,6 +558,21 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d.currentPage])
+
+  // Board-Kachel und Fokus-Overlay sind zwei unabhängig gemountete Instanzen
+  // desselben Buchs — ohne diese Re-Sync-Effekte würde ein Scrollrichtungs-
+  // oder Zweiseiten-Wechsel in der einen die andere nicht erreichen.
+  useEffect(() => {
+    if (fileType === 'epub') return   // EPUB erzwingt immer horizontal, s. Init oben
+    const stored = d.scrollDir ?? 'vertical'
+    if (stored !== scrollDir) setScrollDir(stored)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.scrollDir, fileType])
+  useEffect(() => {
+    const stored = !!d.twoPageSpread
+    if (stored !== twoPageSpread) setTwoPageSpread(stored)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.twoPageSpread])
 
   function patch(partial: Partial<ReaderBook>) {
     patchBook(partial)
@@ -934,7 +949,7 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
   function toggleScrollDir() {
     const next: ScrollDir = scrollDir === 'vertical' ? 'horizontal' : 'vertical'
     setScrollDir(next)
-    patch({ scrollDir: next } as Partial<ReaderBook>)
+    patch({ scrollDir: next })
   }
 
   function toggleTwoPageSpread() {

@@ -207,8 +207,18 @@ export default function TilePicker() {
                   <SearchBar search={search} setSearch={setSearch} autoFocus />
                 </div>
 
-                {/* Scrollable grid area */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px' }}>
+                {/* Scrollable grid area — top edge fades out instead of hard-
+                    clipping whatever row has scrolled up under the search
+                    bar (mask fades actual pixels, so it looks right against
+                    any theme's popover background without hardcoding a color).
+                    The matching paddingTop gives the fade a blank buffer to
+                    dissolve into when not scrolled, instead of always
+                    shaving the top edge off the very first row. */}
+                <div style={{
+                  flex: 1, overflowY: 'auto', padding: '14px 24px 24px',
+                  maskImage: 'linear-gradient(to bottom, transparent, black 14px)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 14px)',
+                }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
                     {filteredTiles.map(t => (
                       <TileCard key={t.type} icon={t.icon} label={t.label} desc={t.desc}

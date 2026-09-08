@@ -44,6 +44,11 @@ export interface TaskData {
   viewMode?:  'weekly' | 'daily'   // Mo–So-Liste vs. Checkpoint-Roadmap für heute
   // Tagesansicht: Zickzack-Pfad (Pathways-artig) vs. gerade Spalte nach unten
   roadmapLayout?: 'zigzag' | 'linear'
+  // Statistik-Chart-Ansicht + Wochen-Offset — persistiert + re-synced, damit
+  // Board-Kachel und Fokus-Overlay (zwei unabhängig gemountete Instanzen)
+  // dieselbe Ansicht zeigen statt auseinanderzulaufen.
+  chartMode?:  'kachel' | 'balken' | 'verlauf'
+  weekOffset?: number
 }
 
 // Font/color/shadow/stroke fields are optional — pre-existing notes on
@@ -91,7 +96,10 @@ export interface TimerData {
   customSounds?: TimerCustomSound[]
 }
 
-export interface WaterData { goalMl: number; loggedMl: number; mlPerSection: number; lastDate?: string; dailyLog?: Record<string, number>; statsOpen?: boolean }
+// weekOffset: persisted so a simultaneously-open Focus Mode mount (s.
+// FocusOverlay.tsx) shows the same stats week as the board tile instead of
+// each independently defaulting back to "this week".
+export interface WaterData { goalMl: number; loggedMl: number; mlPerSection: number; lastDate?: string; dailyLog?: Record<string, number>; statsOpen?: boolean; weekOffset?: number }
 
 // ─── Sleep tracker ────────────────────────────────────────────────────────────
 export interface SleepEntry { bed: string; wake: string }   // HH:MM
@@ -141,11 +149,17 @@ export interface CalendarData {
   events: CalendarEvent[]
   // Zuletzt angezeigter Ausschnitt (Monat/Woche/Tag) — persistiert, damit ein
   // zweites gleichzeitiges Mounting desselben Widgets (Fokus-Modus) exakt
-  // denselben Ausschnitt zeigt statt bei "heute" neu zu starten.
-  viewYear?:  number
-  viewMonth?: number
-  weekStart?: string   // YYYY-MM-DD, bereits auf Montag normalisiert
-  dayDate?:   string   // YYYY-MM-DD
+  // denselben Ausschnitt zeigt statt bei "heute" neu zu starten. Live-Sync
+  // zwischen beiden Instanzen läuft über CalendarWidget's eigene Re-Sync-
+  // Effekte (s. dort) — reines Persistieren allein reicht nicht, weil
+  // useState's Lazy-Initializer nur beim Mounten einmal liest.
+  calView?:      'month' | 'week' | 'day'
+  viewYear?:     number
+  viewMonth?:    number
+  weekStart?:    string   // YYYY-MM-DD, bereits auf Montag normalisiert
+  dayDate?:      string   // YYYY-MM-DD
+  selectedDate?: string | null   // YYYY-MM-DD, im Monatsraster aufgeklappter Tag
+  gridScrollTop?: number
 }
 
 // ─── Chart widget ─────────────────────────────────────────────────────────────
@@ -263,6 +277,10 @@ export interface ReaderBook {
   epubLocationChars?: number  // Granularität, mit der epubLocationsRef erzeugt wurde — bei Abweichung vom aktuellen Wert wird neu generiert
   totalPages?:   number   // gecachter Nenner für die Fortschritts-% — beim ersten Öffnen gesetzt
   twoPageSpread?: boolean
+  // PDF-Scrollrichtung — bei EPUB wird dieser Wert ignoriert (dort immer
+  // horizontal/paginiert erzwungen, s. ReaderWidget). Muss re-synced werden:
+  // Board-Kachel und Fokus-Overlay sind zwei unabhängig gemountete Instanzen.
+  scrollDir?:    'vertical' | 'horizontal'
   category?:     string   // freier Text, eine Kategorie pro Buch (v1 — kein Mehrfach-Tag)
   addedAt:       number
   lastOpenedAt?: number
@@ -301,10 +319,52 @@ export interface DrawElement {
   fontSize?: number
   fillImageUrl?: string
   brushType?: string
+  // Flood fill captures a raster snapshot of the canvas AS DISPLAYED at the
+  // moment it's created (it has to — it's filling contiguous rendered
+  // pixels, not a vector shape), so unlike every other element type here,
+  // its stored image is intrinsically tied to whatever pan/zoom was active
+  // right then. Recorded so DrawboardWidget's render() can compensate and
+  // redraw the image at the correct LOGICAL position/scale under whatever
+  // the CURRENT pan/zoom is, instead of always stamping it back at a fixed
+  // screen position — that mismatch is what made filled areas visibly
+  // drift out of place while everything else (drawn as vectors, always
+  // transformed by the current pan/zoom) tracked correctly.
+  fillPanX?: number
+  fillPanY?: number
+  fillScale?: number
+  // Separate fill/background color from `color` (stroke) — undefined means
+  // "use `color`" (legacy behavior, keeps old boards rendering identically).
+  bgColor?: string
+  // undefined = today's only look: a flat translucent fill in `color`.
+  fillStyle?: 'hachure' | 'cross-hatch' | 'solid'
+  // undefined = solid (today's only option).
+  strokeStyle?: 'solid' | 'dashed' | 'dotted'
+  // rect only; undefined/false = sharp corners (today's only option).
+  roundCorners?: boolean
 }
 
 export interface DrawboardData {
   elements: DrawElement[]
+  // View state (zoom/pan/active tool/etc.) — kept in sync between a widget's
+  // normal board-tile mount and a simultaneously-open Focus Mode mount (two
+  // fully independent component instances, s. FocusOverlay.tsx) via
+  // DrawboardWidget's own saveView()/re-sync effects. All optional: absent
+  // on boards saved before this existed, in which case DrawboardWidget just
+  // falls back to its own built-in defaults.
+  zoom?:       number
+  panX?:       number
+  panY?:       number
+  tool?:       string
+  color?:      string
+  strokePct?:  number
+  opacityPct?: number
+  filled?:     boolean
+  canvasBg?:   string
+  brushType?:  string
+  bgColor?:      string
+  fillStyle?:    string
+  strokeStyle?:  string
+  roundCorners?: boolean
 }
 
 export interface HtmlWidgetData {

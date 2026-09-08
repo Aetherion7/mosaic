@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useBoardStore } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { todayStr, getWeekDates, weekRangeLabel } from '@/lib/dates'
@@ -34,6 +34,18 @@ export default function SleepWidget({ widget }: { widget: Widget }) {
 
   // s. types/index.ts SleepData.weekOffset — persistiert für den Fokus-Modus
   const [weekOffset, setWeekOffset] = useState(() => d.weekOffset ?? 0)
+  // useState's Lazy-Initializer liest widget.data nur einmal beim Mounten —
+  // ohne diesen Re-Sync-Effekt blieb ein zweites gleichzeitiges Mounting
+  // (Board-Kachel + Fokus-Modus, s. FocusOverlay.tsx) beim Umschalten der
+  // Woche in der jeweils ANDEREN Instanz auf dem alten Stand stehen, obwohl
+  // der Wert im Store längst aktuell war. Reiner Wertevergleich, kein
+  // Zurückschreiben hier — kann sich also nicht mit setToday()/den
+  // Wochen-Buttons gegenseitig aufschaukeln.
+  useEffect(() => {
+    const next = d.weekOffset ?? 0
+    if (next !== weekOffset) setWeekOffset(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.weekOffset])
 
   const goalH = d.goalH ?? 8
   const log   = d.log ?? {}

@@ -109,7 +109,16 @@ export default function WaterWidget({ widget }: { widget: Widget }) {
   const mode = useUIStore(s => s.mode)
   const d    = widget.data as WaterData
 
-  const [weekOffset, setWeekOffset] = useState(0)
+  // Persisted (like SleepWidget/CalendarWidget's own view state) so a
+  // simultaneously-open Focus Mode mount (s. FocusOverlay.tsx — a second,
+  // fully independent instance of this same component) shows the same week
+  // instead of silently drifting back to "this week" on its own.
+  const [weekOffset, setWeekOffset] = useState(() => d.weekOffset ?? 0)
+  useEffect(() => {
+    const next = d.weekOffset ?? 0
+    if (next !== weekOffset) setWeekOffset(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.weekOffset])
 
   useEffect(() => {
     function checkReset() {
@@ -249,7 +258,7 @@ export default function WaterWidget({ widget }: { widget: Widget }) {
         {statsOpen && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', padding: '0 6px 4px', gap: 2, justifyContent: 'center' }}>
-              <button onPointerDown={e => e.stopPropagation()} onClick={() => setWeekOffset(o => o - 1)}
+              <button onPointerDown={e => e.stopPropagation()} onClick={() => { const next = weekOffset - 1; setWeekOffset(next); updateTaskData(widget.id, { weekOffset: next }) }}
                 title={t('Previous week')}
                 style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
                 <svg width="7" height="7" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="7,1 3,5 7,9"/></svg>
@@ -257,7 +266,7 @@ export default function WaterWidget({ widget }: { widget: Widget }) {
               <span style={{ fontSize: 8, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', textAlign: 'center', minWidth: 68 }}>
                 {weekRangeLabel(weekOffset, t)}
               </span>
-              <button onPointerDown={e => e.stopPropagation()} onClick={() => setWeekOffset(o => Math.min(0, o + 1))} disabled={weekOffset >= 0}
+              <button onPointerDown={e => e.stopPropagation()} onClick={() => { const next = Math.min(0, weekOffset + 1); setWeekOffset(next); updateTaskData(widget.id, { weekOffset: next }) }} disabled={weekOffset >= 0}
                 title={t('Next week')}
                 style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: weekOffset >= 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, opacity: weekOffset >= 0 ? 0.25 : 1 }}>
                 <svg width="7" height="7" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3,1 7,5 3,9"/></svg>

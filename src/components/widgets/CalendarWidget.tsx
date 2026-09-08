@@ -276,10 +276,6 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
     const v = widget.data.calView as string | undefined
     return (v === 'week' || v === 'day') ? v : 'month'
   })
-  function changeCalView(v: 'month'|'week'|'day') {
-    setCalView(v)
-    updateWidget(widget.id, { data: { ...widget.data, calView: v } })
-  }
   const [hourH,   setHourH]   = useState(HOUR_H_DEF)
   const [viewMenuOpen, setViewMenuOpen] = useState(false)
 
@@ -298,7 +294,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
   // neu zu starten, sobald man in eine andere Woche/Monat/Tag navigiert hat.
   const [viewYear,     setViewYear]     = useState(() => (widget.data.viewYear as number | undefined) ?? today.getFullYear())
   const [viewMonth,    setViewMonth]    = useState(() => (widget.data.viewMonth as number | undefined) ?? today.getMonth())
-  const [selectedDate, setSelectedDate] = useState<string|null>(null)
+  const [selectedDate, setSelectedDate] = useState<string|null>(() => (widget.data.selectedDate as string | undefined) ?? null)
 
   // Week state
   const [weekStart, setWeekStart] = useState(() => {
@@ -311,6 +307,49 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
     const s = widget.data.dayDate as string | undefined
     return s ? new Date(s + 'T00:00:00') : new Date(today)
   })
+
+  // The above are only ever RE-READ from widget.data at mount (useState's
+  // lazy initializer runs once) — so while the *value* was already being
+  // persisted correctly, the board tile and a simultaneously-open Focus Mode
+  // mount (two fully independent instances of this same component, s.
+  // FocusOverlay.tsx) never actually stayed in sync after that: navigating
+  // months in one left the other showing whatever it had at its own mount
+  // time. This is the reported bug. Fix: explicit effects that re-read from
+  // widget.data whenever it changes and adopt the new value locally — plain
+  // value-equality checks, no write-back inside these effects, so they only
+  // ever flow store→local and can't ping-pong with the write-side handlers
+  // below (contrast with NoteWidget.tsx's TipTap sync, which has to guard
+  // against exactly that because it both reads AND writes in one effect).
+  useEffect(() => {
+    const v = widget.data.calView as string | undefined
+    const next = (v === 'week' || v === 'day') ? v : 'month'
+    if (next !== calView) setCalView(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widget.data.calView])
+  useEffect(() => {
+    const y = (widget.data.viewYear as number | undefined) ?? today.getFullYear()
+    const m = (widget.data.viewMonth as number | undefined) ?? today.getMonth()
+    if (y !== viewYear) setViewYear(y)
+    if (m !== viewMonth) setViewMonth(m)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widget.data.viewYear, widget.data.viewMonth])
+  useEffect(() => {
+    const next = (widget.data.selectedDate as string | undefined) ?? null
+    if (next !== selectedDate) setSelectedDate(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widget.data.selectedDate])
+  useEffect(() => {
+    const s = widget.data.weekStart as string | undefined
+    const next = s ? getMonday(new Date(s + 'T00:00:00')) : getMonday(today)
+    if (next.getTime() !== weekStart.getTime()) setWeekStart(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widget.data.weekStart])
+  useEffect(() => {
+    const s = widget.data.dayDate as string | undefined
+    const next = s ? new Date(s + 'T00:00:00') : new Date(today)
+    if (next.getTime() !== dayDate.getTime()) setDayDate(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widget.data.dayDate])
 
   // Drag (week view — create new event by dragging empty cells)
   const draggingRef    = useRef(false)
@@ -566,19 +605,28 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
   // updateWidgetQuiet (nicht updateWidget): reines Blättern erzeugt weder
   // einen Undo-Schritt noch markiert es das Board als bearbeitet — gleiche
   // Kategorie wie die aktuelle Seite im ReaderWidget.
+  //
+  // Also persists selectedDate now (previously pure local state, never
+  // written to widget.data at all) — same dual-mount reasoning as the view
+  // fields above: which date is expanded/selected should match between the
+  // board tile and a simultaneously-open Focus Mode instance too.
+  function selectDate(ds: string | null) {
+    setSelectedDate(ds)
+    updateWidgetQuiet(widget.id, { data: { ...widget.data, selectedDate: ds } })
+  }
   function prevMonth() {
     const newMonth = viewMonth === 0 ? 11 : viewMonth - 1
     const newYear  = viewMonth === 0 ? viewYear - 1 : viewYear
     setViewMonth(newMonth); setViewYear(newYear)
     setSelectedDate(null)
-    updateWidgetQuiet(widget.id, { data: { ...widget.data, viewYear: newYear, viewMonth: newMonth } })
+    updateWidgetQuiet(widget.id, { data: { ...widget.data, viewYear: newYear, viewMonth: newMonth, selectedDate: null } })
   }
   function nextMonth() {
     const newMonth = viewMonth === 11 ? 0 : viewMonth + 1
     const newYear  = viewMonth === 11 ? viewYear + 1 : viewYear
     setViewMonth(newMonth); setViewYear(newYear)
     setSelectedDate(null)
-    updateWidgetQuiet(widget.id, { data: { ...widget.data, viewYear: newYear, viewMonth: newMonth } })
+    updateWidgetQuiet(widget.id, { data: { ...widget.data, viewYear: newYear, viewMonth: newMonth, selectedDate: null } })
   }
 
   // ─── Week helpers ─────────────────────────────────────────────────────────
@@ -965,7 +1013,17 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
                 {(['month','week','day'] as const).map(v => (
                   <button
                     key={v}
-                    onClick={() => { changeCalView(v); setSelectedDate(null); setDragState(null); setPopup(null); setViewMenuOpen(false) }}
+                    onClick={() => {
+                      // One combined store write, not changeCalView() + selectDate()
+                      // back to back: each of those spreads widget.data from this
+                      // render's closure, so calling both in the same handler would
+                      // have the second call's spread silently clobber the first
+                      // call's change (updateWidget/updateWidgetQuiet replace `data`
+                      // wholesale, they don't deep-merge across separate calls).
+                      setCalView(v); setSelectedDate(null)
+                      setDragState(null); setPopup(null); setViewMenuOpen(false)
+                      updateWidget(widget.id, { data: { ...widget.data, calView: v, selectedDate: null } })
+                    }}
                     style={{
                       display: 'flex', alignItems: 'center',
                       fontSize: 10, fontWeight: calView === v ? 700 : 500, padding: '5px 8px', borderRadius: 7,
@@ -1051,12 +1109,19 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
             const isSel   = ds === selectedDate
             const dots    = eventsByDate.get(ds) ?? []
             return (
-              <button key={day} onClick={() => { if (mode === 'view') return; setSelectedDate(s => s===ds ? null : ds) }} style={{
+              <button key={day} onClick={() => { if (mode === 'view') return; selectDate(selectedDate === ds ? null : ds) }} style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                 padding: '3px 1px', borderRadius: 7, border: 'none',
                 background: isToday ? 'var(--accent)' : isSel ? 'var(--surface2)' : 'none',
                 cursor: mode === 'view' ? 'default' : 'pointer',
-                outline: isSel && !isToday ? '1px solid var(--accent)' : 'none', minHeight: 28,
+                // inset box-shadow instead of `outline`: an outline is painted
+                // OUTSIDE the element's own box, in a way some browsers/GPU
+                // compositors clip inconsistently against an ancestor's
+                // overflow:hidden for cells flush against the top/bottom row
+                // of this grid — an inset shadow is part of the normal box
+                // paint (like a border), so it can't be clipped independently
+                // of the cell itself.
+                boxShadow: isSel && !isToday ? 'inset 0 0 0 1px var(--accent)' : 'none', minHeight: 28,
               }}>
                 <span style={{ fontSize: 11, fontWeight: isToday ? 700 : 400, color: isToday ? 'var(--on-accent, white)' : 'var(--text1)', lineHeight: 1 }}>{day}</span>
                 {dots.length > 0 && (

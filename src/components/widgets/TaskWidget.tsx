@@ -152,9 +152,23 @@ export default function TaskWidget({ widget, readOnly }: { widget: Widget; readO
   const showStats = useSettings(st => !st.statsDisabledTypes.includes('task'))
 
   const [editingId,    setEditingId]    = useState<string | null>(null)
-  const [chartMode,    setChartMode]    = useState<ChartMode>('kachel')
-  const [weekOffset,   setWeekOffset]   = useState(0)
+  const [chartMode,    setChartMode]    = useState<ChartMode>(() => d.chartMode ?? 'kachel')
+  const [weekOffset,   setWeekOffset]   = useState(() => d.weekOffset ?? 0)
   const [viewMenuOpen, setViewMenuOpen] = useState(false)
+
+  // Board-Kachel und Fokus-Overlay sind zwei unabhängig gemountete Instanzen
+  // desselben Widgets — ohne diese Re-Sync-Effekte würde die jeweils andere
+  // Instanz nichts von Chart-Wechsel/Wochennavigation mitbekommen.
+  useEffect(() => {
+    const next = d.chartMode ?? 'kachel'
+    if (next !== chartMode) setChartMode(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.chartMode])
+  useEffect(() => {
+    const next = d.weekOffset ?? 0
+    if (next !== weekOffset) setWeekOffset(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.weekOffset])
 
   function patch(p: Record<string, unknown>) { updateTaskData(widget.id, p) }
 
@@ -394,7 +408,7 @@ export default function TaskWidget({ widget, readOnly }: { widget: Widget; readO
                   { value: 'verlauf', icon: <LineIcon />, title: t('Trend') },
                 ]}
                 value={chartMode}
-                onChange={setChartMode}
+                onChange={v => { setChartMode(v); patch({ chartMode: v }) }}
                 slotW={22} slotH={18} radius={4} soft
               />
             </div>
@@ -402,7 +416,7 @@ export default function TaskWidget({ widget, readOnly }: { widget: Widget; readO
             {/* Week navigation */}
             {chartMode !== 'verlauf' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
-                <button onPointerDown={e => e.stopPropagation()} onClick={() => setWeekOffset(o => o - 1)}
+                <button onPointerDown={e => e.stopPropagation()} onClick={() => { const next = weekOffset - 1; setWeekOffset(next); patch({ weekOffset: next }) }}
                   title={t('Previous week')}
                   style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
                   <svg width="7" height="7" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="7,1 3,5 7,9"/></svg>
@@ -410,7 +424,7 @@ export default function TaskWidget({ widget, readOnly }: { widget: Widget; readO
                 <span style={{ fontSize: 8, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', textAlign: 'center', minWidth: 68 }}>
                   {weekRangeLabel(weekOffset, t)}
                 </span>
-                <button onPointerDown={e => e.stopPropagation()} onClick={() => setWeekOffset(o => Math.min(0, o + 1))} disabled={weekOffset >= 0}
+                <button onPointerDown={e => e.stopPropagation()} onClick={() => { const next = Math.min(0, weekOffset + 1); setWeekOffset(next); patch({ weekOffset: next }) }} disabled={weekOffset >= 0}
                   title={t('Next week')}
                   style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: weekOffset >= 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, opacity: weekOffset >= 0 ? 0.25 : 1 }}>
                   <svg width="7" height="7" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3,1 7,5 3,9"/></svg>
