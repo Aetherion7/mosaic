@@ -6,7 +6,7 @@ import { useAiStore, type AiChatItem } from '@/store/aiStore'
 import { useSettings } from '@/store/settingsStore'
 import { useT } from '@/hooks/useT'
 import SettingsModal from '@/components/ui/SettingsModal'
-import { IconSparkle, renderInlineMd } from '@/components/ui/aiShared'
+import { IconSparkle, renderInlineMd, MessageActions } from '@/components/ui/aiShared'
 
 // Aufeinanderfolgende Aktions-Chips zu einer umbrechenden Reihe bündeln,
 // statt jeden Chip in eine eigene Zeile zu setzen
@@ -40,6 +40,11 @@ export default function AiPanel() {
   const send      = useAiStore(s => s.send)
   const stop      = useAiStore(s => s.stop)
   const clear     = useAiStore(s => s.clear)
+  const regenerate = useAiStore(s => s.regenerate)
+  // Only the single most recent assistant reply gets a regenerate button —
+  // redoing an older one would silently discard everything the user and
+  // assistant said after it, which isn't what "regenerate" should imply.
+  const lastAssistantId = items.filter(i => i.kind === 'assistant').at(-1)?.id
   // Konfiguriert = Schlüssel vorhanden ODER eigener OpenAI-kompatibler
   // Endpunkt (lokale Server wie Ollama brauchen keinen Schlüssel)
   const hasKey    = useSettings(s => !!s.aiApiKey.trim() || (s.aiProvider === 'openai' && !!s.aiBaseUrl.trim()))
@@ -186,17 +191,20 @@ export default function AiPanel() {
                   }
                   const isUser = item.kind === 'user'
                   return (
-                    <div key={item.id} style={{
-                      alignSelf: isUser ? 'flex-end' : 'flex-start',
-                      maxWidth: '88%',
-                      fontSize: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                      color: isUser ? 'var(--on-accent, white)' : 'var(--text1)',
-                      background: isUser ? 'var(--accent)' : 'var(--surface2)',
-                      border: isUser ? 'none' : '1px solid var(--border)',
-                      borderRadius: isUser ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
-                      padding: '8px 11px',
-                    }}>
-                      {isUser ? item.text : renderInlineMd(item.text)}
+                    <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 3, alignSelf: isUser ? 'flex-end' : 'flex-start', maxWidth: '88%' }}>
+                      <div style={{
+                        fontSize: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                        color: isUser ? 'var(--on-accent, white)' : 'var(--text1)',
+                        background: isUser ? 'var(--accent)' : 'var(--surface2)',
+                        border: isUser ? 'none' : '1px solid var(--border)',
+                        borderRadius: isUser ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+                        padding: '8px 11px',
+                      }}>
+                        {isUser ? item.text : renderInlineMd(item.text)}
+                      </div>
+                      <div style={{ alignSelf: isUser ? 'flex-end' : 'flex-start', padding: '0 2px' }}>
+                        <MessageActions text={item.text} onRegenerate={item.id === lastAssistantId ? regenerate : undefined} />
+                      </div>
                     </div>
                   )
                 })}

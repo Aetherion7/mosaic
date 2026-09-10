@@ -394,7 +394,7 @@ export interface Widget {
 
 // ─── Board background ─────────────────────────────────────────────────────────
 export type BgType = 'color' | 'gradient' | 'image'
-export type PatternType = 'columns' | 'dots' | 'grid' | 'none'
+export type PatternType = 'dots' | 'grid' | 'none'
 
 export interface BoardBg {
   type:            BgType

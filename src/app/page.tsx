@@ -606,8 +606,16 @@ export default function HomePage() {
       ) return
       const shortcuts = useSettings.getState().keyboardShortcutsHome
       const key = e.key.toUpperCase()
-      if (key === shortcuts.newBoard)       setCreating(c => !c)
-      else if (key === shortcuts.newFolder) setCreatingFolder(o => !o)
+      // preventDefault on every branch that can open an auto-focused text
+      // field (new board / new folder name): without it, the browser still
+      // inserts THIS keystroke's character into that field once it gains
+      // focus a moment later — React's state update + the field's autoFocus
+      // both resolve in a microtask that runs before the browser's own
+      // text-insertion step for the same physical keydown, so the character
+      // lands in the newly-focused input instead of going nowhere. Not
+      // needed for `settings` (opens no text field).
+      if (key === shortcuts.newBoard)       { e.preventDefault(); setCreating(c => !c) }
+      else if (key === shortcuts.newFolder) { e.preventDefault(); toggleCreatingFolder() }
       else if (key === shortcuts.focusSearch) { e.preventDefault(); searchInputRef.current?.focus() }
       else if (key === shortcuts.settings)  setSettingsOpen(o => !o)
     }
@@ -767,6 +775,21 @@ export default function HomePage() {
       folderColors: folderColors[f] ? { ...folderColors, [copy]: folderColors[f] } : folderColors,
     })
     setFolderMenuFor(null)
+  }
+
+  // Öffnen/Schließen des Ordner-Dialogs — an EINER Stelle gebündelt (Button
+  // und der F-Shortcut riefen vorher beide direkt setCreatingFolder(o=>!o)
+  // auf), weil das Feld beim Schließen ohne Anlegen (Escape, Klick daneben,
+  // Cancel, erneutes F) nirgends zurückgesetzt wurde: der zuletzt getippte
+  // Name blieb im State hängen und stand beim nächsten Öffnen schon wieder
+  // da — bei wiederholtem Öffnen/Schließen sichtbar akkumulierend. Reset
+  // beim ÖFFNEN (nicht bei jedem Schließen-Pfad einzeln) deckt das für alle
+  // Wege ab, das Fenster wieder zu schließen.
+  function toggleCreatingFolder() {
+    setCreatingFolder(prev => {
+      if (!prev) setNewFolderName('')
+      return !prev
+    })
   }
 
   // Neuen (leeren) Ordner anlegen — Boards kommen später per Drag & Drop hinein
@@ -1208,7 +1231,7 @@ export default function HomePage() {
           <div ref={folderCreateRef} style={{ position: 'relative' }}>
             <button
               id="tour-add-folder-btn"
-              onClick={() => setCreatingFolder(o => !o)}
+              onClick={toggleCreatingFolder}
               title={`${t('Add folder')} [${homeShortcuts.newFolder}]`} aria-label={t('Add folder')} aria-haspopup="dialog"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',

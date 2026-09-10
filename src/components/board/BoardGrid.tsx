@@ -11,7 +11,6 @@ import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { INFINITE_GRID_ROWS } from '@/lib/constants'
 import { useUIStore } from '@/store/uiStore'
 import { useSettings } from '@/store/settingsStore'
-import { DEFAULT_BG } from '@/lib/defaults'
 import { useT } from '@/hooks/useT'
 import CanvasBackground from '@/components/canvas/CanvasBackground'
 import TileWrapper, { GRID_COLS, GRID_GAP, GRID_ROW_H, INFINITE_COL_W, INFINITE_GRID_COLS } from './TileWrapper'
@@ -43,14 +42,12 @@ export default function BoardGrid() {
   const isInfinite    = layoutMode === 'infinite'
   const currentBoardId = useBoardStore(s => s.currentBoardId)
 
-  const bg      = useBoardStore(s => selectBoard(s)?.bg ?? DEFAULT_BG)
   const widgets = useBoardStore(useShallow(s => {
     const board = selectBoard(s)
     return board ? Object.values(board.widgets) : []
   }))
   const moveWidget          = useBoardStore(s => s.moveWidget)
   const bumpWidgetZIndex    = useBoardStore(s => s.bumpWidgetZIndex)
-  const mode                = useUIStore(s => s.mode)
   const openPanel           = useUIStore(s => s.openPanel)
   const selectWidget        = useUIStore(s => s.selectWidget)
   const lastAddedWidgetId   = useUIStore(s => s.lastAddedWidgetId)
@@ -319,25 +316,6 @@ export default function BoardGrid() {
           ...(isInfinite ? {} : { minHeight: '100%' }),
         }}
       >
-        {mode === 'edit' && bg.pattern === 'columns' && (
-          <div style={{
-            position: 'absolute', top: isIsland ? topPad : GRID_GAP, right: GRID_GAP, bottom: GRID_GAP, left: GRID_GAP,
-            display: 'grid',
-            gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
-            gap: GRID_GAP,
-            pointerEvents: 'none', zIndex: 0,
-          }}>
-            {Array.from({ length: GRID_COLS }).map((_, i) => (
-              <div key={i} style={{
-                borderRadius: 8,
-                border: `1px dashed ${bg.patternColor ?? '#ffffff'}`,
-                opacity: bg.patternOpacity ?? 0.06,
-                height: '100%',
-              }} />
-            ))}
-          </div>
-        )}
-
         <AnimatePresence>
           {sortedWidgets.map(w => (
             <TileWrapper key={w.id} widget={w} gridRef={gridRef} />

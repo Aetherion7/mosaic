@@ -72,7 +72,7 @@ export default function CanvasBackground() {
   return (
     <>
       <div style={{ position: 'absolute', inset: insetVal, ...bgCss(bg) }} />
-      {bg.pattern !== 'none' && bg.pattern !== 'columns' && (
+      {bg.pattern !== 'none' && (
         <div style={{
           position: 'absolute', inset: 0,
           ...patternCss(bg, view),

@@ -12,7 +12,7 @@ import { DEFAULT_BG } from '@/lib/defaults'
 import { todayStr } from '@/lib/dates'
 import { TileContent, buildStyle, widgetTypeIcon, TYPE_LABELS } from '@/components/board/TileWrapper'
 import WidgetErrorBoundary from '@/components/board/WidgetErrorBoundary'
-import type { BoardBg, WidgetStyle, GradientDir, PatternType, Widget, NoteData, TaskData, WaterData } from '@/types'
+import type { BoardBg, WidgetStyle, GradientDir, PatternType, Widget, NoteData, TaskData, WaterData, TimerData } from '@/types'
 
 // Interaktiver Theme-Editor: ersetzt die vorherige "JSON einfügen"-Fläche in
 // ErscheinungsbildPanel.tsx durch ein eigenes Fenster mit echten Reglern für
@@ -90,6 +90,10 @@ export default function ThemeEditorModal({ initial, onClose }: { initial?: Custo
   const [cssVars, setCssVars] = useState<Record<string, string>>(() => ({ ...DEFAULT_THEME.cssVars, ...initial?.cssVars }))
   const [bg, setBgState] = useState<BoardBg>(() => ({ ...DEFAULT_BG, ...initial?.bg }))
   const [style, setStyleState] = useState<WidgetStyle>(() => ({ ...DEFAULT_THEME.widgetStyle, ...initial?.widgetStyle } as WidgetStyle))
+  // Shared between the Colors list and the Preview so hovering either side
+  // highlights the other — a swatch row on the left, or any tagged element
+  // on the right (`data-color-key` + the same onHoverColorKey wiring).
+  const [hoverColorKey, setHoverColorKey] = useState<string | null>(null)
   const [advancedOpen, setAdvancedOpen] = useState(false)
 
   function setVar(key: string, v: string) { setCssVars(prev => ({ ...prev, [key]: v })) }
@@ -171,7 +175,10 @@ export default function ThemeEditorModal({ initial, onClose }: { initial?: Custo
               <FSection label={t('Colors')}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 18px' }}>
                   {COLOR_FIELDS.map(f => (
-                    <FRow key={f.key} label={t(f.label)} title={t(f.desc)}>
+                    <FRow key={f.key} label={t(f.label)} title={t(f.desc)}
+                      active={hoverColorKey === f.key}
+                      onMouseEnter={() => setHoverColorKey(f.key)}
+                      onMouseLeave={() => setHoverColorKey(null)}>
                       <ColorSwatch value={cssVars[f.key] ?? '#888888'} onChange={v => setVar(f.key, v)} />
                       <div style={{ flex: 1, height: 22, borderRadius: 6, background: cssVars[f.key] ?? '#888888', border: '1px solid var(--border)' }} />
                     </FRow>
@@ -312,7 +319,7 @@ export default function ThemeEditorModal({ initial, onClose }: { initial?: Custo
             <div style={{ width: 420, flexShrink: 0, borderLeft: '1px solid var(--border)', padding: 18, display: 'flex', flexDirection: 'column', gap: 10, background: 'color-mix(in srgb, var(--surface2) 40%, transparent)' }}>
               <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('Live preview')}</span>
               <div style={{ flex: 1, minHeight: 0 }}>
-                <LivePreview cssVars={cssVars} bg={bg} style={style} />
+                <LivePreview cssVars={cssVars} bg={bg} style={style} hoverColorKey={hoverColorKey} onHoverColorKey={setHoverColorKey} />
               </div>
             </div>
           </div>
@@ -378,13 +385,94 @@ function makePreviewWidgets(): Widget[] {
     data: { goalMl: 2000, loggedMl: 1250, mlPerSection: 250, lastDate: todayStr() } as WaterData,
   }
 
-  return [note, task, water]
+  // The ONLY place --success and --surface3 render anywhere in the real app
+  // (TimerWidget.tsx: the ring turns --success when done, its track/Pause
+  // button use --surface3) — finished (elapsed === durationMin*60) so both
+  // show up without needing an invented stand-in.
+  const timer: Widget = {
+    id: '__theme-preview-timer__', type: 'timer', pos: basePos, zIndex: 1, style: noopStyle,
+    data: { name: 'Focus session', durationMin: 5, startedAt: null, running: false, elapsed: 300 } as TimerData,
+  }
+
+  return [note, task, water, timer]
 }
 
-function LivePreview({ cssVars, bg, style }: { cssVars: Record<string, string>; bg: BoardBg; style: WidgetStyle }) {
+function LivePreview({ cssVars, bg, style, hoverColorKey, onHoverColorKey }: {
+  cssVars: Record<string, string>; bg: BoardBg; style: WidgetStyle
+  hoverColorKey: string | null; onHoverColorKey: (k: string | null) => void
+}) {
   const t = useT()
   const v = (k: string, fallback: string) => cssVars[k] ?? fallback
   const widgets = useMemo(() => makePreviewWidgets(), [])
+  // Cursor position (+ the container's own width, so the tooltip can flip
+  // to the left near the right edge instead of overflowing past it) tracked
+  // purely for the tooltip below — cleared on mouse-leave so it can't
+  // linger at a stale spot if the pointer re-enters without moving first.
+  const [cursorPos, setCursorPos] = useState<{ x: number; y: number; w: number } | null>(null)
+  const hoveredLabel = hoverColorKey ? t(COLOR_FIELDS.find(f => f.key === hoverColorKey)?.label ?? hoverColorKey) : null
+
+  // Canonicalizes every Colors value to the exact string form getComputedStyle
+  // hands back for a hovered element's color/backgroundColor/fill/stroke, so
+  // the two can be compared directly — no manual tagging required inside the
+  // real widget components themselves. Deliberately routed through a real
+  // (detached-but-attached) DOM node's own computed style rather than e.g. a
+  // canvas 2D context: canvas's fillStyle getter serializes opaque colors as
+  // "#rrggbb" hex, while getComputedStyle always returns "rgb(r, g, b)" —
+  // those never string-match even for the identical color, which silently
+  // broke every lookup (detection always fell through to the background-
+  // color climb) until this was caught by testing an actual hover.
+  const colorKeyByRgb = useMemo(() => {
+    const map = new Map<string, string>()
+    if (typeof document === 'undefined') return map
+    const probe = document.createElement('div')
+    probe.style.cssText = 'position:absolute; visibility:hidden; pointer-events:none;'
+    document.body.appendChild(probe)
+    for (const f of COLOR_FIELDS) {
+      const raw = cssVars[f.key]
+      if (!raw) continue
+      probe.style.color = raw
+      map.set(getComputedStyle(probe).color, f.key)
+    }
+    document.body.removeChild(probe)
+    return map
+  }, [cssVars])
+
+  // Walks from the exact hovered element outward: a leaf node's own paint
+  // (SVG fill/stroke, or text color) is the most specific answer to "what
+  // color is under the cursor"; failing that, climb for the nearest
+  // explicit background/border, since those don't inherit and the visible
+  // color at that point comes from whichever ancestor actually painted it.
+  function detectColorKey(target: Element): string | null {
+    if (target.children.length === 0) {
+      const cs = getComputedStyle(target)
+      // fill/stroke are computed for *any* element, SVG or not — the CSS
+      // spec's initial value for fill is black, so every plain non-SVG
+      // text node was silently reporting "rgb(0, 0, 0)" and false-matching
+      // --shadow-color (which happens to default to pure black) before
+      // color was ever checked. Only trust fill/stroke on real SVG nodes.
+      const paints = target instanceof SVGElement ? [cs.fill, cs.stroke, cs.color] : [cs.color]
+      for (const paint of paints) {
+        const key = colorKeyByRgb.get(paint)
+        if (key) return key
+      }
+    }
+    let node: Element | null = target
+    for (let hops = 0; node && hops < 8; hops++, node = node.parentElement) {
+      const cs = getComputedStyle(node)
+      // borderTopColor resolves to *something* (often black, via the
+      // currentcolor initial value) even on elements with no visible
+      // border at all — only trust it once a border is actually being
+      // painted, or hovering plain text picks up false "Shadow color" /
+      // "Background" hits from invisible borders several ancestors up.
+      const hasVisibleBorder = cs.borderTopStyle !== 'none' && parseFloat(cs.borderTopWidth) > 0
+      const paints = hasVisibleBorder ? [cs.backgroundColor, cs.borderTopColor] : [cs.backgroundColor]
+      for (const paint of paints) {
+        const key = colorKeyByRgb.get(paint)
+        if (key) return key
+      }
+    }
+    return colorKeyByRgb.get(getComputedStyle(target).color) ?? null
+  }
 
   // Kept as two mutually-exclusive branches (never both in the same style
   // object) rather than `background` + `backgroundImage`/`backgroundSize`
@@ -399,7 +487,6 @@ function LivePreview({ cssVars, bg, style }: { cssVars: Record<string, string>; 
   const patternStyle: React.CSSProperties =
     bg.pattern === 'dots' ? { backgroundImage: `radial-gradient(circle, ${bg.patternColor} 1px, transparent 1px)`, backgroundSize: '14px 14px', opacity: bg.patternOpacity }
     : bg.pattern === 'grid' ? { backgroundImage: `linear-gradient(${bg.patternColor} 1px, transparent 1px), linear-gradient(90deg, ${bg.patternColor} 1px, transparent 1px)`, backgroundSize: '16px 16px', opacity: bg.patternOpacity }
-    : bg.pattern === 'columns' ? { backgroundImage: `linear-gradient(90deg, ${bg.patternColor} 1px, transparent 1px)`, backgroundSize: '18px 100%', opacity: bg.patternOpacity }
     : {}
 
   // The real, exported buildStyle() from TileWrapper.tsx — the exact same
@@ -424,30 +511,118 @@ function LivePreview({ cssVars, bg, style }: { cssVars: Record<string, string>; 
   const scopedVars = cssVars as React.CSSProperties
 
   return (
-    <div style={{
-      position: 'relative', width: '100%', height: '100%', minHeight: 320, borderRadius: 14, overflow: 'hidden',
-      display: 'flex', flexDirection: 'column',
-      ...scopedVars,
-      ...containerBgStyle,
-      border: '1px solid rgba(255,255,255,0.08)',
-    }}>
+    <div
+      onMouseMove={e => {
+        const r = e.currentTarget.getBoundingClientRect()
+        setCursorPos({ x: e.clientX - r.left, y: e.clientY - r.top, w: r.width })
+      }}
+      onMouseLeave={() => setCursorPos(null)}
+      style={{
+        position: 'relative', width: '100%', height: '100%', minHeight: 320, borderRadius: 14, overflow: 'hidden',
+        display: 'flex', flexDirection: 'column',
+        ...scopedVars,
+        ...containerBgStyle,
+        border: '1px solid rgba(255,255,255,0.08)',
+      }}>
       {bg.type === 'image' && bg.imageUrl && (
         <div style={{ position: 'absolute', inset: 0, backdropFilter: `brightness(${bg.imageBrightness}) blur(${bg.imageBlur}px)`, WebkitBackdropFilter: `brightness(${bg.imageBrightness}) blur(${bg.imageBlur}px)` }} />
       )}
-      <div style={{ position: 'absolute', inset: 0, ...patternStyle }} />
+      {/* Purely decorative — pointerEvents:none matters here: as a
+          position:absolute element it would otherwise paint (and intercept
+          hover/click) ABOVE any static-positioned sibling below it,
+          regardless of DOM order — that's a real CSS stacking rule, not a
+          z-index question, and it silently broke hovering the two new rows
+          added below (which don't set position:relative themselves) until
+          caught via an actual Playwright hover test failing with
+          "<div></div> intercepts pointer events". */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', ...patternStyle }} />
 
-      {/* Mini toolbar strip — gives Surface/Border/Text1/Accent a second,
-          board-chrome context distinct from the widget cards below, closer
-          to a genuine "whole board" preview than isolated cards alone. */}
-      <div style={{
-        position: 'relative', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8,
-        padding: '9px 14px', background: v('--surface', '#12131e'), borderBottom: `1px solid ${v('--border', '#2c2d4a')}`,
-      }}>
-        <div style={{ width: 9, height: 9, borderRadius: '50%', background: v('--accent', '#7c6fe8'), flexShrink: 0 }} />
-        <span style={{ fontSize: 11, fontWeight: 700, color: v('--text1', '#eee') }}>My board</span>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 5 }}>
-          <div style={{ width: 16, height: 16, borderRadius: 5, background: v('--surface2', '#191a2c') }} />
-          <div style={{ width: 16, height: 16, borderRadius: 5, background: v('--surface2', '#191a2c') }} />
+      {/* Mini toolbar strip — a genuine "whole board" chrome context (not
+          just isolated cards) for Surface/Accent/Text1. */}
+      <div
+        data-color-key="--surface"
+        onMouseEnter={() => onHoverColorKey('--surface')}
+        onMouseLeave={() => onHoverColorKey(null)}
+        style={{
+          position: 'relative', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8,
+          padding: '9px 14px', background: v('--surface', '#12131e'), borderBottom: `1px solid ${v('--border', '#2c2d4a')}`,
+          ...refRing(hoverColorKey === '--surface'),
+        }}>
+        <div
+          data-color-key="--accent"
+          onMouseEnter={() => onHoverColorKey('--accent')}
+          onMouseLeave={() => onHoverColorKey(null)}
+          style={{ width: 9, height: 9, borderRadius: '50%', background: v('--accent', '#7c6fe8'), flexShrink: 0, ...refRing(hoverColorKey === '--accent') }} />
+        <span
+          data-color-key="--text1"
+          onMouseEnter={() => onHoverColorKey('--text1')}
+          onMouseLeave={() => onHoverColorKey(null)}
+          style={{ fontSize: 11, fontWeight: 700, color: v('--text1', '#eee'), borderRadius: 4, ...refRing(hoverColorKey === '--text1') }}>My board</span>
+      </div>
+
+      {/* Real interaction patterns, verbatim — not stand-ins. Each one is
+          copied 1:1 (text, colors, padding) from where it actually lives:
+          the "Undo" pill from ToastStack.tsx's delete-undo toast (the only
+          --on-accent TEXT anywhere in the app), the "Empty trash" pill from
+          BoardsPanel.tsx's Settings → Boards → Trash section (the only
+          --danger TEXT anywhere — the previously-missing "red danger text"),
+          and the "…" menu trigger from TileWrapper.tsx's per-widget popover
+          (its exact box-shadow formula, the clearest real --shadow-color). */}
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px 0' }}>
+        <button
+          data-color-key="--on-accent"
+          onMouseEnter={() => onHoverColorKey('--on-accent')}
+          onMouseLeave={() => onHoverColorKey(null)}
+          style={{
+            padding: '5px 14px', borderRadius: 9, border: 'none', cursor: 'default',
+            background: v('--accent', '#7c6fe8'), color: v('--on-accent', '#fff'),
+            fontSize: 12, fontWeight: 700, ...refRing(hoverColorKey === '--on-accent'),
+          }}>{t('Undo')}</button>
+        <button
+          data-color-key="--danger"
+          onMouseEnter={() => onHoverColorKey('--danger')}
+          onMouseLeave={() => onHoverColorKey(null)}
+          style={{
+            padding: '4px 12px', borderRadius: 999, cursor: 'default',
+            border: `1px solid color-mix(in srgb, ${v('--danger', '#f87171')} 40%, transparent)`,
+            background: 'none', color: v('--danger', '#f87171'),
+            fontSize: 11, fontWeight: 600, ...refRing(hoverColorKey === '--danger'),
+          }}>{t('Empty trash')}</button>
+        <div
+          data-color-key="--shadow-color"
+          onMouseEnter={() => onHoverColorKey('--shadow-color')}
+          onMouseLeave={() => onHoverColorKey(null)}
+          style={{
+            marginLeft: 'auto', width: 24, height: 24, borderRadius: 8, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: v('--popover-bg', v('--surface2', '#191a2c')),
+            boxShadow: `0 12px 28px color-mix(in srgb, ${v('--shadow-color', 'rgba(0,0,0,0.45)')} 45%, transparent)`,
+            ...refRing(hoverColorKey === '--shadow-color'),
+          }}>
+          <svg width="12" height="3.5" viewBox="0 0 24 6" fill={v('--text2', '#9795b5')}><circle cx="3" cy="3" r="2.4"/><circle cx="12" cy="3" r="2.4"/><circle cx="21" cy="3" r="2.4"/></svg>
+        </div>
+      </div>
+
+      {/* Verbatim (truncated) from DatenschutzPanel.tsx's Privacy notice —
+          the only real --amber usage in the app; it tints the box, not the
+          text, which is exactly what's shown here rather than inventing an
+          amber-colored label that doesn't exist anywhere for real. */}
+      <div
+        data-color-key="--amber"
+        onMouseEnter={() => onHoverColorKey('--amber')}
+        onMouseLeave={() => onHoverColorKey(null)}
+        style={{
+          flexShrink: 0, margin: '10px 14px 0', display: 'flex', alignItems: 'flex-start', gap: 8,
+          padding: '8px 10px', borderRadius: 10,
+          background: `color-mix(in srgb, ${v('--amber', '#fbbf24')} 8%, ${v('--surface2', '#1e2236')})`,
+          border: `1px solid color-mix(in srgb, ${v('--amber', '#fbbf24')} 25%, transparent)`,
+          ...refRing(hoverColorKey === '--amber'),
+        }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={v('--amber', '#fbbf24')} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+          <path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        </svg>
+        <div style={{ fontSize: 10.5, color: v('--text2', '#9795b5'), lineHeight: 1.5 }}>
+          <strong style={{ color: v('--text1', '#eee') }}>{t('Exception: some widgets need the internet.')}</strong>
         </div>
       </div>
 
@@ -456,28 +631,81 @@ function LivePreview({ cssVars, bg, style }: { cssVars: Record<string, string>; 
           buildStyle() on the card, a header bar with the widget's real icon
           + type label, then the actual widget component inside an error
           boundary (same as the real board — a rendering bug in a widget
-          shouldn't be able to blank out the whole preview). Pointer events
-          are disabled on the whole stack: this is a preview, not an editable
-          mini-board, and it keeps every widget's own click handlers fully
-          inert regardless of what they'd otherwise do. */}
-      <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', gap: 12, padding: 16, overflow: 'auto', pointerEvents: 'none' }}>
+          shouldn't be able to blank out the whole preview). The widget's
+          own internals are hoverable too (pointerEvents 'auto', not
+          'none') — detectColorKey() reads whatever's actually under the
+          cursor at the DOM level, so every real text/icon/fill inside
+          NoteWidget/TaskWidget/WaterWidget/TimerWidget answers correctly
+          with zero per-widget tagging. TimerWidget is included purely
+          because it's the only place --success and --surface3 render
+          anywhere in the app (its "done" ring and its track/Pause button).
+          Click/keydown/pointerdown are still swallowed in capture phase so
+          nothing is actually editable or draggable here — this stays a
+          preview, not a mini editable board. */}
+      <div
+        data-color-key="--bg"
+        onMouseEnter={() => onHoverColorKey('--bg')}
+        onMouseLeave={() => onHoverColorKey(null)}
+        style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', gap: 10, padding: '10px 14px 14px', overflow: 'auto', ...refRing(hoverColorKey === '--bg') }}>
         {widgets.map(widget => (
-          <div key={widget.id} style={{ ...cardChrome, height: 168, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxSizing: 'border-box' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px 5px',
-              borderBottom: '1px solid var(--border)', flexShrink: 0,
-            }}>
+          <div key={widget.id}
+            data-color-key="--surface"
+            onMouseEnter={() => onHoverColorKey('--surface')}
+            onMouseLeave={() => onHoverColorKey(null)}
+            style={{ ...cardChrome, height: 172, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxSizing: 'border-box', ...refRing(hoverColorKey === '--surface') }}>
+            <div
+              data-color-key="--text3"
+              onMouseEnter={() => onHoverColorKey('--text3')}
+              onMouseLeave={() => onHoverColorKey(null)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px 5px',
+                borderBottom: '1px solid var(--border)', flexShrink: 0,
+                ...refRing(hoverColorKey === '--text3'),
+              }}>
               <span style={{ opacity: 0.55, color: 'var(--text2)', display: 'flex' }}>{widgetTypeIcon(widget)}</span>
               <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {t(TYPE_LABELS[widget.type])}
               </span>
             </div>
-            <div style={{ flex: 1, padding: '10px 12px', overflow: 'hidden', minHeight: 0 }}>
+            <div
+              style={{ flex: 1, padding: '10px 12px', overflow: 'hidden', minHeight: 0 }}
+              onMouseMove={e => {
+                const key = detectColorKey(e.target as Element)
+                if (key) onHoverColorKey(key)
+              }}
+              onMouseLeave={() => onHoverColorKey(null)}
+              onClickCapture={e => e.preventDefault()}
+              onMouseDownCapture={e => e.preventDefault()}
+              onPointerDownCapture={e => e.preventDefault()}
+              onKeyDownCapture={e => e.preventDefault()}
+            >
               <WidgetErrorBoundary><TileContent widget={widget} /></WidgetErrorBoundary>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Cursor-following tooltip — only while actually hovering something
+          tagged inside this preview (Colors-list hover highlights the same
+          elements via hoverColorKey, but never sets cursorPos, so it never
+          shows this). */}
+      {cursorPos && hoveredLabel && (() => {
+        // Flip to the cursor's left once past the container's midpoint —
+        // otherwise cells near the right edge push the tooltip straight off
+        // the panel, clipped by its own overflow:hidden.
+        const nearRightEdge = cursorPos.x > cursorPos.w / 2
+        return (
+          <div style={{
+            position: 'absolute', top: cursorPos.y + 16, zIndex: 40,
+            ...(nearRightEdge ? { right: cursorPos.w - cursorPos.x + 16 } : { left: cursorPos.x + 16 }),
+            pointerEvents: 'none', background: 'rgba(15,15,25,0.94)', color: '#fff',
+            fontSize: 10.5, fontWeight: 600, padding: '4px 9px', borderRadius: 6,
+            whiteSpace: 'nowrap', boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
+          }}>
+            {hoveredLabel}
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -499,13 +727,42 @@ function Divider() {
   return <div style={{ height: 1, background: 'var(--border)' }} />
 }
 
-function FRow({ label, title, children }: { label: string; title?: string; children: React.ReactNode }) {
+// `active`/`onMouseEnter`/`onMouseLeave` are only passed by the Colors rows
+// (to link up with the matching Preview element on hover) — every other
+// FRow call site (sliders, pickers, etc.) just omits them and gets the
+// exact same row it always has.
+function FRow({ label, title, children, active, onMouseEnter, onMouseLeave }: {
+  label: string; title?: string; children: React.ReactNode
+  active?: boolean; onMouseEnter?: () => void; onMouseLeave?: () => void
+}) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} title={title}>
+    <div
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8, borderRadius: 6,
+        padding: '2px 4px', margin: '-2px -4px',
+        background: active ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'transparent',
+        transition: 'background 0.12s',
+      }}
+      title={title}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       <span style={{ fontSize: 11.5, color: 'var(--text2)', minWidth: 110, flexShrink: 0, borderBottom: title ? '1px dotted var(--text3)' : 'none', width: 'fit-content' }}>{label}</span>
       {children}
     </div>
   )
+}
+
+// Shared "hover ring" style for any tagged Preview element — a fixed,
+// theme-independent blue so it stays visible regardless of which colors are
+// currently being edited (an accent-colored ring would be invisible/wrong
+// while hovering the Accent row itself). Matches the selection-ring
+// convention already used for Drawboard shape selection.
+function refRing(active: boolean): React.CSSProperties {
+  return {
+    boxShadow: active ? '0 0 0 2px #3b82f6, 0 0 10px 1px rgba(59,130,246,0.5)' : 'none',
+    transition: 'box-shadow 0.12s',
+  }
 }
 
 function FSlider({ label, min, max, step, value, onChange, display }: {
@@ -576,7 +833,6 @@ function PatternPicker({ value, onChange, color, onColorChange, opacity, onOpaci
   const patterns: { id: PatternType; label: string; preview: React.ReactNode }[] = [
     { id: 'dots', label: t('Dots'), preview: <div style={{ width: '100%', height: '100%', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '10px 10px' }} /> },
     { id: 'grid', label: t('Grid'), preview: <div style={{ width: '100%', height: '100%', backgroundImage: 'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)', backgroundSize: '12px 12px' }} /> },
-    { id: 'columns', label: t('Columns'), preview: <div style={{ width: '100%', height: '100%', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)', backgroundSize: '9px 100%' }} /> },
     { id: 'none', label: t('None'), preview: <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 16, opacity: 0.3 }}>—</span></div> },
   ]
   return (
@@ -594,7 +850,7 @@ function PatternPicker({ value, onChange, color, onColorChange, opacity, onOpaci
           </button>
         ))}
       </div>
-      {(value === 'dots' || value === 'grid' || value === 'columns') && (
+      {(value === 'dots' || value === 'grid') && (
         <>
           <FRow label={t('Color')}>
             <ColorSwatch value={color} onChange={onColorChange} />

@@ -4,13 +4,15 @@ import { useT } from '@/hooks/useT'
 import { useSettings, DEFAULT_SHORTCUTS, DEFAULT_HOME_SHORTCUTS, type ShortcutAction, type HomeShortcutAction } from '@/store/settingsStore'
 import { SectionTitle, KbdRow } from './shared'
 
-// Nur die 5 globalen Single-Key-Shortcuts aus TopBar.tsx sind umbelegbar —
-// nicht Ctrl+Z/Y (feste Konvention) und nicht die Widget-internen Tasten
-// (Tabelle, Drawboard), die feste Interaktionsmuster sind statt einzelner
-// Aktionen, die man sinnvoll verlegen würde.
+// Die 6 globalen Single-Key-Shortcuts aus TopBar.tsx sind umbelegbar — nicht
+// Ctrl+Z/Y (feste Konvention) und nicht die Widget-internen Tasten (Tabelle,
+// Drawboard), die feste Interaktionsmuster sind statt einzelner Aktionen,
+// die man sinnvoll verlegen würde. `search` läuft parallel zum weiterhin
+// fest verdrahteten Ctrl+K (Browser-/OS-Konvention) statt es zu ersetzen.
 const REBINDABLE: { action: ShortcutAction; label: string }[] = [
   { action: 'toggleMode', label: 'Toggle edit/view mode' },
   { action: 'addWidget',  label: 'Add widget (edit mode only)' },
+  { action: 'search',     label: 'Open search' },
   { action: 'theme',      label: 'Open / close themes panel' },
   { action: 'ai',         label: 'Open / close AI assistant' },
   { action: 'settings',   label: 'Open / close settings' },
@@ -34,7 +36,12 @@ export default function TastenkürzelPanel({ home }: { home?: boolean } = {}) {
 
 function BoardShortcuts() {
   const t = useT()
-  const shortcuts = useSettings(s => s.keyboardShortcuts)
+  const rawShortcuts = useSettings(s => s.keyboardShortcuts)
+  // Merged with defaults OUTSIDE the selector — see TopBar.tsx's identical
+  // comment: merging inside a zustand selector returns a new object every
+  // call and causes an infinite render loop, since the snapshot never
+  // compares equal to itself.
+  const shortcuts = { ...DEFAULT_SHORTCUTS, ...rawShortcuts }
   const setSetting = useSettings(s => s.setSetting)
   const [recording, setRecording] = useState<ShortcutAction | null>(null)
   const [conflict, setConflict] = useState<string | null>(null)
@@ -50,7 +57,7 @@ function BoardShortcuts() {
       // reiner Modifier-Tastendruck (Shift/Ctrl/Alt/Meta allein) als Binding.
       if (e.key.length !== 1) return
       const key = e.key.toUpperCase()
-      const current = useSettings.getState().keyboardShortcuts
+      const current = { ...DEFAULT_SHORTCUTS, ...useSettings.getState().keyboardShortcuts }
       const usedBy = (Object.entries(current) as [ShortcutAction, string][])
         .find(([action, k]) => k === key && action !== recordingAction)
       if (usedBy) {

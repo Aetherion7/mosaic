@@ -233,6 +233,7 @@ export const de: Record<string, string> = {
   'Navigation': 'Navigation',
   'Toggle edit/view mode': 'Bearbeitungs-/Ansichtsmodus wechseln',
   'Add widget (edit mode only)': 'Widget hinzufügen (nur im Bearbeitungsmodus)',
+  'Open search': 'Suche öffnen',
   'Open / close themes panel': 'Themes-Panel öffnen / schließen',
   'Open / close settings': 'Einstellungen öffnen / schließen',
   'Already used by: {action}': 'Bereits belegt von: {action}',
@@ -1074,6 +1075,25 @@ export const de: Record<string, string> = {
     'Für alternative Endpunkte (Groq, Mistral, Ollama …). Leer = api.openai.com',
   'When you send a message, the assistant transmits your request plus a summary of the current board (widget types, positions, titles and contents) directly from your browser to the selected provider. Nothing runs through mosaic servers, and nothing is sent until you write a message. The API key is stored unencrypted in this browser profile and is never included in backups.':
     'Beim Senden einer Nachricht überträgt der Assistent deine Anfrage plus eine Zusammenfassung des aktuellen Boards (Widget-Typen, Positionen, Titel und Inhalte) direkt aus deinem Browser an den gewählten Anbieter. Nichts läuft über mosaic-Server, und ohne deine Nachricht wird nichts gesendet. Der API-Schlüssel liegt unverschlüsselt in diesem Browserprofil und wird nie in Backups aufgenommen.',
+
+  // ── KI-Chatverlauf (ChatHistoryModal) ──
+  'Chat history': 'Chatverlauf',
+  'View chat history': 'Chatverlauf anzeigen',
+  'conversation': 'Unterhaltung',
+  'conversations': 'Unterhaltungen',
+  'retrieve, copy or delete past chats': 'frühere Chats abrufen, kopieren oder löschen',
+  'No chat history yet': 'Noch kein Chatverlauf',
+  'No chat history yet.': 'Noch kein Chatverlauf.',
+  'Board chat': 'Board-Chat',
+  'Deleted widget': 'Gelöschtes Widget',
+  'Automatically delete chats older than 1 month': 'Chats älter als 1 Monat automatisch löschen',
+  'Select a conversation to view it.': 'Wähle eine Unterhaltung aus, um sie anzuzeigen.',
+  'messages': 'Nachrichten',
+  'Copied!': 'Kopiert!',
+  'Regenerate': 'Neu generieren',
+  '{n}m ago': 'vor {n}m',
+  '{n}h ago': 'vor {n}h',
+  '{n}d ago': 'vor {n}d',
 
   // ── HtmlWidget ──
   'Paste your HTML here…': 'HTML hier einfügen …',

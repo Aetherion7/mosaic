@@ -1,7 +1,6 @@
 'use client'
 import { useT } from '@/hooks/useT'
 import { SectionTitle } from './shared'
-import { APP_VERSION } from '@/lib/version'
 
 const TECHNOLOGIES = [
   ['Next.js 16',    'React framework'],
@@ -63,18 +62,14 @@ export default function UeberPanel() {
   const t = useT()
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 0 20px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ width: 52, height: 52, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 0 16px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mosaiclogo.png" alt="mosaic" width={52} height={52} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <img src="/mosaiclogo.png" alt="mosaic" width={40} height={40} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         </div>
-        <div>
-          <div style={{ fontSize: 20, fontWeight: 400, color: 'var(--text1)', fontFamily: 'Guavine, sans-serif', lineHeight: 1, marginBottom: 4 }}>mosaic</div>
-          <div style={{ fontSize: 12, color: 'var(--text3)' }}>{t('Version')} {APP_VERSION}</div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 5, padding: '3px 8px', borderRadius: 20, background: 'color-mix(in srgb, var(--accent) 12%, var(--surface2))', border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)' }}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 600 }}>{t('Local-first · No account needed')}</span>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          <div style={{ fontSize: 28, fontWeight: 400, color: 'var(--text1)', fontFamily: 'Guavine, sans-serif', lineHeight: 1 }}>mosaic</div>
+          <div style={{ fontSize: 11, fontWeight: 300, color: 'var(--text3)' }}>{t('by Aetherion7')}</div>
         </div>
       </div>
 

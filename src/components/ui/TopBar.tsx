@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
-import { useSettings } from '@/store/settingsStore'
+import { useSettings, DEFAULT_SHORTCUTS } from '@/store/settingsStore'
 import SettingsModal from '@/components/ui/SettingsModal'
 import SlidingTabs from '@/components/ui/SlidingTabs'
 import SearchModal   from '@/components/ui/SearchModal'
@@ -32,7 +32,17 @@ export default function TopBar() {
   const t              = useT()
 
   const showKbdHints  = useSettings(s => s.showKbdHints)
-  const shortcuts     = useSettings(s => s.keyboardShortcuts)
+  const rawShortcuts  = useSettings(s => s.keyboardShortcuts)
+  // Merged with defaults OUTSIDE the selector: a persisted keyboardShortcuts
+  // object from before a new action (like `search`) was added would
+  // otherwise miss that key entirely — zustand's default persist merge
+  // replaces this whole nested object rather than deep-merging it, so an
+  // old profile's `shortcuts.search` would be `undefined` without this
+  // fallback. Merging INSIDE the selector (`useSettings(s => ({...}))`)
+  // returns a new object every call, which broke zustand's snapshot
+  // equality check and caused an infinite render loop ("Maximum update
+  // depth exceeded") — caught via a real hover/click test, not just types.
+  const shortcuts     = { ...DEFAULT_SHORTCUTS, ...rawShortcuts }
   const headerStyle   = useSettings(s => s.headerStyle)
   const aiEnabled     = useSettings(s => s.aiEnabled)
   const isIsland      = headerStyle === 'island'
@@ -68,6 +78,8 @@ export default function TopBar() {
         !!el?.closest('[data-widget-content]')
       if ((e.ctrlKey || e.metaKey) && e.key === 'k' && !inTextField) {
         e.preventDefault()
+        setSettingsOpenRef.current(false)
+        openPanelRef.current(null)
         setSearchOpen(o => !o)
         return
       }
@@ -119,18 +131,43 @@ export default function TopBar() {
       // (settingsStore.keyboardShortcuts) — frisch gelesen statt über einen
       // Ref, da sich diese Zuordnung nur selten ändert und kein Ref-Aufwand
       // für etwas nötig ist, das nicht bei jedem Render neu gesetzt wird.
-      const shortcuts = useSettings.getState().keyboardShortcuts
+      const shortcuts = { ...DEFAULT_SHORTCUTS, ...useSettings.getState().keyboardShortcuts }
       const key = e.key.toUpperCase()
       if (key === shortcuts.toggleMode) toggleMode()
-      if (key === shortcuts.settings) setSettingsOpenRef.current(!settingsOpenRef.current)
+      if (key === shortcuts.settings) {
+        setSearchOpen(false)
+        openPanelRef.current(null)
+        setSettingsOpenRef.current(!settingsOpenRef.current)
+      }
       if (key === shortcuts.addWidget && modeRef.current === 'edit') {
         e.preventDefault()
+        setSettingsOpenRef.current(false)
+        setSearchOpen(false)
         openPanelRef.current(panelRef.current === 'addWidget' ? null : 'addWidget')
       }
-      if (key === shortcuts.theme)
+      if (key === shortcuts.theme) {
+        setSettingsOpenRef.current(false)
+        setSearchOpen(false)
         openPanelRef.current(panelRef.current === 'theme' ? null : 'theme')
-      if (key === shortcuts.ai && useSettings.getState().aiEnabled)
+      }
+      if (key === shortcuts.ai && useSettings.getState().aiEnabled) {
+        setSettingsOpenRef.current(false)
+        setSearchOpen(false)
         openPanelRef.current(panelRef.current === 'ai' ? null : 'ai')
+      }
+      // Rebindable alternative to the fixed Ctrl+K above — same exclusivity
+      // handling (closes Settings/other panels instead of opening behind them).
+      // preventDefault matters here: SearchModal focuses its input via a
+      // mount effect, which (like autoFocus) resolves in a microtask that
+      // runs before the browser's own text-insertion step for this same
+      // keydown — without preventDefault, THIS key's character lands in the
+      // search box the instant it opens.
+      if (key === shortcuts.search) {
+        e.preventDefault()
+        setSettingsOpenRef.current(false)
+        openPanelRef.current(null)
+        setSearchOpen(o => !o)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -285,7 +322,7 @@ export default function TopBar() {
             display: 'flex', alignItems: 'center',
           }}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <IconCircleBtn accent active={panel === 'addWidget'} onClick={() => openPanel(panel === 'addWidget' ? null : 'addWidget')} title={`${t("Add widget")} [${shortcuts.addWidget}]`} id="add-widget-btn">
+              <IconCircleBtn accent active={panel === 'addWidget'} onClick={() => { setSettingsOpen(false); setSearchOpen(false); openPanel(panel === 'addWidget' ? null : 'addWidget') }} title={`${t("Add widget")} [${shortcuts.addWidget}]`} id="add-widget-btn">
                 <IconPlus />
               </IconCircleBtn>
               {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.addWidget}</span>}
@@ -309,17 +346,18 @@ export default function TopBar() {
 
       {/* ── Right: Search + Theme + Export + Settings ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, ...islandRight }}>
-        {/* Search with ⌘K hint — Ctrl+K ist fest verdrahtet (Browser-/OS-
-            Konvention), anders als die 5 umbelegbaren Shortcuts unten. */}
+        {/* Ctrl+K bleibt fest verdrahtet (Browser-/OS-Konvention) UND läuft
+            parallel zum umbelegbaren shortcuts.search (Einstellungen →
+            Tastenkürzel) — wie die anderen 5 Single-Key-Shortcuts unten. */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <IconCircleBtn id="tour-search" active={searchOpen} onClick={() => setSearchOpen(o => !o)} title={t("Search") + " [" + t("Ctrl+K") + "]"}>
+          <IconCircleBtn id="tour-search" active={searchOpen} onClick={() => { setSettingsOpen(false); openPanel(null); setSearchOpen(o => !o) }} title={`${t("Search")} [${shortcuts.search} / ${t("Ctrl+K")}]`}>
             <IconSearch />
           </IconCircleBtn>
-          {showKbdHints && <span style={kbdBadgeStyle}>⌘K</span>}
+          {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.search}</span>}
         </div>
 
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <IconCircleBtn id="tour-theme" active={panel === 'theme'} onClick={() => openPanel(panel === 'theme' ? null : 'theme')} title={`${t("Theme")} [${shortcuts.theme}]`}>
+          <IconCircleBtn id="tour-theme" active={panel === 'theme'} onClick={() => { setSettingsOpen(false); setSearchOpen(false); openPanel(panel === 'theme' ? null : 'theme') }} title={`${t("Theme")} [${shortcuts.theme}]`}>
             <IconSun />
           </IconCircleBtn>
           {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.theme}</span>}
@@ -327,7 +365,7 @@ export default function TopBar() {
 
         {aiEnabled && (
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <IconCircleBtn id="tour-ai" active={panel === 'ai'} onClick={() => openPanel(panel === 'ai' ? null : 'ai')} title={`${t("AI assistant")} [${shortcuts.ai}]`}>
+            <IconCircleBtn id="tour-ai" active={panel === 'ai'} onClick={() => { setSettingsOpen(false); setSearchOpen(false); openPanel(panel === 'ai' ? null : 'ai') }} title={`${t("AI assistant")} [${shortcuts.ai}]`}>
               <IconSparkleTopbar />
             </IconCircleBtn>
             {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.ai}</span>}
@@ -335,7 +373,7 @@ export default function TopBar() {
         )}
 
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <IconCircleBtn id="tour-settings" active={settingsOpen} onClick={() => setSettingsOpen(!settingsOpen)} title={`${t("Settings")} [${shortcuts.settings}]`}>
+          <IconCircleBtn id="tour-settings" active={settingsOpen} onClick={() => { setSearchOpen(false); openPanel(null); setSettingsOpen(!settingsOpen) }} title={`${t("Settings")} [${shortcuts.settings}]`}>
             <IconGear />
           </IconCircleBtn>
           {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.settings}</span>}

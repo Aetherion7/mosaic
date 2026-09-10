@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useWidgetAiStore } from '@/store/aiStore'
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
-import { IconSparkle, renderInlineMd } from '@/components/ui/aiShared'
+import { IconSparkle, renderInlineMd, MessageActions } from '@/components/ui/aiShared'
 import { useT } from '@/hooks/useT'
 import type { Widget } from '@/types'
 
@@ -29,6 +29,8 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
   const send      = useWidgetAiStore(s => s.send)
   const stop      = useWidgetAiStore(s => s.stop)
   const clear     = useWidgetAiStore(s => s.clear)
+  const regenerate = useWidgetAiStore(s => s.regenerate)
+  const lastAssistantId = items.filter(i => i.kind === 'assistant').at(-1)?.id
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef  = useRef<HTMLTextAreaElement>(null)
@@ -132,17 +134,20 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
           }
           const isUser = item.kind === 'user'
           return (
-            <div key={item.id} style={{
-              alignSelf: isUser ? 'flex-end' : 'flex-start',
-              maxWidth: '88%',
-              fontSize: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-              color: isUser ? 'white' : 'var(--text1)',
-              background: isUser ? 'var(--accent)' : 'var(--surface2)',
-              border: isUser ? 'none' : '1px solid var(--border)',
-              borderRadius: isUser ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
-              padding: '8px 11px',
-            }}>
-              {isUser ? item.text : renderInlineMd(item.text)}
+            <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 3, alignSelf: isUser ? 'flex-end' : 'flex-start', maxWidth: '88%' }}>
+              <div style={{
+                fontSize: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                color: isUser ? 'white' : 'var(--text1)',
+                background: isUser ? 'var(--accent)' : 'var(--surface2)',
+                border: isUser ? 'none' : '1px solid var(--border)',
+                borderRadius: isUser ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+                padding: '8px 11px',
+              }}>
+                {isUser ? item.text : renderInlineMd(item.text)}
+              </div>
+              <div style={{ alignSelf: isUser ? 'flex-end' : 'flex-start', padding: '0 2px' }}>
+                <MessageActions text={item.text} onRegenerate={item.id === lastAssistantId ? () => regenerate(widget.id) : undefined} />
+              </div>
             </div>
           )
         })}

@@ -39,9 +39,9 @@ export type AiProvider = 'anthropic' | 'openai' | 'gemini' | ''
 // Ctrl+Z/Y-Konventionen oder die Widget-internen Tastenkürzel (Tabelle,
 // Drawboard), die feste, allgemein erwartete Interaktionsmuster sind statt
 // einer einzelnen Aktion, die man sinnvoll auf eine andere Taste legen würde.
-export type ShortcutAction = 'toggleMode' | 'addWidget' | 'theme' | 'ai' | 'settings'
+export type ShortcutAction = 'toggleMode' | 'addWidget' | 'theme' | 'ai' | 'settings' | 'search'
 export const DEFAULT_SHORTCUTS: Record<ShortcutAction, string> = {
-  toggleMode: 'E', addWidget: 'A', theme: 'T', ai: 'I', settings: 'S',
+  toggleMode: 'E', addWidget: 'A', theme: 'T', ai: 'I', settings: 'S', search: 'F',
 }
 
 // Eigenes, unabhängiges Set für die Board-Auswahl (Startseite, page.tsx) —
@@ -98,6 +98,7 @@ export interface AppSettings {
   aiApiKey:               string
   aiModel:                string   // leer = Default des Providers
   aiBaseUrl:              string   // nur für OpenAI-kompatible Endpunkte
+  aiHistoryAutoExpire:    boolean  // an = Chat-Verlauf älter als 1 Monat wird beim App-Start gelöscht (s. aiStore.ts)
 }
 
 interface SettingsStore extends AppSettings {
@@ -151,6 +152,7 @@ export const useSettings = create<SettingsStore>()(
       aiApiKey:               '',
       aiModel:                '',
       aiBaseUrl:              '',
+      aiHistoryAutoExpire:    true,
       setSetting:       (patch) => set(patch),
       toggleWidgetType: (type)  => set(s => ({
         disabledWidgetTypes: s.disabledWidgetTypes.includes(type)

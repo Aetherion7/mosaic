@@ -1,10 +1,12 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useSettings, type AiProvider } from '@/store/settingsStore'
+import { useAiStore, useWidgetAiStore } from '@/store/aiStore'
 import { DEFAULT_MODELS } from '@/lib/ai/client'
 import { useT } from '@/hooks/useT'
 import { IconSparkle } from '@/components/ui/aiShared'
 import { SectionTitle, SettingItem, Row } from './shared'
+import ChatHistoryModal from './ChatHistoryModal'
 
 // Nie '' — das ist nur der "noch nicht gewählt"-Zustand von AiProvider, kein
 // echter Anbieter, der hier auftauchen dürfte.
@@ -26,6 +28,10 @@ export default function AiSettingsPanel() {
   const setSetting = useSettings(s => s.setSetting)
   const t = useT()
   const [showKey, setShowKey] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const boardChatCount = useAiStore(s => s.items.length)
+  const widgetChatCount = useWidgetAiStore(s => Object.values(s.chats).filter(c => c.length > 0).length)
+  const conversationCount = (boardChatCount > 0 ? 1 : 0) + widgetChatCount
 
   const inputStyle: React.CSSProperties = {
     width: 220, fontSize: 12, padding: '7px 10px', borderRadius: 8,
@@ -129,11 +135,28 @@ export default function AiSettingsPanel() {
           </>
         )}
 
+        <SectionTitle>{t('Chat history')}</SectionTitle>
+        <SettingItem
+          last
+          label={t('View chat history')}
+          desc={conversationCount > 0
+            ? `${conversationCount} ${conversationCount === 1 ? t('conversation') : t('conversations')} · ${t('retrieve, copy or delete past chats')}`
+            : t('No chat history yet')}
+          control={
+            <button onClick={() => setHistoryOpen(true)}
+              style={{ fontSize: 11.5, fontWeight: 600, padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}>
+              {t('Open')}
+            </button>
+          }
+        />
+
         <SectionTitle>{t('Privacy')}</SectionTitle>
         <div style={{ fontSize: 11, color: 'var(--text3)', lineHeight: 1.6, padding: '4px 0 12px' }}>
           {t('When you send a message, the assistant transmits your request plus a summary of the current board (widget types, positions, titles and contents) directly from your browser to the selected provider. Nothing runs through mosaic servers, and nothing is sent until you write a message. The API key is stored unencrypted in this browser profile and is never included in backups.')}
         </div>
       </div>
+
+      {historyOpen && <ChatHistoryModal onClose={() => setHistoryOpen(false)} />}
     </div>
   )
 }

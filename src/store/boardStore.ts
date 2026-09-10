@@ -181,10 +181,18 @@ function snap(s: S, kind?: string): Pick<S, '_history' | '_future'> {
 }
 
 // Theme-CSS-Variablen aufs Dokument anwenden (bei Undo/Redo von Theme-Wechseln)
+let themeTransitionTimer: ReturnType<typeof setTimeout> | undefined
 function applyThemeCss(id: string) {
   const theme = findTheme(id)
   if (!theme || typeof document === 'undefined') return
   const root = document.documentElement
+  // Brief global transition so the color swap crossfades instead of
+  // snapping instantly — see .theme-transitioning in globals.css. Timer
+  // reset on every call so rapid theme switches (e.g. arrow-keying through
+  // a list) don't leave the class removed mid-fade on the next switch.
+  clearTimeout(themeTransitionTimer)
+  root.classList.add('theme-transitioning')
+  themeTransitionTimer = setTimeout(() => root.classList.remove('theme-transitioning'), 180)
   Object.entries(theme.cssVars).forEach(([k, v]) => root.style.setProperty(k, v))
 }
 
