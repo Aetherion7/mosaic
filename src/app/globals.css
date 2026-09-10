@@ -148,19 +148,16 @@ input[type=number] { -moz-appearance: textfield; }
 .cal-delete-btn:hover { background: rgba(239,68,68,0.25) !important; color: #ef4444 !important; border-radius: 3px; }
 .cal-delete-btn:active { background: rgba(239,68,68,0.45) !important; }
 
-/* Brief global crossfade on theme switch (boardStore.ts's applyThemeCss adds
-   this class right before writing new --vars, then removes it ~180ms
-   later) — kept deliberately simple: a flat set of color-only properties
-   with !important, since some elements already set their own inline
-   transition for hover effects (e.g. "background 0.14s") which would
-   otherwise win over this and skip the crossfade. box-shadow is
-   deliberately excluded — animating blur/spread on every widget card at
-   once is the heaviest property here to repaint (especially under
-   software rendering) and was the main source of visible stutter. */
-.theme-transitioning, .theme-transitioning * {
-  transition: background-color .12s ease-out, border-color .12s ease-out,
-              color .12s ease-out, fill .12s ease-out,
-              stroke .12s ease-out !important;
+/* Theme-switch crossfade (boardStore.ts's applyThemeCss wraps the --var
+   writes in document.startViewTransition()). The API's default cross-fade
+   is already compositor-only opacity animation — cheap regardless of DOM
+   size — this just tunes duration/easing to feel snappy rather than using
+   the ~0.25s ease default. ::view-transition-old(root) is a snapshot of the
+   page BEFORE the change, ::view-transition-new(root) AFTER; both fire
+   together so this cross-fades rather than sliding one out then the other in. */
+::view-transition-old(root), ::view-transition-new(root) {
+  animation-duration: 0.15s;
+  animation-timing-function: ease-out;
 }
 
 /* Keyboard focus — visible ring for keyboard users, hidden for mouse */

@@ -181,19 +181,27 @@ function snap(s: S, kind?: string): Pick<S, '_history' | '_future'> {
 }
 
 // Theme-CSS-Variablen aufs Dokument anwenden (bei Undo/Redo von Theme-Wechseln)
-let themeTransitionTimer: ReturnType<typeof setTimeout> | undefined
+// Crossfades the color swap via the View Transitions API instead of a CSS
+// `transition` on every element (the previous approach: a `.theme-
+// transitioning, .theme-transitioning * { transition: ... }` rule). That
+// forced a style recalc + repaint on literally every node in the DOM for the
+// duration of the fade — cheap in a small demo, but visibly janky on weaker/
+// software-rendered systems once a real board has dozens of widgets, even
+// after trimming the duration and dropping box-shadow from it. A view
+// transition instead rasterizes the OLD and NEW states as two static images
+// ONCE and cross-fades between them with a compositor-only opacity
+// animation — the cost is constant regardless of DOM size, since nothing is
+// restyled or repainted frame-by-frame. Electron 43 bundles a Chromium new
+// enough to support this (landed in Chromium 111); `startViewTransition` is
+// undefined on anything older, so unsupported runtimes just apply instantly
+// with no error and no fallback timer/class to manage.
 function applyThemeCss(id: string) {
   const theme = findTheme(id)
   if (!theme || typeof document === 'undefined') return
   const root = document.documentElement
-  // Brief global transition so the color swap crossfades instead of
-  // snapping instantly — see .theme-transitioning in globals.css. Timer
-  // reset on every call so rapid theme switches (e.g. arrow-keying through
-  // a list) don't leave the class removed mid-fade on the next switch.
-  clearTimeout(themeTransitionTimer)
-  root.classList.add('theme-transitioning')
-  themeTransitionTimer = setTimeout(() => root.classList.remove('theme-transitioning'), 180)
-  Object.entries(theme.cssVars).forEach(([k, v]) => root.style.setProperty(k, v))
+  const apply = () => { Object.entries(theme.cssVars).forEach(([k, v]) => root.style.setProperty(k, v)) }
+  if (document.startViewTransition) document.startViewTransition(apply)
+  else apply()
 }
 
 // Per-process override for "which board am I actually looking at" — set once
