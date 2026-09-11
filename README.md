@@ -185,7 +185,7 @@ the file back out of a terminal every time. The `.deb` install gets this the nor
 </td>
 <td width="50%">
 
-<img src="docs/screenshots/ai-assistant.png" alt="Per-widget AI chat open on a table widget, with changes scoped to just that widget" width="100%">
+<img src="docs/screenshots/ai-assistant.png" alt="Per-widget AI chat open on a calendar widget, with changes scoped to just that widget" width="100%">
 
 </td>
 </tr>
