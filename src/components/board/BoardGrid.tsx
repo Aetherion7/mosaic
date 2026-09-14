@@ -148,6 +148,14 @@ export default function BoardGrid() {
       if (useUIStore.getState().mode !== 'edit') return
       if (useUIStore.getState().panel !== null) return
       if ((e.target as HTMLElement).closest('[data-widget-tile]')) return
+      // Everything past this point is empty canvas or board chrome (HUD,
+      // minimap, empty-state CTA) — never a real widget — so the browser's
+      // own text-selection drag is never wanted here: it would highlight
+      // whatever text the drag path happens to cross (e.g. a nearby widget's
+      // label) even though the drag never touched that widget. Suppressed
+      // unconditionally BEFORE the chrome check below, so chrome-originated
+      // drags are covered too, not just canvas-originated ones.
+      e.preventDefault()
       // Zoom-HUD/Minimap liegen als absolut positionierte Kinder INNERHALB
       // von outerRef — ihr eigenes onPointerDown+stopPropagation() greift zu
       // spät, weil dieser Listener hier nativ auf outerRef sitzt und daher

@@ -6,7 +6,7 @@ import { useAiStore, type AiChatItem } from '@/store/aiStore'
 import { useSettings } from '@/store/settingsStore'
 import { useT } from '@/hooks/useT'
 import SettingsModal from '@/components/ui/SettingsModal'
-import { IconSparkle, renderInlineMd, MessageActions } from '@/components/ui/aiShared'
+import { IconSparkle, IconArrowUp, IconSearchGlass, renderInlineMd, MessageActions } from '@/components/ui/aiShared'
 
 // Aufeinanderfolgende Aktions-Chips zu einer umbrechenden Reihe bündeln,
 // statt jeden Chip in eine eigene Zeile zu setzen
@@ -173,8 +173,8 @@ export default function AiPanel() {
                   if (group.kind === 'chips') return (
                     <div key={group.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignSelf: 'flex-start', maxWidth: '92%' }}>
                       {group.items.map(chip => (
-                        <span key={chip.id} style={{ fontSize: 10, fontWeight: 600, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)', borderRadius: 999, padding: '2px 9px', whiteSpace: 'nowrap' }}>
-                          {chip.text}
+                        <span key={chip.id} style={{ display: 'inline-flex', alignItems: 'center', fontSize: 10, fontWeight: 600, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)', borderRadius: 999, padding: '2px 9px', whiteSpace: 'nowrap' }}>
+                          {chip.text === '🔍' ? <IconSearchGlass size={10} /> : chip.text}
                         </span>
                       ))}
                     </div>
@@ -253,9 +253,7 @@ export default function AiPanel() {
                       <rect x="4" y="4" width="16" height="16" rx="3"/>
                     </svg>
                   ) : (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                    </svg>
+                    <IconArrowUp size={15} />
                   )}
                 </button>
               </div>

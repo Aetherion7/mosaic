@@ -379,6 +379,10 @@ h2 { font-family: 'Guavine', serif; font-size: clamp(30px, 4vw, 42px); font-weig
 .install-body { padding: 0 18px 18px 46px; font-size: 13px; color: var(--text2); line-height: 1.65; }
 .install-body p { margin-bottom: 10px; }
 .install-body p:last-child { margin-bottom: 0; }
+.install-body ol { margin: 0; padding-left: 18px; }
+.install-body ol li { margin-bottom: 10px; }
+.install-body ol li:last-child { margin-bottom: 0; }
+.install-body ol .codeblock { margin: 8px 0 0; }
 .distro-label {
   display: block; font-size: 11px; font-weight: 700; color: var(--text3);
   text-transform: uppercase; letter-spacing: .04em; margin: 14px 0 7px;
@@ -778,12 +782,17 @@ footer .flinks a:hover { color: var(--text1); }
           </summary>
           <div class="install-body">
             <p>You'll likely see <strong>"'mosaic' is damaged and can't be opened. You should move
-            it to the Trash."</strong> That's just Gatekeeper's generic message for any app without
-            a paid Developer ID signature — the download isn't actually broken, and right-click →
-            "Open" no longer clears it on current macOS.</p>
-            <p>Fix it: move <code class="mono">mosaic.app</code> to <code class="mono">/Applications</code>,
-            then run this once in Terminal:</p>
-            <pre class="codeblock">xattr -cr /Applications/mosaic.app</pre>
+            it to the Trash."</strong> That's just Gatekeeper's generic warning for any app without
+            a paid Developer ID signature — the download itself isn't broken, and right-click →
+            "Open" no longer bypasses it on current macOS. Two steps fix it:</p>
+            <ol>
+              <li>Move <code class="mono">mosaic.app</code> into <code class="mono">/Applications</code>.
+              (Finder shows this folder under your system's language — e.g. "Programme" on a
+              German Mac — but the actual path on disk is always <code class="mono">/Applications</code>,
+              in every language.)</li>
+              <li>Run this once in Terminal:
+              <pre class="codeblock">xattr -cr /Applications/mosaic.app</pre></li>
+            </ol>
           </div>
         </details>
         <details>

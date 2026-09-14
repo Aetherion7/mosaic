@@ -14,6 +14,22 @@ export function IconSparkle({ size = 14 }: { size?: number }) {
   )
 }
 
+export function IconArrowUp({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+    </svg>
+  )
+}
+
+export function IconSearchGlass({ size = 13 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/>
+    </svg>
+  )
+}
+
 // ── Leichtgewichtiges Inline-Markdown für Assistent-Antworten ────────────────
 // Nur **fett**, *kursiv* und `Code` — Zeilenumbrüche/Listen erledigt pre-wrap.
 // Bewusst keine Markdown-Bibliothek: die Antworten sind kurz, und mehr Syntax

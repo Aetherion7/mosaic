@@ -1257,7 +1257,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
                         fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap',
                         cursor: mode === 'edit' ? (isActive ? 'grabbing' : 'grab') : 'default',
                         opacity: isPast ? 0.4 : 1,
-                        boxShadow: isActive ? '0 4px 14px rgba(0,0,0,0.4)' : 'none',
+                        boxShadow: isActive ? '0 4px 14px rgba(0,0,0,0.4)' : '0 1px 3px rgba(0,0,0,0.2)',
                         zIndex: isActive ? 2 : 1,
                       }}
                     >

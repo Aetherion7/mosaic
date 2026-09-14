@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import TaskList from '@tiptap/extension-task-list'
@@ -129,7 +129,16 @@ const ParagraphWithAlign = Paragraph.extend({
     return {
       markdown: {
         serialize: withAlignSerialize((state, node) => {
-          state.renderInline(node)
+          // A genuinely empty paragraph (kept as visual spacing between two
+          // others) serializes to nothing — markdown has no syntax to tell
+          // "one blank paragraph" apart from the ordinary blank-line gap
+          // between any two blocks, so re-parsing the string back always
+          // merges it away, closing the gap the user deliberately left. A
+          // lone non-breaking space keeps the paragraph non-empty (so it
+          // survives the round trip as its own block) while staying
+          // invisible on screen.
+          if (node.content.size === 0) state.write(' ')
+          else state.renderInline(node)
           state.closeBlock(node)
         }),
         parse: {},
@@ -334,6 +343,28 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
   // our own keystrokes (skip re-render) from external content changes.
   const editorGeneratedContent = useRef((d.content ?? '') as string)
 
+  // Debounced store write: every keystroke used to call updateNoteContent()
+  // synchronously, which — via the persist middleware — JSON-serializes and
+  // writes the ENTIRE boards tree to IndexedDB on every single character,
+  // stalling the main thread mid-keystroke and making typing feel laggy on
+  // anything but a trivial board. editorGeneratedContent.current still
+  // updates immediately (unaffected — see the guard in the sync effect
+  // below), only the actual store commit is batched.
+  const pendingContentRef = useRef<string | null>(null)
+  const debounceTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const flushNoteContent = useCallback(() => {
+    if (debounceTimerRef.current) { clearTimeout(debounceTimerRef.current); debounceTimerRef.current = null }
+    if (pendingContentRef.current !== null) {
+      updateNoteContent(widget.id, pendingContentRef.current)
+      pendingContentRef.current = null
+    }
+  }, [updateNoteContent, widget.id])
+
+  // Flush a pending edit before the widget unmounts or switches to a
+  // different note — otherwise a fast close/switch right after typing
+  // could drop the last debounce window's keystrokes.
+  useEffect(() => flushNoteContent, [flushNoteContent])
+
   // Always-fresh navigation callback for the PdfRef ProseMirror plugin.
   // bookId is undefined for pre-library links (created before a Reader
   // widget's single book became a shelf of many) — fall back to whichever
@@ -413,7 +444,9 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const md = (editor.storage as any).markdown.getMarkdown()
       editorGeneratedContent.current = md
-      updateNoteContent(widget.id, md)
+      pendingContentRef.current = md
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+      debounceTimerRef.current = setTimeout(flushNoteContent, 250)
     },
   })
 

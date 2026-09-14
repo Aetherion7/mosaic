@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useWidgetAiStore } from '@/store/aiStore'
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
-import { IconSparkle, renderInlineMd, MessageActions } from '@/components/ui/aiShared'
+import { IconSparkle, IconArrowUp, IconSearchGlass, renderInlineMd, MessageActions } from '@/components/ui/aiShared'
 import { useT } from '@/hooks/useT'
 import type { Widget } from '@/types'
 
@@ -119,8 +119,8 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
         )}
         {items.map(item => {
           if (item.kind === 'action') return (
-            <span key={item.id} style={{ alignSelf: 'flex-start', fontSize: 10, fontWeight: 600, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)', borderRadius: 999, padding: '2px 9px' }}>
-              {item.text}
+            <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', alignSelf: 'flex-start', fontSize: 10, fontWeight: 600, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)', borderRadius: 999, padding: '2px 9px' }}>
+              {item.text === '🔍' ? <IconSearchGlass size={10} /> : item.text}
             </span>
           )
           if (item.kind === 'error') {
@@ -197,9 +197,7 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
           {running ? (
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>
           ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
+            <IconArrowUp size={15} />
           )}
         </button>
       </div>
