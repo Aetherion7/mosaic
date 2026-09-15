@@ -557,7 +557,7 @@ export default function MapWidget({ widget }: { widget: Widget }) {
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          position: 'absolute', top: 48, left: 8, zIndex: 1000,
+          position: 'absolute', bottom: 8, left: 8, zIndex: 1000,
           display: 'flex', flexDirection: 'column',
           background: 'color-mix(in srgb, var(--surface) 92%, transparent)',
           backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',

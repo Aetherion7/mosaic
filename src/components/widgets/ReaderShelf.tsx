@@ -153,47 +153,49 @@ const visuallyHiddenStyle: React.CSSProperties = {
 
 // ── One book card ─────────────────────────────────────────────────────────────
 
-const CATEGORY_PANEL_W = 180
+const TAG_PANEL_W = 180
 
-function BookCard({ book, existingCategories, containerRef, onOpen, onDelete, onRename, onSetCategory, onCoverGenerated }: {
+function BookCard({ book, existingTags, containerRef, onOpen, onDelete, onRename, onToggleTag, onAddTag, onCoverGenerated }: {
   book: ReaderBook
-  existingCategories: string[]
+  existingTags: string[]
   containerRef: React.RefObject<HTMLDivElement | null>
   onOpen: () => void
   onDelete: () => void
   onRename: (name: string) => void
-  onSetCategory: (category: string | undefined) => void
+  onToggleTag: (tag: string) => void
+  onAddTag: (name: string) => void
   onCoverGenerated: (coverRef: string) => void
 }) {
   const t = useT()
   const coverUrl = useBlobUrl(book.coverRef)
   const [renaming, setRenaming] = useState(false)
   const [nameVal, setNameVal] = useState(book.fileName)
-  const [categoryOpen, setCategoryOpen] = useState(false)
+  const [tagsOpen, setTagsOpen] = useState(false)
+  const [newTagVal, setNewTagVal] = useState('')
   // Horizontal offset (px, relative to the card's own left edge) for the
-  // category panel — the panel is wider than a shelf card, so a naive
+  // tag panel — the panel is wider than a shelf card, so a naive
   // "anchor to the card's corner" position clips off-screen for cards near
   // either edge of the grid. Measured against the shelf's own scroll
   // container (not the viewport) once the panel opens.
   const [panelLeft, setPanelLeft] = useState<number | null>(null)
   const cardRef = useRef<HTMLDivElement>(null)
-  const categoryPopoverRef = useRef<HTMLDivElement>(null)
+  const tagPopoverRef = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
-    if (!categoryOpen) { setPanelLeft(null); return }
+    if (!tagsOpen) { setPanelLeft(null); return }
     const card = cardRef.current
     const container = containerRef.current
     if (!card || !container) return
     const cardRect = card.getBoundingClientRect()
     const contRect = container.getBoundingClientRect()
-    let left = cardRect.width - CATEGORY_PANEL_W  // default: right-align with the card, like a normal dropdown
+    let left = cardRect.width - TAG_PANEL_W  // default: right-align with the card, like a normal dropdown
     const MARGIN = 6
     const absLeft  = cardRect.left + left
-    const absRight = absLeft + CATEGORY_PANEL_W
+    const absRight = absLeft + TAG_PANEL_W
     if (absLeft < contRect.left + MARGIN)  left += (contRect.left + MARGIN) - absLeft
     if (absRight > contRect.right - MARGIN) left -= absRight - (contRect.right - MARGIN)
     setPanelLeft(left)
-  }, [categoryOpen, containerRef])
+  }, [tagsOpen, containerRef])
 
   // Missing cover (e.g. a migrated legacy book) — generate one lazily, once.
   useEffect(() => {
@@ -218,24 +220,31 @@ function BookCard({ book, existingCategories, containerRef, onOpen, onDelete, on
     else setNameVal(book.fileName)
   }
 
-  // Picking a category from the existing list toggles it: clicking the
-  // book's current category again clears it, clicking a different one
-  // switches to it. Creating/renaming/deleting categories themselves
-  // happens from the toolbar above (the single place that manages what
-  // categories exist) — this popover is purely an assignment picker.
-  function selectCategory(name: string) {
-    onSetCategory(book.category === name ? undefined : name)
-    setCategoryOpen(false)
+  // Tapping any tag in the list toggles it on/off for this book — the
+  // popover stays open across taps so several tags can be picked in one
+  // sitting instead of reopening it per tag. Typing a brand-new name below
+  // the list creates AND assigns it in one step, so a book's first tag
+  // never requires a trip to the toolbar above first.
+  function toggleTag(name: string) {
+    onToggleTag(name)
+  }
+
+  function commitNewTag() {
+    const v = newTagVal.trim()
+    setNewTagVal('')
+    if (!v) return
+    onAddTag(v)
+    onToggleTag(v)
   }
 
   useEffect(() => {
-    if (!categoryOpen) return
+    if (!tagsOpen) return
     function onDocMouseDown(e: MouseEvent) {
-      if (categoryPopoverRef.current && !categoryPopoverRef.current.contains(e.target as Node)) setCategoryOpen(false)
+      if (tagPopoverRef.current && !tagPopoverRef.current.contains(e.target as Node)) setTagsOpen(false)
     }
     document.addEventListener('mousedown', onDocMouseDown)
     return () => document.removeEventListener('mousedown', onDocMouseDown)
-  }, [categoryOpen])
+  }, [tagsOpen])
 
   return (
     <motion.div
@@ -243,7 +252,7 @@ function BookCard({ book, existingCategories, containerRef, onOpen, onDelete, on
       whileHover={{ y: -4, scale: 1.02 }}
       transition={{ type: 'spring', stiffness: 400, damping: 28 }}
       style={{
-        // No overflow:hidden here (unlike before) — the category panel below
+        // No overflow:hidden here (unlike before) — the tag panel below
         // needs to be able to extend past the cover's edge without getting
         // clipped by it. The cover and footer each round their own corners
         // instead, so the card still reads as one rounded block.
@@ -251,7 +260,7 @@ function BookCard({ book, existingCategories, containerRef, onOpen, onDelete, on
         background: 'var(--surface)', border: '1px solid var(--border)',
         boxShadow: '0 2px 10px rgba(0,0,0,0.18)', cursor: 'pointer',
       }}
-      onClick={() => !renaming && !categoryOpen && onOpen()}
+      onClick={() => !renaming && !tagsOpen && onOpen()}
     >
       {/* Cover */}
       <div style={{
@@ -277,7 +286,7 @@ function BookCard({ book, existingCategories, containerRef, onOpen, onDelete, on
           style={{ position: 'absolute', top: 6, right: 6, display: 'flex', gap: 4, opacity: 0, transition: 'opacity 0.12s' }}
           onClick={e => e.stopPropagation()}
         >
-          <button onClick={() => setCategoryOpen(v => !v)} title={t('Set category')}
+          <button onClick={() => setTagsOpen(v => !v)} title={t('Edit tags')}
             style={{ width: 22, height: 22, borderRadius: 6, border: 'none', background: 'rgba(0,0,0,0.55)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backdropFilter: 'blur(4px)' }}>
             <IcoTag />
           </button>
@@ -291,59 +300,95 @@ function BookCard({ book, existingCategories, containerRef, onOpen, onDelete, on
           </button>
         </div>
 
-        {book.category && (
-          <div style={{ position: 'absolute', bottom: 6, left: 6, fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'rgba(0,0,0,0.55)', color: 'white', backdropFilter: 'blur(4px)' }}>
-            {book.category}
+        {!!book.tags?.length && (
+          <div style={{ position: 'absolute', bottom: 6, left: 6, right: 6, display: 'flex', flexWrap: 'wrap', gap: 3, alignItems: 'flex-end' }}>
+            {book.tags.slice(0, 2).map(tag => (
+              <div key={tag} style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'rgba(0,0,0,0.55)', color: 'white', backdropFilter: 'blur(4px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                {tag}
+              </div>
+            ))}
+            {book.tags.length > 2 && (
+              <div style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 999, background: 'rgba(0,0,0,0.55)', color: 'white', backdropFilter: 'blur(4px)' }}>
+                +{book.tags.length - 2}
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Category picker: assign one of the existing categories to this
-          book. Categories themselves are created/renamed/deleted from the
-          toolbar above, not here — this popover only assigns. */}
-      {categoryOpen && (
+      {/* Tag picker: assign any number of the existing tags to this book —
+          each row toggles independently and the popover stays open so
+          several can be picked in one sitting. Typing a new name below
+          creates a tag and assigns it in the same step; renaming/deleting
+          a tag itself still happens from the toolbar above (the single
+          place that manages what tags exist across the whole library). */}
+      {tagsOpen && (
         <div
-          ref={categoryPopoverRef}
+          ref={tagPopoverRef}
           onClick={e => e.stopPropagation()}
           style={{
-            position: 'absolute', top: 34, zIndex: 20, width: CATEGORY_PANEL_W,
+            position: 'absolute', top: 34, zIndex: 20, width: TAG_PANEL_W,
             ...(panelLeft === null ? { right: 6 } : { left: panelLeft }),
             background: 'var(--popover-bg)', border: '1px solid var(--border)', borderRadius: 10,
             boxShadow: '0 8px 24px rgba(0,0,0,0.35)', backdropFilter: 'blur(16px)', overflow: 'hidden',
           }}
         >
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '8px 10px 6px' }}>
-            {t('Category')}
+            {t('Tags')}
           </div>
 
-          {existingCategories.length > 0 ? (
-            <div style={{ maxHeight: 168, overflowY: 'auto', padding: '0 4px 6px' }}>
-              {existingCategories.map(c => (
-                <button
-                  key={c}
-                  onClick={() => selectCategory(c)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6, width: '100%', textAlign: 'left',
-                    fontSize: 11.5, fontWeight: book.category === c ? 700 : 500,
-                    color: book.category === c ? 'var(--accent)' : 'var(--text1)',
-                    background: 'none', border: 'none', borderRadius: 6, cursor: 'pointer',
-                    padding: '6px 8px', margin: '1px 0',
-                  }}
-                >
-                  <span style={{
-                    width: 12, height: 12, borderRadius: '50%', flexShrink: 0,
-                    border: book.category === c ? 'none' : '1.5px solid var(--border)',
-                    background: book.category === c ? 'var(--accent)' : 'transparent',
-                  }} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c}</span>
-                </button>
-              ))}
+          {existingTags.length > 0 ? (
+            <div style={{ maxHeight: 140, overflowY: 'auto', padding: '0 4px' }}>
+              {existingTags.map(name => {
+                const checked = book.tags?.includes(name) ?? false
+                return (
+                  <button
+                    key={name}
+                    onClick={() => toggleTag(name)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6, width: '100%', textAlign: 'left',
+                      fontSize: 11.5, fontWeight: checked ? 700 : 500,
+                      color: checked ? 'var(--accent)' : 'var(--text1)',
+                      background: 'none', border: 'none', borderRadius: 6, cursor: 'pointer',
+                      padding: '6px 8px', margin: '1px 0',
+                    }}
+                  >
+                    <span style={{
+                      width: 13, height: 13, borderRadius: 4, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: checked ? 'none' : '1.5px solid var(--border)',
+                      background: checked ? 'var(--accent)' : 'transparent',
+                    }}>
+                      {checked && (
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--on-accent, white)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
+                    </span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                  </button>
+                )
+              })}
             </div>
           ) : (
-            <div style={{ fontSize: 10.5, color: 'var(--text3)', lineHeight: 1.5, padding: '0 10px 10px' }}>
-              {t('No categories yet — create one from the toolbar above.')}
+            <div style={{ fontSize: 10.5, color: 'var(--text3)', lineHeight: 1.5, padding: '0 10px 6px' }}>
+              {t('No tags yet — add one below.')}
             </div>
           )}
+
+          <div style={{ padding: '6px 8px 8px', borderTop: existingTags.length > 0 ? '1px solid var(--border)' : 'none', marginTop: 4 }}>
+            <input
+              value={newTagVal}
+              onChange={e => setNewTagVal(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') commitNewTag() }}
+              placeholder={t('Add a tag…')}
+              style={{
+                width: '100%', boxSizing: 'border-box', fontSize: 11, padding: '5px 8px',
+                borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)',
+                color: 'var(--text1)', outline: 'none',
+              }}
+            />
+          </div>
         </div>
       )}
 
@@ -390,59 +435,59 @@ function BookCard({ book, existingCategories, containerRef, onOpen, onDelete, on
 
 type SortMode = 'recent' | 'title' | 'progress'
 
-export default function ReaderShelf({ books, categories: categoryList, onOpen, onAdd, onDelete, onRename, onSetCategory, onAddCategory, onRenameCategory, onDeleteCategory, onCoverGenerated }: {
+export default function ReaderShelf({ books, tags: tagList, onOpen, onAdd, onDelete, onRename, onToggleTag, onAddTag, onRenameTag, onDeleteTag, onCoverGenerated }: {
   books: Record<string, ReaderBook>
-  categories: string[]
+  tags: string[]
   onOpen: (id: string) => void
   onAdd: (file: File) => void
   onDelete: (id: string) => void
   onRename: (id: string, fileName: string) => void
-  onSetCategory: (id: string, category: string | undefined) => void
-  onAddCategory: (name: string) => void
-  onRenameCategory: (oldName: string, newName: string) => void
-  onDeleteCategory: (name: string) => void
+  onToggleTag: (id: string, tag: string) => void
+  onAddTag: (name: string) => void
+  onRenameTag: (oldName: string, newName: string) => void
+  onDeleteTag: (name: string) => void
   onCoverGenerated: (id: string, coverRef: string) => void
 }) {
   const t = useT()
   const [drag, setDrag] = useState(false)
-  const [category, setCategory] = useState<string>('all')
+  const [tagFilter, setTagFilter] = useState<string>('all')
   const [sort, setSort] = useState<SortMode>('recent')
-  const [addingCategory, setAddingCategory] = useState(false)
-  const [newCatVal, setNewCatVal] = useState('')
-  const newCatValRef = useRef(newCatVal); newCatValRef.current = newCatVal
-  const newCatRef = useRef<HTMLDivElement>(null)
+  const [addingTag, setAddingTag] = useState(false)
+  const [newTagVal, setNewTagVal] = useState('')
+  const newTagValRef = useRef(newTagVal); newTagValRef.current = newTagVal
+  const newTagRef = useRef<HTMLDivElement>(null)
   const dragCounter = useRef(0)
   const gridScrollRef = useRef<HTMLDivElement>(null)
 
-  function commitNewCategory() {
-    const v = newCatValRef.current.trim()
-    setAddingCategory(false)
-    setNewCatVal('')
-    if (v) onAddCategory(v)
+  function commitNewTag() {
+    const v = newTagValRef.current.trim()
+    setAddingTag(false)
+    setNewTagVal('')
+    if (v) onAddTag(v)
   }
 
   useEffect(() => {
-    if (!addingCategory) return
+    if (!addingTag) return
     function onDocMouseDown(e: MouseEvent) {
-      if (newCatRef.current && !newCatRef.current.contains(e.target as Node)) commitNewCategory()
+      if (newTagRef.current && !newTagRef.current.contains(e.target as Node)) commitNewTag()
     }
     document.addEventListener('mousedown', onDocMouseDown)
     return () => document.removeEventListener('mousedown', onDocMouseDown)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [addingCategory])
+  }, [addingTag])
 
   const all = Object.values(books)
-  // Union of the explicit (toolbar-managed) list with any category value
-  // still present on a book — defensive: keeps an orphaned/legacy value
-  // (from before categories were tracked independently) visible and
-  // manageable instead of silently hiding it.
-  const categories = Array.from(new Set([...categoryList, ...all.map(b => b.category).filter((c): c is string => !!c)])).sort()
+  // Union of the explicit (toolbar-managed) list with any tag still present
+  // on a book — defensive: keeps an orphaned/legacy value (from before tags
+  // were tracked independently) visible and manageable instead of silently
+  // hiding it.
+  const tags = Array.from(new Set([...tagList, ...all.flatMap(b => b.tags ?? [])])).sort()
 
   function isAccepted(f: File) {
     return f.type === 'application/pdf' || f.type === 'application/epub+zip' || /\.(pdf|epub)$/i.test(f.name)
   }
 
-  let visible = category === 'all' ? all : all.filter(b => b.category === category)
+  let visible = tagFilter === 'all' ? all : all.filter(b => b.tags?.includes(tagFilter))
   visible = [...visible].sort((a, b) => {
     if (sort === 'title') return a.fileName.localeCompare(b.fileName)
     if (sort === 'progress') {
@@ -488,39 +533,39 @@ export default function ReaderShelf({ books, categories: categoryList, onOpen, o
       onDrop={e => { e.preventDefault(); dragCounter.current = 0; setDrag(false); const f = e.dataTransfer.files[0]; if (f && isAccepted(f)) onAdd(f) }}
       style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}
     >
-      {/* Filter + category management + sort row */}
+      {/* Filter + tag management + sort row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderBottom: '1px solid var(--border)', flexShrink: 0, overflowX: 'auto' }}>
-        <button onClick={() => setCategory('all')} style={pillStyle(category === 'all')}>{t('All')}</button>
-        {categories.map(c => (
-          <CategoryPill
-            key={c}
-            name={c}
-            active={category === c}
-            onSelect={() => setCategory(c)}
+        <button onClick={() => setTagFilter('all')} style={pillStyle(tagFilter === 'all')}>{t('All')}</button>
+        {tags.map(name => (
+          <TagPill
+            key={name}
+            name={name}
+            active={tagFilter === name}
+            onSelect={() => setTagFilter(name)}
             onRename={newName => {
-              onRenameCategory(c, newName)
-              if (category === c) setCategory(newName)
+              onRenameTag(name, newName)
+              if (tagFilter === name) setTagFilter(newName)
             }}
             onDelete={() => {
-              onDeleteCategory(c)
-              if (category === c) setCategory('all')
+              onDeleteTag(name)
+              if (tagFilter === name) setTagFilter('all')
             }}
           />
         ))}
-        {addingCategory ? (
-          <div ref={newCatRef} style={{ flexShrink: 0 }}>
+        {addingTag ? (
+          <div ref={newTagRef} style={{ flexShrink: 0 }}>
             <input
-              autoFocus value={newCatVal} onChange={e => setNewCatVal(e.target.value)}
+              autoFocus value={newTagVal} onChange={e => setNewTagVal(e.target.value)}
               onKeyDown={e => {
-                if (e.key === 'Enter') commitNewCategory()
-                if (e.key === 'Escape') { setNewCatVal(''); setAddingCategory(false) }
+                if (e.key === 'Enter') commitNewTag()
+                if (e.key === 'Escape') { setNewTagVal(''); setAddingTag(false) }
               }}
-              placeholder={t('New category…')}
+              placeholder={t('New tag…')}
               style={{ fontSize: 10.5, fontWeight: 600, padding: '4px 10px', borderRadius: 999, border: '1px solid var(--accent)', background: 'var(--surface2)', color: 'var(--text1)', outline: 'none', width: 110 }}
             />
           </div>
         ) : (
-          <button onClick={() => setAddingCategory(true)} title={t('New category…')} style={{
+          <button onClick={() => setAddingTag(true)} title={t('New tag…')} style={{
             flexShrink: 0, width: 24, height: 24, borderRadius: '50%', border: '1px dashed var(--border)',
             background: 'none', color: 'var(--text3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
           }}>
@@ -542,12 +587,13 @@ export default function ReaderShelf({ books, categories: categoryList, onOpen, o
             <BookCard
               key={book.id}
               book={book}
-              existingCategories={categories}
+              existingTags={tags}
               containerRef={gridScrollRef}
               onOpen={() => onOpen(book.id)}
               onDelete={() => onDelete(book.id)}
               onRename={name => onRename(book.id, name)}
-              onSetCategory={c => onSetCategory(book.id, c)}
+              onToggleTag={tag => onToggleTag(book.id, tag)}
+              onAddTag={onAddTag}
               onCoverGenerated={ref => onCoverGenerated(book.id, ref)}
             />
           ))}
@@ -575,11 +621,11 @@ export default function ReaderShelf({ books, categories: categoryList, onOpen, o
   )
 }
 
-// ── One category filter pill, with hover-revealed rename/delete ────────────────
-// The toolbar is the one place categories are created, renamed, and deleted;
-// the per-book tag icon is purely an assignment picker over this same list.
+// ── One tag filter pill, with hover-revealed rename/delete ──────────────────────
+// The toolbar is the one place tags are created, renamed, and deleted; the
+// per-book tag icon is purely an assignment picker over this same list.
 
-function CategoryPill({ name, active, onSelect, onRename, onDelete }: {
+function TagPill({ name, active, onSelect, onRename, onDelete }: {
   name: string
   active: boolean
   onSelect: () => void
@@ -632,29 +678,29 @@ function CategoryPill({ name, active, onSelect, onRename, onDelete }: {
   }
 
   return (
-    <div className="reader-category-pill" style={{ position: 'relative', flexShrink: 0 }}>
+    <div className="reader-tag-pill" style={{ position: 'relative', flexShrink: 0 }}>
       <button onClick={onSelect} style={pillStyle(active)}>{name}</button>
       <div
-        className="reader-category-pill-actions"
+        className="reader-tag-pill-actions"
         style={{ position: 'absolute', top: -5, right: -5, display: 'flex', gap: 2, opacity: 0, transition: 'opacity 0.12s' }}
       >
         <button
           onClick={e => { e.stopPropagation(); setVal(name); setEditing(true) }}
-          title={t('Rename category')}
+          title={t('Rename tag')}
           style={{ width: 15, height: 15, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface3)', color: 'var(--text2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}
         >
           <IcoPencil size={7} />
         </button>
         <button
           onClick={e => { e.stopPropagation(); onDelete() }}
-          title={t('Delete category')}
+          title={t('Delete tag')}
           style={{ width: 15, height: 15, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--surface3)', color: '#ff8080', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}
         >
           <IcoTrash size={7} />
         </button>
       </div>
       <style>{`
-        .reader-category-pill:hover > .reader-category-pill-actions { opacity: 1 !important; }
+        .reader-tag-pill:hover > .reader-tag-pill-actions { opacity: 1 !important; }
       `}</style>
     </div>
   )

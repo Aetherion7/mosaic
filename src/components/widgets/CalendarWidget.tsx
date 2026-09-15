@@ -1378,31 +1378,49 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
             {(() => {
               const { entries, overlapMap } = overlayLayout
               if (!entries.length) return null
+              const numVC = viewDays.length
+
+              // Geometry computed ONCE, then rendered in TWO passes below (tiles,
+              // then resize handles) — a nested z-index can never escape its own
+              // tile's stacking context, so a handle positioned *inside* an
+              // overlapping tile can get painted over by a NEIGHBOURING tile
+              // regardless of how high its own z-index is set (s. the
+              // current-time indicator above for the same reasoning). Rendering
+              // every handle in one shared layer AFTER all the tiles — a plain
+              // sibling, not nested inside any of them — is the only way to
+              // guarantee they always stay on top.
+              const positioned = entries.map(({ ev, colStart, numCols, effStart, effEnd }) => {
+                const dateEnd          = ev.dateEnd ?? ev.date
+                const eff              = dragOverride?.evId === ev.id ? dragOverride : null
+                const effectiveStart   = eff?.date    ?? effStart
+                const effectiveDateEnd = eff?.dateEnd ?? effEnd
+
+                const startMin   = eff ? eff.startMin : parseHHMM(ev.timeStart!)
+                const endMin     = eff ? eff.endMin   : (ev.timeEnd ? parseHHMM(ev.timeEnd) : startMin + 60)
+
+                const { slot, totalSlots } = (numCols === 1 ? overlapMap.get(`${ev.id}|${effStart}`) : undefined) ?? { slot: 0, totalSlots: 1 }
+                const top        = (startMin / 60) * hourH
+                const durMin     = endMin > startMin ? endMin - startMin : 24 * 60 - startMin
+                const height     = Math.max(24, (durMin / 60) * hourH - 2)
+                const isActive   = !!eff
+                const darkBg     = `color-mix(in srgb, ${ev.color} 60%, black)`
+                const isPast     = fadePastEvents && !ev.recurrence && (effectiveDateEnd ?? effectiveStart) < todayStr
+
+                // Day span for move (always from original saved dates)
+                const origDaySpan = Math.round((new Date(dateEnd + 'T00:00:00').getTime() - new Date(ev.date + 'T00:00:00').getTime()) / 86400000)
+
+                const left  = `calc(34px + ${colStart * totalSlots + slot} * (100% - 34px) / ${numVC * totalSlots} + 2px)`
+                const width = numCols === 1
+                  ? `calc((100% - 34px) / ${numVC * totalSlots} - 4px)`
+                  : `calc(${numCols} * (100% - 34px) / ${numVC} - 4px)`
+
+                return { ev, colStart, numCols, effStart, effectiveStart, effectiveDateEnd, startMin, endMin, top, height, isActive, darkBg, isPast, origDaySpan, left, width }
+              })
 
               return (
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 3 }}>
-                  {entries.map(({ ev, colStart, numCols, effStart, effEnd }) => {
-                    const dateEnd          = ev.dateEnd ?? ev.date
-                    const eff              = dragOverride?.evId === ev.id ? dragOverride : null
-                    const effectiveStart   = eff?.date    ?? effStart
-                    const effectiveDateEnd = eff?.dateEnd ?? effEnd
-                    const numVC            = viewDays.length
-
-                    const startMin   = eff ? eff.startMin : parseHHMM(ev.timeStart!)
-                    const endMin     = eff ? eff.endMin   : (ev.timeEnd ? parseHHMM(ev.timeEnd) : startMin + 60)
-
-                    const { slot, totalSlots } = (numCols === 1 ? overlapMap.get(`${ev.id}|${effStart}`) : undefined) ?? { slot: 0, totalSlots: 1 }
-                    const top        = (startMin / 60) * hourH
-                    const durMin     = endMin > startMin ? endMin - startMin : 24 * 60 - startMin
-                    const height     = Math.max(24, (durMin / 60) * hourH - 2)
-                    const isActive   = !!eff
-                    const darkBg     = `color-mix(in srgb, ${ev.color} 60%, black)`
-                    const isPast     = fadePastEvents && !ev.recurrence && (effectiveDateEnd ?? effectiveStart) < todayStr
-
-                    // Day span for move (always from original saved dates)
-                    const origDaySpan = Math.round((new Date(dateEnd + 'T00:00:00').getTime() - new Date(ev.date + 'T00:00:00').getTime()) / 86400000)
-
-                    return (
+                <>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 3 }}>
+                    {positioned.map(({ ev, colStart, numCols, effStart, effectiveStart, effectiveDateEnd, top, height, isActive, darkBg, isPast, origDaySpan, left, width }) => (
                       <div
                         key={`${ev.id}-${effStart}`}
                         onMouseDown={e => {
@@ -1421,11 +1439,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
                         }}
                         style={{
                           position: 'absolute',
-                          left:  `calc(34px + ${colStart * totalSlots + slot} * (100% - 34px) / ${numVC * totalSlots} + 2px)`,
-                          width: numCols === 1
-                            ? `calc((100% - 34px) / ${numVC * totalSlots} - 4px)`
-                            : `calc(${numCols} * (100% - 34px) / ${numVC} - 4px)`,
-                          top, height,
+                          left, width, top, height,
                           background: ev.color,
                           borderRadius: 5,
                           padding: '3px 4px',
@@ -1439,7 +1453,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
                             ? '0 6px 20px rgba(0,0,0,0.45)'
                             : ev.copyShadow
                               ? '0 8px 24px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35)'
-                              : 'none',
+                              : '0 1px 3px rgba(0,0,0,0.2)',
                           opacity: isPast ? 0.35 : 1,
                         }}
                       >
@@ -1473,40 +1487,54 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
                             <span style={{ fontSize: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{ev.location}</span>
                           </div>
                         )}
-
-                        {/* Corner resize circle — drag to extend/shrink both time and days */}
-                        {mode === 'edit' && (
-                          <div
-                            data-nomove="true"
-                            onMouseDown={e => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              const scrollTop = gridScrollRef.current?.scrollTop ?? 0
-                              dragCornerResizeRef.current = {
-                                evId:         ev.id,
-                                origStartMin: startMin,
-                                origEndMin:   endMin,
-                                origDateEnd:  effectiveDateEnd,
-                                mouseY0:      e.clientY,
-                                scrollTop0:   scrollTop,
-                                mouseX0:      e.clientX,
-                              }
-                            }}
-                            style={{
-                              position: 'absolute', bottom: -6, right: -6,
-                              width: 14, height: 14, borderRadius: '50%',
-                              background: 'white',
-                              border: `2px solid ${darkBg}`,
-                              cursor: 'nwse-resize',
-                              zIndex: 20,
-                              boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
-                            }}
-                          />
-                        )}
                       </div>
-                    )
-                  })}
-                </div>
+                    ))}
+                  </div>
+
+                  {/* Corner resize handles — own top-level layer, always above every
+                      hourly-grid tile (see the comment above positioned/). Stays
+                      BELOW the pinned multi-day bar strip (zIndex 15, a sibling
+                      of gridBodyRef further up — gridBodyRef itself has no
+                      z-index of its own, so its children compare directly
+                      against that sibling) and the current-time indicator (22)
+                      further above, both of which are meant to stay pinned
+                      above the entire hourly grid, handles included. */}
+                  {mode === 'edit' && (
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 12 }}>
+                      {positioned.map(({ ev, effStart, startMin, endMin, effectiveDateEnd, top, height, darkBg, left, width }) => (
+                        <div
+                          key={`handle-${ev.id}-${effStart}`}
+                          data-nomove="true"
+                          onMouseDown={e => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            const scrollTop = gridScrollRef.current?.scrollTop ?? 0
+                            dragCornerResizeRef.current = {
+                              evId:         ev.id,
+                              origStartMin: startMin,
+                              origEndMin:   endMin,
+                              origDateEnd:  effectiveDateEnd,
+                              mouseY0:      e.clientY,
+                              scrollTop0:   scrollTop,
+                              mouseX0:      e.clientX,
+                            }
+                          }}
+                          style={{
+                            position: 'absolute',
+                            left: `calc(${left} + ${width} - 8px)`,
+                            top: top + height - 8,
+                            width: 14, height: 14, borderRadius: '50%',
+                            background: 'white',
+                            border: `2px solid ${darkBg}`,
+                            cursor: 'nwse-resize',
+                            pointerEvents: 'auto',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
               )
             })()}
           </div>

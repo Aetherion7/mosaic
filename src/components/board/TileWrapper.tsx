@@ -490,22 +490,6 @@ function TileWrapperInner({ widget, gridRef }: Props) {
     data:     { widgetType: widget.type },
   })
 
-  const effCol     = resizePreview?.col     ?? widget.pos.col
-  const effRow     = resizePreview?.row     ?? widget.pos.row
-  const effColSpan = resizePreview?.colSpan ?? widget.pos.colSpan
-  const effRowSpan = resizePreview?.rowSpan ?? widget.pos.rowSpan
-
-  function onResizePointerDown(e: React.PointerEvent, dir: string) {
-    e.stopPropagation()
-    e.preventDefault()
-    resizeStart.current = {
-      dir, ox: e.clientX, oy: e.clientY,
-      col: widget.pos.col, row: widget.pos.row,
-      colSpan: widget.pos.colSpan, rowSpan: widget.pos.rowSpan,
-    }
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-  }
-
   const MIN_SPANS: Partial<Record<string, { colSpan: number; rowSpan: number }>> = {
     task:        { colSpan: 3, rowSpan: 2 },
     calendar:    { colSpan: 4, rowSpan: 2 },
@@ -513,10 +497,12 @@ function TileWrapperInner({ widget, gridRef }: Props) {
     spreadsheet: { colSpan: 4, rowSpan: 2 },
     drawboard:   { colSpan: 3, rowSpan: 2 },
     map:         { colSpan: 3, rowSpan: 2 },
-    // rowSpan war 1 — bei nur 112px Höhe wurde entweder die Stats-Zeile
-    // (gefühlt/Feuchtigkeit/Wind) oder die Hero-Temperatur abgeschnitten,
-    // weil beide plus die Stadt-Zeile nicht in eine Grid-Reihe passen.
-    weather:     { colSpan: 3, rowSpan: 2 },
+    // rowSpan 2 (232px) still clipped the description pill ("Overcast" etc.)
+    // under the hero temperature in edit mode — city row + temp/icon row +
+    // pill + stats row + the edit-mode city-search row don't fit in two grid
+    // rows without something getting cut off. Confirmed against a real
+    // screenshot at rowSpan 3 (352px), where every row shows in full.
+    weather:     { colSpan: 3, rowSpan: 3 },
     clock:       { colSpan: 2, rowSpan: 1 },
     // War 2×1 — seit der Note-Widget-Erweiterung um die Text-Widget-
     // Funktionen (Schrift/Größe/B/I/U/Ausrichtung/Farbe/Schatten/Kontur/
@@ -535,6 +521,33 @@ function TileWrapperInner({ widget, gridRef }: Props) {
     // andere Widgets, um nicht komplett unbedienbar zu werden.
     reader:      { colSpan: 4, rowSpan: 3 },
   }
+  const minSpanForType = MIN_SPANS[widget.type]
+
+  // Clamped at RENDER time, not just during an active resize drag: the drag
+  // handler below already stops a manual resize from crossing this floor,
+  // but widget.pos itself can still hold a smaller value from elsewhere —
+  // older boards saved before a type's minimum existed/grew, an AI-tool or
+  // template write, undo/redo of a pre-minimum state — none of which go
+  // through the drag handler's own clamp. Enforcing the floor here as well
+  // means any such widget always renders at a usable size instead of
+  // reproducing the exact clipped layout the minimums exist to prevent,
+  // without needing to rewrite the (possibly intentionally different)
+  // stored value.
+  const effCol     = resizePreview?.col     ?? widget.pos.col
+  const effRow     = resizePreview?.row     ?? widget.pos.row
+  const effColSpan = Math.max(minSpanForType?.colSpan ?? 1, resizePreview?.colSpan ?? widget.pos.colSpan)
+  const effRowSpan = Math.max(minSpanForType?.rowSpan ?? 1, resizePreview?.rowSpan ?? widget.pos.rowSpan)
+
+  function onResizePointerDown(e: React.PointerEvent, dir: string) {
+    e.stopPropagation()
+    e.preventDefault()
+    resizeStart.current = {
+      dir, ox: e.clientX, oy: e.clientY,
+      col: widget.pos.col, row: widget.pos.row,
+      colSpan: widget.pos.colSpan, rowSpan: widget.pos.rowSpan,
+    }
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  }
 
   function onResizePointerMove(e: React.PointerEvent) {
     const rs = resizeStart.current
@@ -547,8 +560,8 @@ function TileWrapperInner({ widget, gridRef }: Props) {
     const rowH  = (GRID_ROW_H + GRID_GAP) * (isInfinite ? canvasZoom : 1)
     const maxCols = isInfinite ? INFINITE_GRID_COLS : GRID_COLS
 
-    const minCS = MIN_SPANS[widget.type]?.colSpan ?? 1
-    const minRS = MIN_SPANS[widget.type]?.rowSpan ?? 1
+    const minCS = minSpanForType?.colSpan ?? 1
+    const minRS = minSpanForType?.rowSpan ?? 1
 
     let newCol     = rs.col
     let newRow     = rs.row

@@ -62,11 +62,11 @@ const DEFAULT_SPANS: Record<WidgetType, { colSpan: number; rowSpan: number }> = 
   spreadsheet: { colSpan: 8, rowSpan: 4 },
   drawboard:   { colSpan: 6, rowSpan: 4 },
   clock:       { colSpan: 4, rowSpan: 2 },
-  weather:     { colSpan: 4, rowSpan: 2 },
+  weather:     { colSpan: 4, rowSpan: 3 },
   map:         { colSpan: 6, rowSpan: 3 },
   html:        { colSpan: 4, rowSpan: 2 },
   reader:      { colSpan: 8, rowSpan: 5 },
-  sleep:       { colSpan: 4, rowSpan: 2 },
+  sleep:       { colSpan: 4, rowSpan: 4 },
   agenda:      { colSpan: 3, rowSpan: 2 },
   quicklinks:  { colSpan: 4, rowSpan: 2 },
 }

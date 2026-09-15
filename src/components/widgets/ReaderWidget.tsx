@@ -16,6 +16,7 @@ import { registerReader, unregisterReader } from '@/lib/ai/readerRegistry'
 import { LIGHT_THEME_IDS } from '@/lib/themes'
 import { extractNoteTitle, renderNoteTitleHtml } from '@/lib/noteTitle'
 import { useT } from '@/hooks/useT'
+import { ColorSwatch } from '@/components/ui/ColorSwatch'
 import ReaderShelf from './ReaderShelf'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import type { Widget, ReaderBook, ReaderData, ReaderHighlight, ReaderFileType } from '@/types'
@@ -70,9 +71,24 @@ interface LegacyReaderFields {
   scrollDir?: ScrollDir; twoPageSpread?: boolean
 }
 
-function migrateLegacyReaderData(raw: Partial<ReaderData> & LegacyReaderFields): { books: Record<string, ReaderBook>; activeBookId?: string; categories: string[]; migrated: boolean } {
-  if (raw.books) return { books: raw.books, activeBookId: raw.activeBookId, categories: raw.categories ?? [], migrated: false }
-  if (!raw.fileData) return { books: {}, activeBookId: undefined, categories: raw.categories ?? [], migrated: false }
+function migrateLegacyReaderData(raw: Partial<ReaderData> & LegacyReaderFields): { books: Record<string, ReaderBook>; activeBookId?: string; tags: string[]; migrated: boolean } {
+  if (raw.books) {
+    // v1 → v2: a book's single `category` becomes its first tag, and the
+    // widget-level `categories` list merges into `tags` the same way —
+    // both legacy fields are dropped once converted, never written again.
+    const needsMigration = Object.values(raw.books).some(b => b.category && (!b.tags || !b.tags.includes(b.category)))
+      || (!!raw.categories?.length && !raw.tags)
+    if (!needsMigration) return { books: raw.books, activeBookId: raw.activeBookId, tags: raw.tags ?? [], migrated: false }
+    const books: Record<string, ReaderBook> = {}
+    for (const [id, b] of Object.entries(raw.books)) {
+      books[id] = b.category
+        ? { ...b, tags: Array.from(new Set([...(b.tags ?? []), b.category])), category: undefined }
+        : b
+    }
+    const tags = Array.from(new Set([...(raw.tags ?? []), ...(raw.categories ?? [])]))
+    return { books, activeBookId: raw.activeBookId, tags, migrated: true }
+  }
+  if (!raw.fileData) return { books: {}, activeBookId: undefined, tags: raw.tags ?? raw.categories ?? [], migrated: false }
   const id = uidBook()
   const book: ReaderBook = {
     id,
@@ -88,7 +104,7 @@ function migrateLegacyReaderData(raw: Partial<ReaderData> & LegacyReaderFields):
     addedAt: Date.now(),
     lastOpenedAt: Date.now(),
   }
-  return { books: { [id]: book }, activeBookId: id, categories: raw.categories ?? [], migrated: true }
+  return { books: { [id]: book }, activeBookId: id, tags: raw.tags ?? raw.categories ?? [], migrated: true }
 }
 
 // ── SVG icon helpers ──────────────────────────────────────────────────────────
@@ -192,12 +208,12 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
   const allWidgets = useBoardStore(useShallow(s => selectBoard(s)?.widgets ?? {}))
 
   const rawData = widget.data as Partial<ReaderData> & LegacyReaderFields
-  const { books, activeBookId, categories, migrated } = useMemo(() => migrateLegacyReaderData(rawData), [rawData])
+  const { books, activeBookId, tags, migrated } = useMemo(() => migrateLegacyReaderData(rawData), [rawData])
 
   // Persist a one-time legacy migration write. Runs once per detected legacy
   // shape (not on every render — `migrated` only flips true the first time).
   useEffect(() => {
-    if (migrated) updateWidget(widget.id, { data: { books, activeBookId, categories } })
+    if (migrated) updateWidget(widget.id, { data: { books, activeBookId, tags } })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [migrated])
 
@@ -206,7 +222,7 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
   const activeBook = activeBookId ? books[activeBookId] : undefined
 
   function readFreshData(): ReaderData {
-    return (selectBoard(useBoardStore.getState())?.widgets[widget.id]?.data ?? { books, activeBookId, categories }) as ReaderData
+    return (selectBoard(useBoardStore.getState())?.widgets[widget.id]?.data ?? { books, activeBookId, tags }) as ReaderData
   }
 
   const patchBook = useCallback((partial: Partial<ReaderBook>) => {
@@ -277,47 +293,53 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
     updateWidget(widget.id, { data: { ...fresh, books: { ...fresh.books, [id]: { ...fresh.books[id], fileName } } } })
   }
 
-  function setBookCategory(id: string, category: string | undefined) {
+  // Toggling is the whole assignment model: tapping a tag that's already on
+  // the book removes it, tapping any other tag adds it — no upper limit, so
+  // a book naturally ends up with as many tags as picked.
+  function toggleBookTag(id: string, tag: string) {
     const fresh = readFreshData()
-    if (!fresh.books[id]) return
-    updateWidget(widget.id, { data: { ...fresh, books: { ...fresh.books, [id]: { ...fresh.books[id], category } } } })
+    const b = fresh.books[id]
+    if (!b) return
+    const cur = b.tags ?? []
+    const next = cur.includes(tag) ? cur.filter(x => x !== tag) : [...cur, tag]
+    updateWidget(widget.id, { data: { ...fresh, books: { ...fresh.books, [id]: { ...b, tags: next } } } })
   }
 
-  // Categories are managed independently of book assignment (top bar) —
-  // otherwise a freshly created, still-unassigned category would vanish
-  // immediately (nothing would reference it). `categories` is the source of
-  // truth for what exists; renaming/deleting also sweeps every book
-  // carrying the old name, in the same batched write (one undo step).
-  function addCategory(name: string) {
+  // Tags are managed independently of book assignment (top bar) — otherwise
+  // a freshly created, still-unassigned tag would vanish immediately
+  // (nothing would reference it). `tags` is the source of truth for what
+  // exists; renaming/deleting also sweeps every book carrying the old name,
+  // in the same batched write (one undo step).
+  function addTag(name: string) {
     const v = name.trim()
     if (!v) return
     const fresh = readFreshData()
-    const cats = fresh.categories ?? []
-    if (cats.includes(v)) return
-    updateWidget(widget.id, { data: { ...fresh, categories: [...cats, v] } })
+    const all = fresh.tags ?? []
+    if (all.includes(v)) return
+    updateWidget(widget.id, { data: { ...fresh, tags: [...all, v] } })
   }
 
-  function renameCategory(oldName: string, newName: string) {
+  function renameTag(oldName: string, newName: string) {
     const name = newName.trim()
     if (!name || name === oldName) return
     const fresh = readFreshData()
     const nextBooks = { ...fresh.books }
     for (const [id, b] of Object.entries(nextBooks)) {
-      if (b.category === oldName) nextBooks[id] = { ...b, category: name }
+      if (b.tags?.includes(oldName)) nextBooks[id] = { ...b, tags: Array.from(new Set(b.tags.map(x => x === oldName ? name : x))) }
     }
-    const cats = (fresh.categories ?? []).filter(c => c !== oldName)
-    if (!cats.includes(name)) cats.push(name)
-    updateWidget(widget.id, { data: { ...fresh, books: nextBooks, categories: cats } })
+    const all = (fresh.tags ?? []).filter(c => c !== oldName)
+    if (!all.includes(name)) all.push(name)
+    updateWidget(widget.id, { data: { ...fresh, books: nextBooks, tags: all } })
   }
 
-  function deleteCategory(name: string) {
+  function deleteTag(name: string) {
     const fresh = readFreshData()
     const nextBooks = { ...fresh.books }
     for (const [id, b] of Object.entries(nextBooks)) {
-      if (b.category === name) nextBooks[id] = { ...b, category: undefined }
+      if (b.tags?.includes(name)) nextBooks[id] = { ...b, tags: b.tags.filter(x => x !== name) }
     }
-    const cats = (fresh.categories ?? []).filter(c => c !== name)
-    updateWidget(widget.id, { data: { ...fresh, books: nextBooks, categories: cats } })
+    const all = (fresh.tags ?? []).filter(c => c !== name)
+    updateWidget(widget.id, { data: { ...fresh, books: nextBooks, tags: all } })
   }
 
   function onCoverGenerated(id: string, coverRef: string) {
@@ -330,15 +352,15 @@ export default function ReaderWidget({ widget }: { widget: Widget }) {
     return (
       <ReaderShelf
         books={books}
-        categories={categories}
+        tags={tags}
         onOpen={openBook}
         onAdd={handleAddBook}
         onDelete={deleteBook}
         onRename={renameBook}
-        onSetCategory={setBookCategory}
-        onAddCategory={addCategory}
-        onRenameCategory={renameCategory}
-        onDeleteCategory={deleteCategory}
+        onToggleTag={toggleBookTag}
+        onAddTag={addTag}
+        onRenameTag={renameTag}
+        onDeleteTag={deleteTag}
         onCoverGenerated={onCoverGenerated}
       />
     )
@@ -404,6 +426,11 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
   const [currentPage, setCurrentPage] = useState(d.currentPage ?? 1)
   const [selection,    setSelection]    = useState<SelectionState | null>(null)
   const suppressSelectionRef = useRef(false)
+  // Tracks the highlight created for the CURRENT custom-color picking
+  // session (see applyCustomHighlightColor) so dragging the hue/SV picker
+  // updates that one highlight's color in place instead of creating a new
+  // one on every intermediate onChange tick.
+  const customHlIdRef = useRef<string | null>(null)
   const [showSidebar,   setShowSidebar]   = useState(true)
   const [showPagePanel, setShowPagePanel] = useState(false)
   const [fitWidth,    setFitWidth]    = useState(400)
@@ -812,11 +839,25 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
         rendition.on('selected', (cfiRange: string, contents: Contents) => {
           if (useUIStore.getState().mode !== 'edit') return
           selectedContentsRef.current = contents
-          const text = contents.window.getSelection()?.toString().trim() ?? ''
+          const winSel = contents.window.getSelection()
+          const text = winSel?.toString().trim() ?? ''
           if (!text) return
+          // epub.js renders each chapter into its own iframe, so a selection's
+          // own getBoundingClientRect() is relative to THAT iframe's viewport,
+          // not the outer widget. frameElement (accessible cross-frame only
+          // because epub.js's iframes are same-origin) gives the iframe's own
+          // position, which — added to the in-frame rect — lands back in the
+          // same viewport coordinate space the PDF path above already uses.
+          let x = 0, y = 0
+          try {
+            const r = winSel!.getRangeAt(0).getBoundingClientRect()
+            const frameRect = (contents.window.frameElement as HTMLElement | null)?.getBoundingClientRect()
+            x = (frameRect?.left ?? 0) + r.left + r.width / 2
+            y = (frameRect?.top ?? 0) + r.top
+          } catch { /* keep 0,0 — popover falls back to a corner */ }
           setTimeout(() => {
             if (suppressSelectionRef.current) { suppressSelectionRef.current = false; return }
-            setSelection({ text, x: 0, y: 0, cfiRange })
+            setSelection({ text, x, y, cfiRange })
           }, 0)
         })
 
@@ -1089,6 +1130,65 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
     setSelection(null)
   }
 
+  // Custom color picker (ColorSwatch): unlike the preset swatches above,
+  // this fires onChange continuously while the user drags the hue/SV
+  // picker — the first call creates the highlight (so it previews live on
+  // the page as they pick), every subsequent call updates that SAME
+  // highlight's color in place via customHlIdRef instead of stacking up
+  // new ones. The selection stays alive/visible for the whole session;
+  // finalizeCustomHighlight (wired to ColorSwatch's onClose) is what
+  // actually clears it once the user is done.
+  function applyCustomHighlightColor(color: string) {
+    if (!selection) return
+
+    if (fileType === 'epub' && selection.cfiRange) {
+      if (!customHlIdRef.current) {
+        suppressSelectionRef.current = true
+        const h: ReaderHighlight = {
+          id: `h_${Date.now()}`, page: currentPage,
+          text: selection.text, color, createdAt: Date.now(), cfiRange: selection.cfiRange,
+        }
+        patch({ highlights: { ...highlights, [h.id]: h } })
+        customHlIdRef.current = h.id
+      } else {
+        const existing = highlights[customHlIdRef.current]
+        if (existing) patch({ highlights: { ...highlights, [existing.id]: { ...existing, color } } })
+      }
+      try {
+        // Remove-then-add rather than relying on add() to upsert in place —
+        // keeps this safe regardless of epub.js's exact dedupe behavior for
+        // a repeated (type, cfiRange) pair.
+        renditionRef.current?.annotations.remove(selection.cfiRange, 'highlight')
+      } catch { /* ignore */ }
+      try {
+        renditionRef.current?.annotations.add('highlight', selection.cfiRange, {}, undefined, 'epub-hl',
+          { fill: color, 'fill-opacity': '0.35', 'mix-blend-mode': 'multiply' })
+      } catch { /* ignore */ }
+      return
+    }
+
+    if (!customHlIdRef.current) {
+      suppressSelectionRef.current = true
+      const h: ReaderHighlight = {
+        id: `h_${Date.now()}`, page: (selection as SelectionState & { page?: number }).page ?? currentPage,
+        text: selection.text, color,
+        createdAt: Date.now(), rects: selection.rects,
+      }
+      patch({ highlights: { ...highlights, [h.id]: h } })
+      customHlIdRef.current = h.id
+    } else {
+      const existing = highlights[customHlIdRef.current]
+      if (existing) patch({ highlights: { ...highlights, [existing.id]: { ...existing, color } } })
+    }
+  }
+
+  function finalizeCustomHighlight() {
+    customHlIdRef.current = null
+    if (fileType === 'epub') selectedContentsRef.current?.window.getSelection()?.removeAllRanges()
+    else window.getSelection()?.removeAllRanges()
+    setSelection(null)
+  }
+
   // Listen for pointerup on document (bubble phase) — nur für PDF-Markierungen.
   // IMPORTANT: all selection data is captured SYNCHRONOUSLY here, before any
   // React re-render or DOM mutation (e.g. an AnimatePresence page exit) can
@@ -1306,6 +1406,74 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
     <div ref={setContainerRef} tabIndex={0} onKeyDown={handleKeyDown}
       style={{ display: 'flex', height: '100%', position: 'relative', overflow: 'hidden', userSelect: 'text', flexDirection: 'column', outline: 'none' }}>
 
+      {/* ── Floating highlight-color popup ──
+          Appears directly above the current text selection instead of a
+          fixed toolbar location, so picking a color reads as acting on the
+          selection itself. selection.x/y are viewport-space coordinates
+          captured at selection time (see the pointerup handler below and
+          the epub 'selected' handler above); subtracting the container's
+          own viewport rect converts them to the container-relative px this
+          absolutely-positioned popover needs — the same convention every
+          other overlay in this widget already uses. */}
+      {mode === 'edit' && selection && (() => {
+        const contRect = containerRef.current?.getBoundingClientRect()
+        const left = selection.x - (contRect?.left ?? 0)
+        const top  = selection.y - (contRect?.top ?? 0)
+        return (
+          <div
+            onMouseDown={e => e.preventDefault()}
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'absolute', left, top, zIndex: 30,
+              transform: 'translate(-50%, calc(-100% - 10px))',
+              display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px',
+              // var(--popover-bg), not var(--surface) — in themes like Crystal
+              // Glass, --surface is a near-transparent ~5% white haze (fine for
+              // widget backgrounds, unreadable for a real floating popover).
+              background: 'var(--popover-bg)',
+              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid var(--border)', borderRadius: 999,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+            }}
+          >
+            {HIGHLIGHT_COLORS.map(c => (
+              <button
+                key={c.value}
+                onClick={() => saveHighlight(c.value)}
+                title={t(c.label)}
+                style={{
+                  width: 20, height: 20, borderRadius: '50%',
+                  background: c.value, border: '2px solid var(--surface)',
+                  cursor: 'pointer', padding: 0,
+                  boxShadow: '0 0 0 1.5px ' + c.value + 'cc',
+                  flexShrink: 0,
+                }}
+              />
+            ))}
+            <div style={{ width: 1, height: 16, background: 'var(--border)', flexShrink: 0 }} />
+            <ColorSwatch
+              value="#8b5cf6"
+              onChange={applyCustomHighlightColor}
+              onClose={finalizeCustomHighlight}
+              trigger={onClick => (
+                <button
+                  onClick={onClick}
+                  title={t('Custom color')}
+                  style={{
+                    width: 20, height: 20, borderRadius: '50%',
+                    background: 'conic-gradient(from 0deg, #ff5252, #ffd166, #95e06c, #52b5d4, #8b5cf6, #ff6b9d, #ff5252)',
+                    border: '2px solid var(--surface)',
+                    cursor: 'pointer', padding: 0,
+                    boxShadow: '0 0 0 1.5px var(--border)',
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+            />
+          </div>
+        )
+      })()}
+
       {/* ── Confirm delete-book dialog ── */}
       {confirmDeleteBook && (() => {
         const hlCount   = Object.keys(highlights).length
@@ -1406,11 +1574,18 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
         </div>
       )}
 
-      {/* ── Toolbar ── */}
+      {/* ── Toolbar ──
+          No self-margin/shadow (that combination just exposed a strip of
+          the widget's own background behind it, reading as a floating
+          white box) — the surrounding content already has its own padding,
+          so a plain border-radius here is enough to read as a rounded bar.
+          A hairline border now stands in for the shadow as the only
+          separation from the page content below. */}
       <div style={{
         flexShrink: 0, display: 'flex', alignItems: 'center',
-        padding: '5px 8px', borderBottom: '1px solid var(--border)',
-        background: 'color-mix(in srgb, var(--surface2) 60%, transparent)',
+        padding: '5px 8px', borderRadius: 10, border: '1px solid var(--border)',
+        background: 'var(--popover-bg)',
+        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
       }}>
 
         {/* LEFT: back-to-library + burger (page panel) + filename */}
@@ -1453,31 +1628,8 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
           <Btn onClick={() => goTo(numPages)}        disabled={currentPage >= numPages} title={t('Last page')}><IcoSkipRight /></Btn>
         </div>
 
-        {/* RIGHT: marker palette + highlights toggle + delete book */}
+        {/* RIGHT: highlights toggle + delete book */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
-
-          {/* Highlight palette — nur im Bearbeiten-Modus */}
-          {mode === 'edit' && (
-            <div onMouseDown={e => e.preventDefault()} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 4px' }}>
-              {HIGHLIGHT_COLORS.map(c => (
-                <button
-                  key={c.value}
-                  onClick={() => { if (selection) saveHighlight(c.value) }}
-                  title={selection ? t(c.label) : `${t(c.label)} (${t('select text first')})`}
-                  style={{
-                    width: 18, height: 18, borderRadius: '50%',
-                    background: c.value, border: '2.5px solid var(--surface)',
-                    cursor: selection ? 'pointer' : 'default',
-                    padding: 0,
-                    boxShadow: '0 0 0 1.5px ' + c.value + (selection ? 'cc' : '44'),
-                    opacity: selection ? 1 : 0.3,
-                    transition: 'opacity 0.15s, box-shadow 0.15s',
-                    flexShrink: 0,
-                  }}
-                />
-              ))}
-            </div>
-          )}
 
           <button
             onClick={() => setShowSidebar(s => !s)}
@@ -1495,36 +1647,63 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
       </div>
 
       {/* ── Content row ── */}
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden', position: 'relative' }}>
 
-        {/* ── Page thumbnail panel (nur PDF) ── */}
+        {/* ── Page thumbnail panel (nur PDF) ──
+            Same floating-overlay treatment as the highlights panel on the
+            other side: rounded corners, hairline border, animated in/out
+            instead of a flush, flex-shrinking column. */}
+        <AnimatePresence>
         {fileType === 'pdf' && showPagePanel && numPages > 0 && (
-          <div onPointerDown={e => e.stopPropagation()} style={{
-            flexShrink: 0, width: 88,
-            borderRight: '1px solid var(--border)',
-            overflowY: 'auto', overflowX: 'hidden',
-            background: 'var(--surface2)',
-            display: 'flex', flexDirection: 'column',
-            padding: '6px 6px', gap: 4,
-          }}>
+          <motion.div
+            key="page-thumbnail-panel"
+            onPointerDown={e => e.stopPropagation()}
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.16 }}
+            style={{
+              position: 'absolute', top: 8, left: 8, bottom: 8, width: 88, zIndex: 20,
+              borderRadius: 10, border: '1px solid var(--border)',
+              background: 'var(--popover-bg)',
+              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+              overflowY: 'auto', overflowX: 'hidden',
+              display: 'flex', flexDirection: 'column',
+              padding: '6px 6px', gap: 4,
+            }}
+          >
             <Document file={resolvedFile} loading={null} error={null}>
               {Array.from({ length: numPages }, (_, i) => i + 1).map(pageNum => (
                 <PdfThumbnail key={pageNum} pageNum={pageNum} isCurrent={pageNum === currentPage} onClick={() => goTo(pageNum)} />
               ))}
             </Document>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
-        {/* ── Kapitel-Panel (nur EPUB): Inhaltsverzeichnis, Klick springt hin ── */}
+        {/* ── Kapitel-Panel (nur EPUB): Inhaltsverzeichnis, Klick springt hin ──
+            Same floating-overlay treatment as the highlights panel. */}
+        <AnimatePresence>
         {fileType === 'epub' && showPagePanel && epubToc.length > 0 && (
-          <div onPointerDown={e => e.stopPropagation()} style={{
-            flexShrink: 0, width: 148,
-            borderRight: '1px solid var(--border)',
-            overflowY: 'auto', overflowX: 'hidden',
-            background: 'var(--surface2)',
-            display: 'flex', flexDirection: 'column',
-            padding: '6px 4px', gap: 1,
-          }}>
+          <motion.div
+            key="epub-chapters-panel"
+            onPointerDown={e => e.stopPropagation()}
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.16 }}
+            style={{
+              position: 'absolute', top: 8, left: 8, bottom: 8, width: 148, zIndex: 20,
+              borderRadius: 10, border: '1px solid var(--border)',
+              background: 'var(--popover-bg)',
+              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+              overflowY: 'auto', overflowX: 'hidden',
+              display: 'flex', flexDirection: 'column',
+              padding: '6px 4px', gap: 1,
+            }}
+          >
             <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.07em', padding: '2px 6px 6px' }}>
               {t('Chapters')}
             </div>
@@ -1553,16 +1732,24 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
                 </button>
               )
             })}
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
         {/* Viewer with animated page transitions */}
         <div ref={viewerRef} style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden', userSelect: 'text' }}>
 
-          {/* ── Floating bottom-right: zoom + scroll direction + spread ── */}
+          {/* ── Floating bottom-right: zoom + scroll direction + spread ──
+              zIndex above the highlights panel (20) so it's never hidden
+              behind it, and its own right offset slides out of the panel's
+              way — panel left edge sits at 8 (its own right offset) + 168
+              (width) = 176px from this edge, so 184 clears it with a small
+              gap — whenever the panel is open, animating back to the
+              default 10 the instant it closes. */}
           <div style={{
-            position: 'absolute', bottom: 10, right: 10, zIndex: 20,
+            position: 'absolute', bottom: 10, right: showSidebar ? 184 : 10, zIndex: 25,
             display: 'flex', alignItems: 'center', gap: 3,
+            transition: 'right 0.16s',
             // Mit --bg gemischt statt transparent: bleibt auf der weißen Seite
             // in jedem Theme deckend & lesbar (Glass-Theme-Fix)
             background: 'color-mix(in srgb, var(--surface2) 45%, var(--bg))',
@@ -1692,9 +1879,30 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
           )}
         </div>
 
-        {/* Highlights sidebar */}
+        {/* Highlights sidebar — a floating overlay ANCHORED over the content
+            (not a flex sibling that shrinks it) so the page-scroll
+            container underneath always keeps its full width and its own
+            scrollbar stays pinned at the content row's true right edge,
+            behind this panel, instead of jumping inward whenever the panel
+            opens. */}
+        <AnimatePresence>
         {showSidebar && (
-          <div onPointerDown={e => e.stopPropagation()} style={{ flexShrink: 0, width: 168, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <motion.div
+            key="highlights-sidebar"
+            onPointerDown={e => e.stopPropagation()}
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 16 }}
+            transition={{ duration: 0.16 }}
+            style={{
+              position: 'absolute', top: 8, right: 8, bottom: 8, width: 168, zIndex: 20,
+              borderRadius: 10, border: '1px solid var(--border)',
+              background: 'var(--popover-bg)',
+              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+              display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            }}
+          >
             <div style={{ padding: '5px 8px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 5 }}>
               <IcoHighlight />
               <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{t('Highlights')}</span>
@@ -1801,8 +2009,9 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
 
     </div>

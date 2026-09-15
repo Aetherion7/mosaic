@@ -111,6 +111,8 @@ export interface SleepData {
   // damit der Fokus-Modus (zweites, gleichzeitiges Mounting desselben
   // Widgets) dieselbe Woche zeigt statt bei der aktuellen neu zu starten.
   weekOffset?: number
+  // true/undefined = 24h ("Europäisch"), false = 12h mit AM/PM ("Amerikanisch")
+  timeFormat24?: boolean
 }
 
 // ─── Agenda ───────────────────────────────────────────────────────────────────
@@ -281,7 +283,9 @@ export interface ReaderBook {
   // horizontal/paginiert erzwungen, s. ReaderWidget). Muss re-synced werden:
   // Board-Kachel und Fokus-Overlay sind zwei unabhängig gemountete Instanzen.
   scrollDir?:    'vertical' | 'horizontal'
-  category?:     string   // freier Text, eine Kategorie pro Buch (v1 — kein Mehrfach-Tag)
+  /** @deprecated v1 — ein Tag pro Buch. Migriert nach `tags` beim Laden (s. migrateLegacyReaderData), nicht mehr geschrieben. */
+  category?:     string
+  tags?:         string[] // freier Text, mehrere Tags pro Buch (v2)
   addedAt:       number
   lastOpenedAt?: number
 }
@@ -289,10 +293,12 @@ export interface ReaderBook {
 export interface ReaderData {
   books:        Record<string, ReaderBook>
   activeBookId?: string   // undefined = Regal-Ansicht
-  // Eigenständige Kategorie-Liste, unabhängig von der Buch-Zuordnung — nur
-  // aus book.category abzuleiten würde eine gerade erst (mit noch keinem
-  // zugeordneten Buch) angelegte Kategorie sofort wieder verschwinden lassen.
+  /** @deprecated v1 — globale Kategorie-Liste. Migriert nach `tags` beim Laden, nicht mehr geschrieben. */
   categories?:  string[]
+  // Eigenständige Tag-Liste, unabhängig von der Buch-Zuordnung — nur aus
+  // book.tags abzuleiten würde einen gerade erst (mit noch keinem
+  // zugeordneten Buch) angelegten Tag sofort wieder verschwinden lassen.
+  tags?:        string[]
 }
 
 export interface SpreadsheetData {

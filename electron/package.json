@@ -1,7 +1,7 @@
 {
   "name": "mosaic-electron",
   "desktopName": "mosaic.desktop",
-  "version": "1.12.14",
+  "version": "1.12.15",
   "private": true,
   "author": {
     "name": "Aetherion7"

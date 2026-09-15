@@ -171,10 +171,16 @@ function saveCustomColors(colors: string[]) {
 export function ColorSwatch({
   value,
   onChange,
+  onClose,
   trigger,
 }: {
   value: string
   onChange: (v: string) => void
+  // Fires once the popover actually closes (outside click, or clicking the
+  // trigger again while open) — for callers that need a distinct "the user
+  // is done picking" moment instead of reacting to every intermediate
+  // onChange while dragging the hue/SV picker.
+  onClose?: () => void
   trigger?: (onClick: () => void, isOpen: boolean) => React.ReactNode
 }) {
   const t = useT()
@@ -222,7 +228,7 @@ export function ColorSwatch({
   }
 
   function openPicker() {
-    if (open) { setOpen(false); return }
+    if (open) { setOpen(false); onClose?.(); return }
     setPopReady(false)
     setOpen(true)
   }
@@ -261,11 +267,14 @@ export function ColorSwatch({
   useEffect(() => {
     if (!open) return
     const onDown = (e: MouseEvent) => {
-      if (!popRef.current?.contains(e.target as Node) && !btnRef.current?.contains(e.target as Node))
+      if (!popRef.current?.contains(e.target as Node) && !btnRef.current?.contains(e.target as Node)) {
         setOpen(false)
+        onClose?.()
+      }
     }
     window.addEventListener('mousedown', onDown)
     return () => window.removeEventListener('mousedown', onDown)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   function onSVDown(e: React.PointerEvent<HTMLDivElement>) {
@@ -313,7 +322,13 @@ export function ColorSwatch({
             position: 'fixed', left: popPos.x, top: popPos.y, zIndex: 9999,
             width: 204,
             visibility: popReady ? 'visible' : 'hidden',
-            background: 'color-mix(in srgb, var(--surface) 96%, transparent)',
+            // var(--popover-bg), not var(--surface) — themes like Crystal Glass
+            // make --surface a barely-there ~5% white haze (by design, for the
+            // widget backgrounds), which left this popup nearly invisible
+            // against light content behind it. --popover-bg exists precisely
+            // for this: a near-opaque background real dialogs/popovers can rely
+            // on for legibility, already used by every other popover in the app.
+            background: 'var(--popover-bg)',
             backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
             border: '1px solid var(--border)',
             borderRadius: 14, padding: 10,
