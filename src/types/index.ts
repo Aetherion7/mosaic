@@ -113,6 +113,11 @@ export interface SleepData {
   weekOffset?: number
   // true/undefined = 24h ("Europäisch"), false = 12h mit AM/PM ("Amerikanisch")
   timeFormat24?: boolean
+  // In Bearbeitung befindlicher, noch NICHT geloggter Eintrag — getrennt von
+  // `log`, damit "Schlaf loggen" den Entwurf sichtbar zurücksetzt statt
+  // stillschweigend die zuletzt eingetragenen Werte als neuen Startpunkt
+  // stehen zu lassen.
+  draft?: SleepEntry
 }
 
 // ─── Agenda ───────────────────────────────────────────────────────────────────
@@ -162,6 +167,7 @@ export interface CalendarData {
   dayDate?:      string   // YYYY-MM-DD
   selectedDate?: string | null   // YYYY-MM-DD, im Monatsraster aufgeklappter Tag
   gridScrollTop?: number
+  hourH?: number   // Zeilenhöhe (Zoom) im Wochen-/Tagesraster — dieselbe Re-Sync-Pflicht wie oben
 }
 
 // ─── Chart widget ─────────────────────────────────────────────────────────────
@@ -237,6 +243,12 @@ export interface MapData {
   zoom:      number
   markers:   MapMarker[]
   routes:    MapRoute[]
+  // View-Zustand, der zwischen Board-Kachel und Fokus-Overlay (zwei
+  // unabhängig gemountete Instanzen) gespiegelt werden muss.
+  tool?:          'none' | 'marker' | 'route'
+  activeColor?:   string
+  directoryOpen?: boolean
+  dirTab?:        'markers' | 'routes'
 }
 
 export interface ReaderHighlight {
@@ -283,6 +295,11 @@ export interface ReaderBook {
   // horizontal/paginiert erzwungen, s. ReaderWidget). Muss re-synced werden:
   // Board-Kachel und Fokus-Overlay sind zwei unabhängig gemountete Instanzen.
   scrollDir?:    'vertical' | 'horizontal'
+  // Sichtbarkeit von Highlights-Sidebar und Seiten-/Kapitel-Panel — ebenfalls
+  // Board-Kachel/Fokus-Overlay-Re-Sync-pflichtig, gleicher Grund wie scrollDir.
+  showSidebar?:   boolean
+  showPagePanel?: boolean
+  zoom?:          number
   /** @deprecated v1 — ein Tag pro Buch. Migriert nach `tags` beim Laden (s. migrateLegacyReaderData), nicht mehr geschrieben. */
   category?:     string
   tags?:         string[] // freier Text, mehrere Tags pro Buch (v2)

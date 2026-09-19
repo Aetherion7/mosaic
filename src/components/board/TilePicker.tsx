@@ -198,6 +198,12 @@ export default function TilePicker() {
                   backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
                   border: '1px solid var(--border)',
                   borderRadius: 20,
+                  // Without this, the scrollable grid's own native scrollbar
+                  // (rendered flush against ITS box's right/bottom edge) isn't
+                  // clipped to this container's rounded corners and visibly
+                  // pokes out past the bottom-right corner once the grid is
+                  // tall enough to scroll.
+                  overflow: 'hidden',
                   boxShadow: '0 32px 80px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,0.04)',
                 }}
               >

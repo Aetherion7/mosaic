@@ -10,6 +10,7 @@ import { eventOccursOn } from '@/lib/events'
 import { getTheme } from '@/lib/themes'
 import { requestNotifyPermission } from '@/lib/notify'
 import { useT } from '@/hooks/useT'
+import { Dropdown } from '@/components/ui/Dropdown'
 import type { Widget, CalendarData, CalendarEvent, CalendarRecurrence } from '@/types'
 
 const MONTH_NAMES  = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -276,7 +277,7 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
     const v = widget.data.calView as string | undefined
     return (v === 'week' || v === 'day') ? v : 'month'
   })
-  const [hourH,   setHourH]   = useState(HOUR_H_DEF)
+  const [hourH,   setHourH]   = useState(() => (widget.data.hourH as number | undefined) ?? HOUR_H_DEF)
   const [viewMenuOpen, setViewMenuOpen] = useState(false)
 
   // Current time (minutes since midnight) — updates every 30 s
@@ -350,6 +351,11 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
     if (next.getTime() !== dayDate.getTime()) setDayDate(next)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [widget.data.dayDate])
+  useEffect(() => {
+    const next = (widget.data.hourH as number | undefined) ?? HOUR_H_DEF
+    if (next !== hourH) setHourH(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widget.data.hourH])
 
   // Drag (week view — create new event by dragging empty cells)
   const draggingRef    = useRef(false)
@@ -1045,8 +1051,14 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
               den Zoom-Buttons liegen und war so kaum noch anklickbar. */}
           {(calView === 'week' || calView === 'day') && (
             <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
-              <button onClick={() => setHourH(h => Math.max(HOUR_H_MIN, h - HOUR_H_STEP))} style={zoomBtnStyle} title={t('Zoom out')}>−</button>
-              <button onClick={() => setHourH(h => Math.min(HOUR_H_MAX, h + HOUR_H_STEP))} style={zoomBtnStyle} title={t('Zoom in')}>+</button>
+              <button onClick={() => {
+                const next = Math.max(HOUR_H_MIN, hourH - HOUR_H_STEP)
+                setHourH(next); updateWidgetQuiet(widget.id, { data: { ...widget.data, hourH: next } })
+              }} style={zoomBtnStyle} title={t('Zoom out')}>−</button>
+              <button onClick={() => {
+                const next = Math.min(HOUR_H_MAX, hourH + HOUR_H_STEP)
+                setHourH(next); updateWidgetQuiet(widget.id, { data: { ...widget.data, hourH: next } })
+              }} style={zoomBtnStyle} title={t('Zoom in')}>+</button>
             </div>
           )}
           {/* ICS upload — directly opens file picker */}
@@ -1622,13 +1634,18 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
                   {t('Repeat')}
                 </label>
-                <select value={popupRecurrence} onChange={e => setPopupRecurrence(e.target.value as CalendarRecurrence | '')} style={popupInput}>
-                  <option value="">{t('None')}</option>
-                  <option value="daily">{t('Daily')}</option>
-                  <option value="weekly">{t('Weekly')}</option>
-                  <option value="monthly">{t('Monthly')}</option>
-                  <option value="yearly">{t('Yearly')}</option>
-                </select>
+                <Dropdown
+                  value={popupRecurrence}
+                  onChange={v => setPopupRecurrence(v as CalendarRecurrence | '')}
+                  buttonStyle={{ ...popupInput, width: '100%' }}
+                  options={[
+                    { value: '',        label: t('None') },
+                    { value: 'daily',   label: t('Daily') },
+                    { value: 'weekly',  label: t('Weekly') },
+                    { value: 'monthly', label: t('Monthly') },
+                    { value: 'yearly',  label: t('Yearly') },
+                  ]}
+                />
               </div>
 
               {/* 3b — Erinnerung */}
@@ -1637,24 +1654,25 @@ export default function CalendarWidget({ widget }: { widget: Widget }) {
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                   {t('Reminder')}
                 </label>
-                <select
-                  value={popupReminderMin === null ? '' : popupReminderMin}
+                <Dropdown
+                  value={popupReminderMin === null ? '' : String(popupReminderMin)}
                   disabled={!popup.startTime}
-                  onChange={e => {
-                    if (e.target.value === '') { setPopupReminderMin(null); return }
-                    setPopupReminderMin(Number(e.target.value))
+                  onChange={v => {
+                    if (v === '') { setPopupReminderMin(null); return }
+                    setPopupReminderMin(Number(v))
                     requestNotifyPermission()
                   }}
-                  style={popupInput}
-                >
-                  <option value="">{t('None')}</option>
-                  <option value={0}>{t('At time of event')}</option>
-                  <option value={5}>{t('5 minutes before')}</option>
-                  <option value={10}>{t('10 minutes before')}</option>
-                  <option value={30}>{t('30 minutes before')}</option>
-                  <option value={60}>{t('1 hour before')}</option>
-                  <option value={1440}>{t('1 day before')}</option>
-                </select>
+                  buttonStyle={{ ...popupInput, width: '100%' }}
+                  options={[
+                    { value: '',     label: t('None') },
+                    { value: '0',    label: t('At time of event') },
+                    { value: '5',    label: t('5 minutes before') },
+                    { value: '10',   label: t('10 minutes before') },
+                    { value: '30',   label: t('30 minutes before') },
+                    { value: '60',   label: t('1 hour before') },
+                    { value: '1440', label: t('1 day before') },
+                  ]}
+                />
                 {!popup.startTime && (
                   <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 4 }}>{t('Add a start time to enable a reminder.')}</div>
                 )}

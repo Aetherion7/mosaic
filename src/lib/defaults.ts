@@ -66,7 +66,7 @@ const DEFAULT_SPANS: Record<WidgetType, { colSpan: number; rowSpan: number }> = 
   map:         { colSpan: 6, rowSpan: 3 },
   html:        { colSpan: 4, rowSpan: 2 },
   reader:      { colSpan: 8, rowSpan: 5 },
-  sleep:       { colSpan: 4, rowSpan: 4 },
+  sleep:       { colSpan: 3, rowSpan: 5 },
   agenda:      { colSpan: 3, rowSpan: 2 },
   quicklinks:  { colSpan: 4, rowSpan: 2 },
 }

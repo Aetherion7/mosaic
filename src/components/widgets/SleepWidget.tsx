@@ -25,6 +25,15 @@ function fmtH(h: number, lang: 'en' | 'de'): string {
   return h.toLocaleString(lang === 'de' ? 'de-DE' : 'en-US', { maximumFractionDigits: 1 }) + ' h'
 }
 
+// Hours + minutes breakdown ("8 h 35 min") for the passive duration readout —
+// distinct from fmtH's rounded decimal-hours format used for the goal value.
+function fmtHM(hoursFloat: number): string {
+  const totalMin = Math.round(hoursFloat * 60)
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  return `${h} h ${m} min`
+}
+
 // European 24h ("23:30") vs. American 12h with AM/PM ("11:30 PM")
 function formatClockTime(hhmm: string, use12h: boolean): string {
   if (!hhmm) return '--:--'
@@ -38,7 +47,8 @@ function formatClockTime(hhmm: string, use12h: boolean): string {
 export default function SleepWidget({ widget }: { widget: Widget }) {
   const t = useT()
   const lang = useSettings(s => s.language)
-  const updateTaskData = useBoardStore(s => s.updateTaskData)
+  const updateTaskData    = useBoardStore(s => s.updateTaskData)
+  const updateWidgetQuiet = useBoardStore(s => s.updateWidgetQuiet)
   const mode = useUIStore(s => s.mode)
   const d    = widget.data as SleepData
 
@@ -49,7 +59,7 @@ export default function SleepWidget({ widget }: { widget: Widget }) {
   // (Board-Kachel + Fokus-Modus, s. FocusOverlay.tsx) beim Umschalten der
   // Woche in der jeweils ANDEREN Instanz auf dem alten Stand stehen, obwohl
   // der Wert im Store längst aktuell war. Reiner Wertevergleich, kein
-  // Zurückschreiben hier — kann sich also nicht mit setToday()/den
+  // Zurückschreiben hier — kann sich also nicht mit setDraft()/den
   // Wochen-Buttons gegenseitig aufschaukeln.
   useEffect(() => {
     const next = d.weekOffset ?? 0
@@ -60,14 +70,25 @@ export default function SleepWidget({ widget }: { widget: Widget }) {
   const goalH = d.goalH ?? 8
   const log   = d.log ?? {}
   const today = todayStr()
-  const entry = log[today]
-  const durToday = durationH(entry)
-  const goalMet = durToday != null && durToday >= goalH
-  const use12h = d.timeFormat24 === false
+  // Der Entwurf (noch nicht geloggt) lebt direkt in widget.data.draft statt
+  // in lokalem useState — dadurch spiegeln Board-Kachel und Fokus-Overlay
+  // sich automatisch, ganz ohne eigenen Re-Sync-Effekt, weil beide Instanzen
+  // bei jedem Render denselben Store-Wert lesen.
+  const draft    = d.draft ?? { bed: '', wake: '' }
+  const durDraft = durationH(draft)
+  const use12h   = d.timeFormat24 === false
+  const canLog   = !!draft.bed && !!draft.wake
 
-  function setToday(patch: Partial<SleepEntry>) {
-    const next: SleepEntry = { bed: entry?.bed ?? '', wake: entry?.wake ?? '', ...patch }
-    updateTaskData(widget.id, { log: { ...log, [today]: next } })
+  function setDraft(patch: Partial<SleepEntry>) {
+    updateWidgetQuiet(widget.id, { data: { ...d, draft: { ...draft, ...patch } } })
+  }
+
+  // "Jede Nacht neu": Loggen schreibt den Entwurf ins Verlauf UND setzt ihn
+  // sofort zurück — die nächste Nacht startet wieder leer, statt die zuletzt
+  // eingetragenen Zeiten stehen zu lassen, als wären sie schon die neuen.
+  function logSleep() {
+    if (!canLog) return
+    updateTaskData(widget.id, { log: { ...log, [today]: draft }, draft: { bed: '', wake: '' } })
   }
 
   const weekDates = getWeekDates(weekOffset)
@@ -79,53 +100,81 @@ export default function SleepWidget({ widget }: { widget: Widget }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 4 }} onPointerDown={e => e.stopPropagation()}>
 
-      {/* Bedtime / woke-up — big editable time display, iOS Sleep Schedule style */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, flexShrink: 0 }}>
-        <SleepTimeField icon={<MoonIcon />} label={t('Bedtime')} value={entry?.bed ?? ''} onChange={v => setToday({ bed: v })} use12h={use12h} />
-        <SleepTimeField icon={<SunIcon />} label={t('Woke up')} value={entry?.wake ?? ''} onChange={v => setToday({ wake: v })} use12h={use12h} align="right" />
-      </div>
+      {/* Time-format — same custom dropdown pattern as ClockWidget's style
+          picker / CalendarWidget's view switcher (button + chevron, opens a
+          floating popover with the options spelled out by their real term)
+          instead of a bare native <select>, so it reads as the same kind of
+          control as every other "pick one of a few options" button in the
+          app. Edit-mode only — a settings-like control, not something to
+          show while just viewing the board. Top-and-centered since it
+          applies to the whole widget (dial + both time fields), not just
+          whatever sits directly below it. */}
+      {mode === 'edit' && (
+        <div style={{ display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+          <TimeFormatPicker use12h={use12h} onChange={v => updateTaskData(widget.id, { timeFormat24: !v })} />
+        </div>
+      )}
 
-      {/* Circular sleep dial — drag the moon/sun around the clock face to set
-          bed/wake time, the highlighted arc between them is the sleep window. */}
+      {/* Bedtime / woke-up + circular sleep dial, as ONE unit that gets
+          centered together in the flex:1 area below — so the labels always
+          hug the dial regardless of widget height, instead of sitting at a
+          fixed spot near the top of the widget with a growing gap to the
+          dial on tall widgets. The label row is in normal document flow
+          ABOVE the dial inside this same wrapper, so it can never overlap
+          the picker above the wrapper (only the negative marginBottom below
+          pulls the dial closer, which only affects what comes after it).
+          The previous version anchored the labels via a negative "top"
+          measured against the OUTER centered box, which drifted with
+          however much free height that box had — safe at one widget size,
+          overlapping the picker at another (the narrower minimum surfaced
+          it). This wrapper has no such ambiguity: everything inside it is
+          normal flow. */}
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <SleepDial
-          bed={entry?.bed || '23:00'}
-          wake={entry?.wake || '07:00'}
-          onChangeBed={v => setToday({ bed: v })}
-          onChangeWake={v => setToday({ wake: v })}
-          use12h={use12h}
-        />
-      </div>
-
-      {/* Duration + goal message, below the dial like the iOS reference */}
-      <div style={{ textAlign: 'center', flexShrink: 0, padding: '0 4px' }}>
-        <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text1)', lineHeight: 1.2 }}>
-          {durToday != null ? fmtH(durToday, lang) : '–'}
-        </div>
-        <div style={{ fontSize: 9.5, lineHeight: 1.4, color: durToday == null ? 'var(--text3)' : goalMet ? 'var(--accent)' : 'var(--text3)' }}>
-          {durToday == null
-            ? t('Log tonight\'s sleep to see how it compares to your goal.')
-            : goalMet ? t('This schedule meets your sleep goal.') : t('This schedule falls short of your sleep goal.')}
+        <div style={{ width: 'min(240px, 100%)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: -16, position: 'relative', zIndex: 1 }}>
+            <SleepTimeField icon={<MoonIcon />} label={t('Bedtime')} value={draft.bed} onChange={v => setDraft({ bed: v })} use12h={use12h} />
+            <SleepTimeField icon={<SunIcon />} label={t('Woke up')} value={draft.wake} onChange={v => setDraft({ wake: v })} use12h={use12h} align="right" />
+          </div>
+          <div style={{ aspectRatio: '1 / 1', width: '100%' }}>
+            <SleepDial
+              bed={draft.bed || '23:00'}
+              wake={draft.wake || '07:00'}
+              onChangeBed={v => setDraft({ bed: v })}
+              onChangeWake={v => setDraft({ wake: v })}
+              onChangeBoth={(b, w) => setDraft({ bed: b, wake: w })}
+              use12h={use12h}
+            />
+          </div>
         </div>
       </div>
 
-      {/* 24h ("European") / 12h AM-PM ("American") display toggle — a display
-          preference, not an edit-mode-only control, so it stays visible in
-          both modes, right above the (edit-mode-only) Sleep goal row below. */}
-      <div style={{ display: 'flex', justifyContent: 'flex-start', flexShrink: 0 }}>
-        <button
-          onClick={() => updateTaskData(widget.id, { timeFormat24: use12h })}
-          title={use12h ? t('Switch to 24-hour time') : t('Switch to 12-hour time (AM/PM)')}
-          style={{
-            fontSize: 8, fontWeight: 700, letterSpacing: '0.03em',
-            padding: '2px 6px', borderRadius: 999,
-            border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text3)',
-            cursor: 'pointer',
-          }}
-        >
-          {use12h ? '12h' : '24h'}
-        </button>
+      {/* Passive duration readout — how long the current draft amounts to,
+          hours + minutes rather than fmtH's rounded decimal (the goal
+          value's format). Purely informational, no +/- controls; editing
+          happens on the dial/time fields above. */}
+      <div style={{ textAlign: 'center', flexShrink: 0, margin: '2px 0 6px', fontSize: 13, fontWeight: 700, color: durDraft != null ? 'var(--text1)' : 'var(--text3)' }}>
+        {durDraft != null ? fmtHM(durDraft) : '–'}
       </div>
+
+      {/* Log sleep — commits the draft to the history below AND resets it,
+          so the next night always starts from a blank slate instead of
+          silently carrying over whatever was last entered. Sized to its
+          content (alignSelf: center) instead of stretching the full widget
+          width, which read as oversized for a single confirm action. */}
+      <button
+        onClick={logSleep}
+        disabled={!canLog}
+        style={{
+          alignSelf: 'center', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+          padding: '7px 22px', borderRadius: 8, border: 'none', marginBottom: 10,
+          background: canLog ? 'var(--accent)' : 'var(--surface2)',
+          color: canLog ? 'var(--on-accent, white)' : 'var(--text3)',
+          fontSize: 11, fontWeight: 700, cursor: canLog ? 'pointer' : 'default',
+        }}
+      >
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        {t('Log sleep')}
+      </button>
 
       {/* Goal stepper (edit mode) */}
       {mode === 'edit' && (
@@ -208,17 +257,91 @@ function SleepTimeField({ icon, label, value, onChange, align, use12h }: {
         <input
           type="time" value={value}
           onChange={e => onChange(e.target.value)}
+          // Explicitly request the native picker instead of relying on the
+          // browser opening it only when a click lands on its (invisible,
+          // internally-positioned) picker icon — that icon's hit region
+          // follows the input's OWN native content width, not our CSS
+          // width:100%, so it drifted out of reach in 12h mode once "AM/PM"
+          // widened the visible label (worked fine in 24h, silently missed
+          // the icon in 12h). showPicker() opens it unconditionally on any
+          // click, in both formats.
+          onClick={e => { try { e.currentTarget.showPicker?.() } catch { /* unsupported browser — click still focuses for keyboard entry */ } }}
           style={{
             position: 'absolute', inset: 0, width: '100%', height: '100%',
             opacity: 0, border: 'none', outline: 'none', padding: 0, margin: 0,
             cursor: 'pointer', colorScheme: 'dark',
           }}
         />
-        <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text1)', pointerEvents: 'none', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text1)', pointerEvents: 'none', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
           {formatClockTime(value, use12h)}
         </span>
       </span>
     </label>
+  )
+}
+
+// ── Time-format dropdown ─────────────────────────────────────────────────────
+// Same button+chevron+floating-popover shape as ClockWidget's clock-style
+// picker and CalendarWidget's view switcher — the app's standard "pick one
+// of a few options" control, rather than a bare native <select>.
+function TimeFormatPicker({ use12h, onChange }: { use12h: boolean; onChange: (use12h: boolean) => void }) {
+  const t = useT()
+  const [open, setOpen] = useState(false)
+  const OPTS: { id: boolean; label: string }[] = [
+    { id: false, label: t('24-hour clock') },
+    { id: true,  label: t('12-hour clock (AM/PM)') },
+  ]
+  const current = OPTS.find(o => o.id === use12h) ?? OPTS[0]
+
+  return (
+    <div style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        title={t('Time format')}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          fontSize: 10, fontWeight: 600, padding: '4px 9px', borderRadius: 8,
+          border: '1px solid var(--border)', background: 'var(--surface2)',
+          color: 'var(--text2)', cursor: 'pointer',
+        }}
+      >
+        {current.label}
+        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      {open && (<>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setOpen(false)} />
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 50,
+          display: 'flex', flexDirection: 'column', gap: 1, padding: 4, minWidth: 150,
+          background: 'var(--popover-bg)',
+          backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+          border: '1px solid var(--border)', borderRadius: 10,
+          boxShadow: '0 8px 28px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)',
+        }}>
+          {OPTS.map(opt => {
+            const active = opt.id === use12h
+            return (
+              <button
+                key={String(opt.id)}
+                onClick={() => { onChange(opt.id); setOpen(false) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 7,
+                  fontSize: 10, fontWeight: active ? 700 : 500, padding: '5px 8px', borderRadius: 7,
+                  border: 'none', textAlign: 'left',
+                  background: active ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'transparent',
+                  color: active ? 'var(--accent)' : 'var(--text2)',
+                  cursor: 'pointer',
+                }}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
+      </>)}
+    </div>
   )
 }
 
@@ -255,15 +378,20 @@ function polar(r: number, angleDeg: number) {
   return { x: DIAL_CX + r * Math.sin(rad), y: DIAL_CY - r * Math.cos(rad) }
 }
 
-function SleepDial({ bed, wake, onChangeBed, onChangeWake, use12h }: {
-  bed: string; wake: string; onChangeBed: (v: string) => void; onChangeWake: (v: string) => void; use12h: boolean
+function SleepDial({ bed, wake, onChangeBed, onChangeWake, onChangeBoth, use12h }: {
+  bed: string; wake: string; onChangeBed: (v: string) => void; onChangeWake: (v: string) => void
+  onChangeBoth: (bed: string, wake: string) => void; use12h: boolean
 }) {
   const svgRef = useRef<SVGSVGElement>(null)
-  const [dragging, setDragging] = useState<'bed' | 'wake' | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
+  const [dragging, setDragging] = useState<'bed' | 'wake' | 'arc' | null>(null)
+  // Holds BOTH times while any drag is in progress — for a handle drag only
+  // the field being moved actually changes, for an arc drag both shift
+  // together, but the shape is the same either way so one preview object
+  // handles all three drag kinds uniformly.
+  const [preview, setPreview] = useState<{ bed: string; wake: string } | null>(null)
 
-  const curBed  = dragging === 'bed'  && preview != null ? preview : bed
-  const curWake = dragging === 'wake' && preview != null ? preview : wake
+  const curBed  = preview ? preview.bed  : bed
+  const curWake = preview ? preview.wake : wake
 
   const bedAngle = angleForTime(curBed)
   const wakeAngleRaw = angleForTime(curWake)
@@ -272,14 +400,24 @@ function SleepDial({ bed, wake, onChangeBed, onChangeWake, use12h }: {
   const p1 = polar(DIAL_R, bedAngle)
   const p2 = polar(DIAL_R, wakeAngle % 360)
   const arcPath = `M ${p1.x} ${p1.y} A ${DIAL_R} ${DIAL_R} 0 ${largeArc} 1 ${p2.x} ${p2.y}`
+  // Grip dots at the arc's midpoint hint that the whole band can be dragged
+  // (not just the two end handles) — same idea as a drag-handle affordance.
+  const midAngle = (bedAngle + wakeAngle) / 2
+  const gripDots = [-6, 0, 6].map(off => polar(DIAL_R, midAngle + off))
 
-  function angleFromPointer(e: PointerEvent): number {
+  function localPoint(clientX: number, clientY: number): { x: number; y: number } {
     const svg = svgRef.current
-    if (!svg) return 0
+    if (!svg) return { x: DIAL_CX, y: DIAL_CY }
     const rect = svg.getBoundingClientRect()
-    const relX = (e.clientX - rect.left) / rect.width * DIAL_SIZE
-    const relY = (e.clientY - rect.top) / rect.height * DIAL_SIZE
-    const dx = relX - DIAL_CX, dy = relY - DIAL_CY
+    return {
+      x: (clientX - rect.left) / rect.width * DIAL_SIZE,
+      y: (clientY - rect.top) / rect.height * DIAL_SIZE,
+    }
+  }
+
+  function angleFromPointer(clientX: number, clientY: number): number {
+    const { x, y } = localPoint(clientX, clientY)
+    const dx = x - DIAL_CX, dy = y - DIAL_CY
     let angle = Math.atan2(dx, -dy) * 180 / Math.PI
     if (angle < 0) angle += 360
     return angle
@@ -292,25 +430,93 @@ function SleepDial({ bed, wake, onChangeBed, onChangeWake, use12h }: {
   function startDrag(which: 'bed' | 'wake') {
     return (e: React.PointerEvent) => {
       e.stopPropagation()
+      e.preventDefault()
       setDragging(which)
-      let last = which === 'bed' ? bed : wake
+      let lastBed = bed, lastWake = wake
       const onMove = (ev: PointerEvent) => {
-        const angle = angleFromPointer(ev)
+        const angle = angleFromPointer(ev.clientX, ev.clientY)
         const mins = Math.round((angle / 360 * 1440) / 5) * 5
-        last = minutesToTime(mins)
-        setPreview(last)
+        const t = minutesToTime(mins)
+        if (which === 'bed') lastBed = t; else lastWake = t
+        setPreview({ bed: lastBed, wake: lastWake })
       }
       const onUp = () => {
         window.removeEventListener('pointermove', onMove)
         window.removeEventListener('pointerup', onUp)
         setDragging(null)
         setPreview(null)
-        if (which === 'bed') onChangeBed(last)
-        else onChangeWake(last)
+        if (which === 'bed') onChangeBed(lastBed)
+        else onChangeWake(lastWake)
       }
       window.addEventListener('pointermove', onMove)
       window.addEventListener('pointerup', onUp)
     }
+  }
+
+  // Dragging the highlighted band itself shifts bed AND wake together by the
+  // same delta — moves the whole sleep window earlier/later without
+  // changing its length, instead of only ever being able to drag one end.
+  function startArcDrag(e: React.PointerEvent) {
+    e.stopPropagation()
+    e.preventDefault()
+    setDragging('arc')
+    const startBedMin  = timeToMinutes(bed)
+    const startWakeMin = timeToMinutes(wake)
+    const startAngle = angleFromPointer(e.clientX, e.clientY)
+    let lastBed = bed, lastWake = wake
+    const onMove = (ev: PointerEvent) => {
+      const angle = angleFromPointer(ev.clientX, ev.clientY)
+      let deltaAngle = angle - startAngle
+      // Normalize to [-180, 180] so a grab near the 0/360 wrap doesn't jump
+      if (deltaAngle > 180) deltaAngle -= 360
+      if (deltaAngle < -180) deltaAngle += 360
+      const deltaMin = Math.round((deltaAngle / 360 * 1440) / 5) * 5
+      lastBed  = minutesToTime(startBedMin + deltaMin)
+      lastWake = minutesToTime(startWakeMin + deltaMin)
+      setPreview({ bed: lastBed, wake: lastWake })
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      setDragging(null)
+      setPreview(null)
+      // One atomic update, not two separate onChangeBed/onChangeWake calls —
+      // each of those independently spreads the same stale `draft` snapshot
+      // in the parent's setDraft(), so the second call would silently
+      // overwrite what the first one just wrote (bed snapping back to its
+      // pre-drag value while only wake actually moved, ballooning the
+      // window's apparent length).
+      onChangeBoth(lastBed, lastWake)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  // Single dispatcher on the whole SVG instead of separate onPointerDown
+  // handlers per element: relying on native hit-testing/z-order to route a
+  // grab to "the band" vs. a handle vs. an hour label was ambiguous (a press
+  // near a handle or over a text glyph could start the wrong drag, or start
+  // none at all and fall through to the browser's native text-selection
+  // drag instead) — computing the nearest target ourselves from the pointer
+  // position is unambiguous, and doubles as one place to preventDefault the
+  // native text-selection gesture.
+  const HANDLE_HIT_R = 16
+  function handleDialPointerDown(e: React.PointerEvent) {
+    e.preventDefault()
+    const { x, y } = localPoint(e.clientX, e.clientY)
+    const distBed  = Math.hypot(x - p1.x, y - p1.y)
+    const distWake = Math.hypot(x - p2.x, y - p2.y)
+    if (distBed <= HANDLE_HIT_R || distWake <= HANDLE_HIT_R) {
+      startDrag(distBed <= distWake ? 'bed' : 'wake')(e)
+      return
+    }
+    const dx = x - DIAL_CX, dy = y - DIAL_CY
+    const radial = Math.hypot(dx, dy)
+    if (Math.abs(radial - DIAL_R) > TRACK_W / 2 + 8) return
+    let angle = Math.atan2(dx, -dy) * 180 / Math.PI
+    if (angle < 0) angle += 360
+    const inRange = (angle >= bedAngle && angle <= wakeAngle) || (angle + 360 >= bedAngle && angle + 360 <= wakeAngle)
+    if (inRange) startArcDrag(e)
   }
 
   return (
@@ -318,19 +524,26 @@ function SleepDial({ bed, wake, onChangeBed, onChangeWake, use12h }: {
       ref={svgRef}
       viewBox={`0 0 ${DIAL_SIZE} ${DIAL_SIZE}`}
       width="100%" height="100%"
-      style={{ maxWidth: 240, maxHeight: 240, touchAction: 'none', overflow: 'visible' }}
+      onPointerDown={handleDialPointerDown}
+      style={{ maxWidth: 240, maxHeight: 240, touchAction: 'none', overflow: 'visible', userSelect: 'none', WebkitUserSelect: 'none' }}
     >
-      <circle cx={DIAL_CX} cy={DIAL_CY} r={DIAL_R} fill="none" stroke="var(--surface2)" strokeWidth={TRACK_W} />
+      <circle cx={DIAL_CX} cy={DIAL_CY} r={DIAL_R} fill="none" stroke="var(--surface2)" strokeWidth={TRACK_W} style={{ pointerEvents: 'none' }} />
 
       {Array.from({ length: 24 }, (_, h) => h).map(h => {
         const angle  = h / 24 * 360
         const major  = h % 6 === 0
         const pOut = polar(DIAL_R + TRACK_W / 2 + 2, angle)
         const pIn  = polar(DIAL_R + TRACK_W / 2 - (major ? 6 : 3), angle)
-        return <line key={h} x1={pIn.x} y1={pIn.y} x2={pOut.x} y2={pOut.y} stroke="var(--text3)" strokeWidth={major ? 1.4 : 0.8} opacity={major ? 0.55 : 0.28} />
+        return <line key={h} x1={pIn.x} y1={pIn.y} x2={pOut.x} y2={pOut.y} stroke="var(--text3)" strokeWidth={major ? 1.4 : 0.8} opacity={major ? 0.55 : 0.28} style={{ pointerEvents: 'none' }} />
       })}
 
-      <path d={arcPath} fill="none" stroke="var(--accent)" strokeWidth={TRACK_W} strokeLinecap="round" opacity={0.85} />
+      {/* The band itself is draggable (shifts bed+wake together) — the three
+          grip dots at its midpoint signal that, same as a drag-handle icon. */}
+      <path d={arcPath} fill="none" stroke="var(--accent)" strokeWidth={TRACK_W} strokeLinecap="round" opacity={0.85}
+        style={{ cursor: dragging === 'arc' ? 'grabbing' : 'grab', pointerEvents: 'none' }} />
+      {gripDots.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={1.6} fill="var(--on-accent, white)" opacity={0.85} style={{ pointerEvents: 'none' }} />
+      ))}
 
       {LABEL_HOURS.map(h => {
         const cardinal = CARDINAL_HOURS.has(h)
@@ -338,17 +551,17 @@ function SleepDial({ bed, wake, onChangeBed, onChangeWake, use12h }: {
         return (
           <text key={h} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle"
             fontSize={cardinal ? 8 : 6.5} fontWeight={cardinal ? 700 : 500}
-            fill="var(--text3)" opacity={cardinal ? 1 : 0.7}>
+            fill="var(--text3)" opacity={cardinal ? 1 : 0.7} style={{ pointerEvents: 'none', userSelect: 'none' }}>
             {dialLabel(h, use12h)}
           </text>
         )
       })}
 
-      <g onPointerDown={startDrag('bed')} style={{ cursor: 'grab' }}>
+      <g style={{ cursor: 'grab', pointerEvents: 'none' }}>
         <circle cx={p1.x} cy={p1.y} r={11} fill="var(--surface)" stroke="var(--accent)" strokeWidth={2} />
         <g transform={`translate(${p1.x - 4}, ${p1.y - 4})`} style={{ color: 'var(--accent)' }}><MoonIcon size={8} /></g>
       </g>
-      <g onPointerDown={startDrag('wake')} style={{ cursor: 'grab' }}>
+      <g style={{ cursor: 'grab', pointerEvents: 'none' }}>
         <circle cx={p2.x} cy={p2.y} r={11} fill="var(--surface)" stroke="#f2b84b" strokeWidth={2} />
         <g transform={`translate(${p2.x - 4}, ${p2.y - 4})`} style={{ color: '#f2b84b' }}><SunIcon size={8} /></g>
       </g>

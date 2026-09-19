@@ -7,6 +7,7 @@ import { useUIStore } from '@/store/uiStore'
 import { useSettings } from '@/store/settingsStore'
 import { useT } from '@/hooks/useT'
 import { evalSafeExpr, buildFormulaFns } from '@/lib/safeFormula'
+import { Dropdown } from '@/components/ui/Dropdown'
 import type { Widget } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -124,7 +125,8 @@ const ROW_HDR_W = 36
 export default function TableWidget({ widget }: { widget: Widget }) {
   const t = useT()
   const lang = useSettings(s => s.language)
-  const updateTaskData = useBoardStore(s => s.updateTaskData)
+  const updateTaskData    = useBoardStore(s => s.updateTaskData)
+  const updateWidgetQuiet = useBoardStore(s => s.updateWidgetQuiet)
   const mode           = useUIStore(s => s.mode)
   const d = widget.data as {
     rows: number; cols: number; cells: CellMap
@@ -146,8 +148,24 @@ export default function TableWidget({ widget }: { widget: Widget }) {
   const [editingTitle, setEditingTitle] = useState(false)
 
   // View features
-  const [showFilters,   setShowFilters]   = useState(false)
-  const [activeFilters, setActiveFilters] = useState<Record<number, string>>({})
+  const [showFilters,   setShowFilters]   = useState<boolean>(() => !!(d as { showFilters?: boolean }).showFilters)
+  const [activeFilters, setActiveFilters] = useState<Record<number, string>>(() => (d as { activeFilters?: Record<number, string> }).activeFilters ?? {})
+
+  // Board-Kachel + Fokus-Overlay sind zwei unabhängig gemountete Instanzen —
+  // ohne Re-Sync blieb der Filter in einer Instanz umgeschaltet/gesetzt,
+  // während die andere weiterhin (oder gar nicht) gefiltert anzeigte.
+  useEffect(() => {
+    const dd = widget.data as { showFilters?: boolean; activeFilters?: Record<number, string> }
+    const nextShow = !!dd.showFilters
+    if (nextShow !== showFilters) setShowFilters(nextShow)
+    const nextFilters = dd.activeFilters ?? {}
+    if (JSON.stringify(nextFilters) !== JSON.stringify(activeFilters)) setActiveFilters(nextFilters)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widget.data.showFilters, widget.data.activeFilters])
+
+  function persistFilters(nextShow: boolean, nextFilters: Record<number, string>) {
+    updateWidgetQuiet(widget.id, { data: { ...dRef.current, showFilters: nextShow, activeFilters: nextFilters } })
+  }
   const [filterDrop,    setFilterDrop]    = useState<{ col: number; x: number; y: number } | null>(null)
   const [findOpen,      setFindOpen]      = useState(false)
   const [findVal,       setFindVal]       = useState('')
@@ -803,12 +821,18 @@ export default function TableWidget({ widget }: { widget: Widget }) {
         <div data-filterdrop="1" style={{ ...sPopup, left: filterDrop.x, top: filterDrop.y, minWidth: 160 }} onPointerDown={e => e.stopPropagation()}>
           <div style={{ padding: '4px 10px 4px', fontSize: 10, color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{t('Filter')}: {idxToCol(filterDrop.col)}</div>
           <div style={{ height: 1, background: 'var(--border)', margin: '2px 0' }} />
-          <div onPointerDown={() => { setActiveFilters(f => { const n = {...f}; delete n[filterDrop.col]; return n }); setFilterDrop(null) }}
+          <div onPointerDown={() => {
+            const n = { ...activeFilters }; delete n[filterDrop.col]
+            setActiveFilters(n); persistFilters(showFilters, n); setFilterDrop(null)
+          }}
             style={{ padding: '5px 14px', fontSize: 12, cursor: 'pointer', color: 'var(--text3)', fontStyle: 'italic' }}>
             {t('(Show all)')}
           </div>
           {colUniqueValues(filterDrop.col).map(v => (
-            <div key={v} onPointerDown={() => { setActiveFilters(f => ({ ...f, [filterDrop.col]: v })); setFilterDrop(null) }}
+            <div key={v} onPointerDown={() => {
+              const n = { ...activeFilters, [filterDrop.col]: v }
+              setActiveFilters(n); persistFilters(showFilters, n); setFilterDrop(null)
+            }}
               style={{ padding: '5px 14px', fontSize: 12, cursor: 'pointer', color: 'var(--text1)', background: activeFilters[filterDrop.col] === v ? 'color-mix(in srgb,var(--accent) 15%,transparent)' : 'transparent', display: 'flex', alignItems: 'center', gap: 6 }}>
               {activeFilters[filterDrop.col] === v && <span style={{ color: 'var(--accent)' }}>✓</span>}
               {t(v)}
@@ -842,9 +866,12 @@ export default function TableWidget({ widget }: { widget: Widget }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2, flexShrink: 0, padding: '3px 6px', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', minHeight: 30 }}>
 
             {/* Font size */}
-            <select value={selCell?.fs ?? 12} onChange={e => patchRange({ fs: +e.target.value })} style={sSel} title={t('Font size')}>
-              {[8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
+            <Dropdown
+              value={String(selCell?.fs ?? 12)}
+              onChange={v => patchRange({ fs: +v })}
+              buttonStyle={sSel} title={t('Font size')}
+              options={[8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36].map(n => ({ value: String(n), label: String(n) }))}
+            />
 
             <Sep />
 
@@ -936,18 +963,26 @@ export default function TableWidget({ widget }: { widget: Widget }) {
             <Sep />
 
             {/* Number format */}
-            <select value={selCell?.fmt ?? 'auto'} onChange={e => patchRange({ fmt: e.target.value as SCell['fmt'] })} style={sSel} title={t('Number format')}>
-              <option value="auto">Auto</option>
-              <option value="num">0.00</option>
-              <option value="int"># {t('Integer')}</option>
-              <option value="cur">€ {t('Currency')}</option>
-              <option value="pct">% {t('Percent')}</option>
-              <option value="text">{t('Text')}</option>
-            </select>
+            <Dropdown
+              value={selCell?.fmt ?? 'auto'}
+              onChange={v => patchRange({ fmt: v as SCell['fmt'] })}
+              buttonStyle={sSel} title={t('Number format')}
+              options={[
+                { value: 'auto', label: 'Auto' },
+                { value: 'num',  label: '0.00' },
+                { value: 'int',  label: `# ${t('Integer')}` },
+                { value: 'cur',  label: `€ ${t('Currency')}` },
+                { value: 'pct',  label: `% ${t('Percent')}` },
+                { value: 'text', label: t('Text') },
+              ]}
+            />
             {selCell?.fmt && !['auto','text'].includes(selCell.fmt) && (
-              <select value={selCell?.dec ?? 2} onChange={e => patchRange({ dec: +e.target.value })} style={{ ...sSel, width: 44 }} title={t('Decimal places')}>
-                {[0,1,2,3,4].map(n => <option key={n} value={n}>.{n === 0 ? '0' : '0'.repeat(n)}</option>)}
-              </select>
+              <Dropdown
+                value={String(selCell?.dec ?? 2)}
+                onChange={v => patchRange({ dec: +v })}
+                buttonStyle={{ ...sSel, width: 44 }} title={t('Decimal places')}
+                options={[0,1,2,3,4].map(n => ({ value: String(n), label: `.${n === 0 ? '0' : '0'.repeat(n)}` }))}
+              />
             )}
 
             <Sep />
@@ -978,7 +1013,11 @@ export default function TableWidget({ widget }: { widget: Widget }) {
             <Sep />
 
             {/* Filter toggle */}
-            <TBtn active={showFilters} onClick={() => { setShowFilters(v => !v); if (showFilters) setActiveFilters({}) }} title={t('Show/hide filter')}>
+            <TBtn active={showFilters} onClick={() => {
+              const nextShow = !showFilters
+              const nextFilters = showFilters ? {} : activeFilters
+              setShowFilters(nextShow); setActiveFilters(nextFilters); persistFilters(nextShow, nextFilters)
+            }} title={t('Show/hide filter')}>
               <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M1 2h12l-4.5 5.5V12l-3-1.5V7.5L1 2z"/>
               </svg>

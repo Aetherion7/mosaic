@@ -12,18 +12,33 @@ import type { Widget } from '@/types'
 // jederzeit einsehen/ändern, neu laden.
 export default function HtmlWidget({ widget }: { widget: Widget }) {
   const t = useT()
-  const updateWidget = useBoardStore(s => s.updateWidget)
+  const updateWidget      = useBoardStore(s => s.updateWidget)
+  const updateWidgetQuiet = useBoardStore(s => s.updateWidgetQuiet)
   const mode = useUIStore(s => s.mode)
-  const d = widget.data as { html?: string }
+  const d = widget.data as { html?: string; view?: 'render' | 'code' }
   const html = d.html ?? ''
   const canEdit = mode === 'edit'
 
-  const [view, setView]   = useState<'render' | 'code'>(html ? 'render' : 'code')
+  const [view, setView]   = useState<'render' | 'code'>(d.view ?? (html ? 'render' : 'code'))
   const [draft, setDraft] = useState(html)
   useEffect(() => { setDraft(html) }, [html])
 
+  // Board-Kachel + Fokus-Overlay sind zwei unabhängig gemountete Instanzen
+  // (s. FocusOverlay.tsx) — ohne diesen Re-Sync blieb Umschalten zwischen
+  // Vorschau/Code in einer Instanz von der jeweils anderen unbemerkt.
+  useEffect(() => {
+    const next = widget.data.view === 'code' ? 'code' : (widget.data.view === 'render' ? 'render' : view)
+    if (next !== view) setView(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widget.data.view])
+
+  function switchView(v: 'render' | 'code') {
+    setView(v)
+    updateWidgetQuiet(widget.id, { data: { ...d, view: v } })
+  }
+
   function apply() {
-    updateWidget(widget.id, { data: { ...d, html: draft } })
+    updateWidget(widget.id, { data: { ...d, html: draft, view: 'render' } })
     setView('render')
   }
 
@@ -118,7 +133,7 @@ export default function HtmlWidget({ widget }: { widget: Widget }) {
               <button onClick={() => fileInputRef.current?.click()} style={{ ...pillStyle, background: 'var(--surface3)', color: 'var(--text2)' }}>
                 {t('Upload file')}
               </button>
-              {html && <button onClick={() => { setDraft(html); setView('render') }} style={{ ...pillStyle, background: 'var(--surface3)', color: 'var(--text2)' }}>
+              {html && <button onClick={() => { setDraft(html); switchView('render') }} style={{ ...pillStyle, background: 'var(--surface3)', color: 'var(--text2)' }}>
                 {t('Cancel')}
               </button>}
               <button onClick={apply} style={{ ...pillStyle, background: 'var(--accent)' }}>{t('Apply')}</button>
@@ -158,7 +173,7 @@ export default function HtmlWidget({ widget }: { widget: Widget }) {
           </svg>
           <div style={{ fontSize: 12 }}>{t('No HTML yet')}</div>
           {canEdit && (
-            <button onClick={() => setView('code')} style={{ ...pillStyle, background: 'var(--accent)' }}>{t('Paste HTML')}</button>
+            <button onClick={() => switchView('code')} style={{ ...pillStyle, background: 'var(--accent)' }}>{t('Paste HTML')}</button>
           )}
         </div>
       )}
@@ -171,7 +186,7 @@ export default function HtmlWidget({ widget }: { widget: Widget }) {
             </button>
           )}
           {(html || canEdit) && (
-            <button onClick={() => setView(v => v === 'render' ? 'code' : 'render')} style={pillStyle} title={t('View/edit code')}>
+            <button onClick={() => switchView(view === 'render' ? 'code' : 'render')} style={pillStyle} title={t('View/edit code')}>
               {view === 'render' ? t('Code') : t('Preview')}
             </button>
           )}

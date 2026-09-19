@@ -126,7 +126,7 @@ export default function AiPanel() {
         >
           <div style={surfaceStyle}>
           {/* Kopfzeile — gleiches Muster wie ThemePanel/WidgetStylePanel */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 14, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6, flexShrink: 0 }}>
             <span style={{ color: 'var(--accent)', display: 'flex' }}><IconSparkle size={13} /></span>
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1 }}>
               {t('AI assistant')}
@@ -162,7 +162,15 @@ export default function AiPanel() {
           ) : (
             <>
               {/* ── Verlauf ── */}
-              <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, padding: '2px 2px 8px' }}>
+              {/* Top edge fades out instead of a hard line under the header
+                  (same mask-fade idea as TilePicker's scroll area) — the
+                  matching paddingTop gives the fade a blank buffer to
+                  dissolve into instead of shaving the first bubble's top off. */}
+              <div ref={scrollRef} style={{
+                flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, padding: '14px 2px 8px',
+                maskImage: 'linear-gradient(to bottom, transparent, black 14px)',
+                WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 14px)',
+              }}>
                 {items.length === 0 && (
                   <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text3)', fontSize: 11, lineHeight: 1.7, padding: 16 }}>
                     {t('Ask for anything on this board —')}<br />

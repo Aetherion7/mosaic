@@ -638,6 +638,110 @@ export const selStyle: React.CSSProperties = {
   padding: '2px 6px', cursor: 'pointer', height: 22,
 }
 
+// ─── Mini select (replaces a bare native <select> in this toolbar) ─────────────
+// Same portal + fixed-position + outside-pointerdown-close mechanics as
+// FontPicker above, just a flat single-column option list instead of a
+// grouped/searchable one — for the toolbar's small numeric pickers (font
+// size, line height, shadow/stroke offsets) where a native <select> doesn't
+// match the rest of mosaic's own dropdown look.
+export function MiniSelect({ value, options, onChange, title, width }: {
+  value: string | number
+  options: { value: string | number; label: string }[]
+  onChange: (v: string) => void
+  title?: string
+  width?: number
+}) {
+  const [open, setOpen] = useState(false)
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 })
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onPointerDown(e: PointerEvent) {
+      const tgt = e.target as Node
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(tgt) &&
+        triggerRef.current && !triggerRef.current.contains(tgt)
+      ) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [open])
+
+  function openPicker() {
+    if (!open && triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect()
+      const dropW = width ?? 90
+      const left = r.left + dropW > window.innerWidth ? r.right - dropW : r.left
+      setDropPos({ top: r.bottom + 4, left })
+    }
+    setOpen(o => !o)
+  }
+
+  const current = options.find(o => String(o.value) === String(value))
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        ref={triggerRef}
+        onClick={e => { e.stopPropagation(); openPicker() }}
+        title={title}
+        style={{
+          ...selStyle,
+          display: 'flex', alignItems: 'center', gap: 4,
+          justifyContent: 'space-between',
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {current?.label ?? value}
+        </span>
+        <svg width="7" height="5" viewBox="0 0 7 5" style={{ flexShrink: 0, opacity: 0.5 }}>
+          <path d="M0 0 L3.5 5 L7 0" fill="currentColor" />
+        </svg>
+      </button>
+
+      {open && createPortal(
+        <div
+          ref={dropdownRef}
+          onPointerDown={e => e.stopPropagation()}
+          style={{
+            position: 'fixed', top: dropPos.top, left: dropPos.left,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 10, zIndex: 99999, minWidth: width ?? 70,
+            maxHeight: 240, overflowY: 'auto',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+            padding: '4px 0',
+          }}
+        >
+          {options.map(o => {
+            const active = String(o.value) === String(value)
+            return (
+              <button
+                key={String(o.value)}
+                onClick={() => { onChange(String(o.value)); setOpen(false) }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  fontSize: 12, padding: '5px 10px', cursor: 'pointer', border: 'none',
+                  background: active ? 'var(--accent)' : 'transparent',
+                  color: active ? 'var(--on-accent, white)' : 'var(--text1)',
+                }}
+                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface2)' }}
+                onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+              >
+                {o.label}
+              </button>
+            )
+          })}
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+}
+
 export const inputStyle: React.CSSProperties = {
   width: '100%', padding: '4px 7px', borderRadius: 6, fontSize: 11,
   border: '1px solid var(--border)', background: 'var(--surface2)',

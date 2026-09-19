@@ -29,7 +29,7 @@ import { useT } from '@/hooks/useT'
 import { ColorSwatch } from '@/components/ui/ColorSwatch'
 import {
   FontPicker, ToolBtn, Divider, ColorSwatchSmall, NoBgIcon, AlignIcon,
-  getFontCss, FONT_SIZES, selStyle, useInjectBuiltinGoogleFonts,
+  getFontCss, FONT_SIZES, useInjectBuiltinGoogleFonts, MiniSelect,
 } from './shared/TextStyleToolbar'
 import type { Widget, NotePdfLink } from '@/types'
 
@@ -541,14 +541,12 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
 
           <Divider />
 
-          <select
+          <MiniSelect
             value={d.fontSize ?? 13}
-            onChange={e => patch({ fontSize: Number(e.target.value) })}
-            style={selStyle}
+            onChange={v => patch({ fontSize: Number(v) })}
             title={t('Font size')}
-          >
-            {FONT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+            options={FONT_SIZES.map(s => ({ value: s, label: String(s) }))}
+          />
 
           <Divider />
 
@@ -600,16 +598,12 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
           <Divider />
 
           {/* Line height */}
-          <select
+          <MiniSelect
             value={d.lineHeight ?? 1.7}
-            onChange={e => patch({ lineHeight: Number(e.target.value) })}
-            style={selStyle}
+            onChange={v => patch({ lineHeight: Number(v) })}
             title={t('Line height')}
-          >
-            {[1, 1.2, 1.4, 1.6, 1.7, 1.8, 2, 2.5].map(v => (
-              <option key={v} value={v}>{v}×</option>
-            ))}
-          </select>
+            options={[1, 1.2, 1.4, 1.6, 1.7, 1.8, 2, 2.5].map(v => ({ value: v, label: `${v}×` }))}
+          />
 
           <Divider />
 
@@ -701,30 +695,24 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
                 onChange={v => patch({ textShadowColor: v })}
                 title={t('Shadow color')}
               />
-              <select
+              <MiniSelect
                 value={d.textShadowBlur ?? 6}
-                onChange={e => patch({ textShadowBlur: Number(e.target.value) })}
-                style={selStyle}
+                onChange={v => patch({ textShadowBlur: Number(v) })}
                 title={t('Blur')}
-              >
-                {[0, 2, 4, 6, 8, 12, 16, 24].map(v => <option key={v} value={v}>{v}px</option>)}
-              </select>
-              <select
+                options={[0, 2, 4, 6, 8, 12, 16, 24].map(v => ({ value: v, label: `${v}px` }))}
+              />
+              <MiniSelect
                 value={d.textShadowX ?? 1}
-                onChange={e => patch({ textShadowX: Number(e.target.value) })}
-                style={selStyle}
+                onChange={v => patch({ textShadowX: Number(v) })}
                 title={t('X offset')}
-              >
-                {[-6, -4, -2, -1, 0, 1, 2, 4, 6].map(v => <option key={v} value={v}>x{v}</option>)}
-              </select>
-              <select
+                options={[-6, -4, -2, -1, 0, 1, 2, 4, 6].map(v => ({ value: v, label: `x${v}` }))}
+              />
+              <MiniSelect
                 value={d.textShadowY ?? 2}
-                onChange={e => patch({ textShadowY: Number(e.target.value) })}
-                style={selStyle}
+                onChange={v => patch({ textShadowY: Number(v) })}
                 title={t('Y offset')}
-              >
-                {[-6, -4, -2, -1, 0, 1, 2, 4, 6].map(v => <option key={v} value={v}>y{v}</option>)}
-              </select>
+                options={[-6, -4, -2, -1, 0, 1, 2, 4, 6].map(v => ({ value: v, label: `y${v}` }))}
+              />
             </div>
           )}
 
@@ -745,14 +733,12 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
                 onChange={v => patch({ textStrokeColor: v })}
                 title={t('Outline color')}
               />
-              <select
+              <MiniSelect
                 value={d.textStrokeWidth ?? 1}
-                onChange={e => patch({ textStrokeWidth: Number(e.target.value) })}
-                style={selStyle}
+                onChange={v => patch({ textStrokeWidth: Number(v) })}
                 title={t('Outline width')}
-              >
-                {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}px</option>)}
-              </select>
+                options={[1, 2, 3, 4, 5].map(v => ({ value: v, label: `${v}px` }))}
+              />
             </div>
           )}
 

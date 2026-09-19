@@ -35,7 +35,7 @@ const HIGHLIGHT_COLORS = [
   { label: 'Blue',  value: '#52b5d4' },
 ]
 
-const ZOOM_STEPS = [50, 75, 100, 125, 150, 175, 200]
+const ZOOM_STEPS = [50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475, 500]
 // Zeichen pro "Seite" bei der Locations-Generierung. Die tatsächlich
 // gerenderte Seite hängt von Widget-Breite/Zoom/Spalten ab, deshalb bleibt
 // die "Seitenzahl" immer eine Annäherung — aber der Prozentsatz (aktuelle
@@ -431,10 +431,10 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
   // updates that one highlight's color in place instead of creating a new
   // one on every intermediate onChange tick.
   const customHlIdRef = useRef<string | null>(null)
-  const [showSidebar,   setShowSidebar]   = useState(true)
-  const [showPagePanel, setShowPagePanel] = useState(false)
+  const [showSidebar,   setShowSidebar]   = useState(d.showSidebar ?? true)
+  const [showPagePanel, setShowPagePanel] = useState(d.showPagePanel ?? false)
   const [fitWidth,    setFitWidth]    = useState(400)
-  const [zoom,        setZoom]        = useState(100)
+  const [zoom,        setZoom]        = useState(d.zoom ?? 100)
   // EPUBs: nur horizontale (paginierte) Darstellung erlaubt — im
   // durchgehend scrollenden Modus rendert epub.js mehrere Kapitel
   // gleichzeitig/überlappend, was in der Praxis zu falschen
@@ -514,7 +514,7 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
   const handleEpubWheel = useCallback((e: WheelEvent) => {
     if (e.ctrlKey) {
       e.preventDefault()
-      setZoom(prev => {
+      setZoomPersist(prev => {
         const idx  = ZOOM_STEPS.indexOf(prev)
         const next = idx === -1 ? 2 : Math.max(0, Math.min(ZOOM_STEPS.length - 1, idx + (e.deltaY < 0 ? 1 : -1)))
         return ZOOM_STEPS[next]
@@ -535,6 +535,10 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
     setTimeout(() => { wheelCooldownRef.current = false }, 420)
     if (delta > 0) renditionRef.current?.next()?.catch?.(() => {})
     else           renditionRef.current?.prev()?.catch?.(() => {})
+  // setZoomPersist only closes over the stable setZoom/patchQuiet, so a
+  // stale reference from an earlier render behaves identically — safe to
+  // omit from deps.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const highlights = d.highlights ?? {}
@@ -600,6 +604,21 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
     if (stored !== twoPageSpread) setTwoPageSpread(stored)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d.twoPageSpread])
+  useEffect(() => {
+    const stored = d.showSidebar ?? true
+    if (stored !== showSidebar) setShowSidebar(stored)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.showSidebar])
+  useEffect(() => {
+    const stored = d.showPagePanel ?? false
+    if (stored !== showPagePanel) setShowPagePanel(stored)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.showPagePanel])
+  useEffect(() => {
+    const stored = d.zoom ?? 100
+    if (stored !== zoom) setZoom(stored)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.zoom])
 
   function patch(partial: Partial<ReaderBook>) {
     patchBook(partial)
@@ -629,6 +648,33 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
     const p = pendingPosRef.current
     if (p) patchBookQuietRef.current(p)
   }, [])
+
+  // Zoom/Panel-Sichtbarkeit persistieren, damit Board-Kachel und Fokus-
+  // Overlay sich spiegeln (s. Re-Sync-Effekte oben). Zoom ändert sich oft in
+  // schneller Folge (Scrollrad, Tastenkombination) — debounced wie die
+  // Lese-Position, statt bei jedem Tick die komplette Boards-Map zu
+  // serialisieren.
+  function setZoomPersist(updater: number | ((prev: number) => number)) {
+    setZoom(prev => {
+      const next = typeof updater === 'function' ? (updater as (p: number) => number)(prev) : updater
+      patchQuiet({ zoom: next }, true)
+      return next
+    })
+  }
+  function setShowSidebarPersist(updater: boolean | ((prev: boolean) => boolean)) {
+    setShowSidebar(prev => {
+      const next = typeof updater === 'function' ? (updater as (p: boolean) => boolean)(prev) : updater
+      patchQuiet({ showSidebar: next })
+      return next
+    })
+  }
+  function setShowPagePanelPersist(updater: boolean | ((prev: boolean) => boolean)) {
+    setShowPagePanel(prev => {
+      const next = typeof updater === 'function' ? (updater as (p: boolean) => boolean)(prev) : updater
+      patchQuiet({ showPagePanel: next })
+      return next
+    })
+  }
 
   // ── KI-Markierungen: alle Vorkommen eines Suchtexts markieren ──────────────
   // Über die readerRegistry vom highlight_in_reader-Tool aufrufbar (lib/ai).
@@ -950,7 +996,7 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
   }, [fileType, zoom])
 
   function stepZoom(delta: 1 | -1) {
-    setZoom(prev => {
+    setZoomPersist(prev => {
       const idx  = ZOOM_STEPS.indexOf(prev)
       const next = idx === -1 ? 2 : Math.max(0, Math.min(ZOOM_STEPS.length - 1, idx + delta))
       return ZOOM_STEPS[next]
@@ -1003,7 +1049,7 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
     if (e.ctrlKey) {
       if (e.key === '+' || e.key === '=') { e.preventDefault(); stepZoom(1) }
       if (e.key === '-')                  { e.preventDefault(); stepZoom(-1) }
-      if (e.key === '0')                  { e.preventDefault(); setZoom(100) }
+      if (e.key === '0')                  { e.preventDefault(); setZoomPersist(100) }
       return
     }
     const isH = scrollDir === 'horizontal'
@@ -1052,7 +1098,7 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
       if (e.ctrlKey) {
         e.stopPropagation()
         e.preventDefault()
-        setZoom(prev => {
+        setZoomPersist(prev => {
           const idx  = ZOOM_STEPS.indexOf(prev)
           const next = idx === -1 ? 2 : Math.max(0, Math.min(ZOOM_STEPS.length - 1, idx + (e.deltaY < 0 ? 1 : -1)))
           return ZOOM_STEPS[next]
@@ -1595,7 +1641,7 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
           </button>
           {(fileType === 'pdf' || epubToc.length > 0) && (
             <button
-              onClick={() => setShowPagePanel(s => !s)}
+              onClick={() => setShowPagePanelPersist(s => !s)}
               title={fileType === 'pdf'
                 ? (showPagePanel ? t('Hide page preview') : t('Show page preview'))
                 : (showPagePanel ? t('Hide chapters') : t('Show chapters'))}
@@ -1632,7 +1678,7 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
 
           <button
-            onClick={() => setShowSidebar(s => !s)}
+            onClick={() => setShowSidebarPersist(s => !s)}
             title={showSidebar ? t('Hide highlights') : t('Show highlights')}
             style={{ ...iconBtnStyle, background: showSidebar ? 'var(--accent)' : 'var(--surface2)', color: showSidebar ? 'var(--on-accent, white)' : 'var(--text2)', borderColor: showSidebar ? 'var(--accent)' : 'var(--border)' }}
           >
@@ -1759,7 +1805,7 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
             boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
           }}>
             <Btn onClick={() => stepZoom(-1)} disabled={zoom <= ZOOM_STEPS[0]} title={t('Zoom out (Ctrl+−)')}><IcoZoomOut /></Btn>
-            <button onClick={() => setZoom(100)} title={t('Reset zoom')}
+            <button onClick={() => setZoomPersist(100)} title={t('Reset zoom')}
               style={{ fontSize: 10, fontWeight: 700, color: zoom !== 100 ? 'var(--accent)' : 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', minWidth: 32, textAlign: 'center' }}>
               {zoom}%
             </button>
@@ -1910,7 +1956,7 @@ function ReaderBookView({ widget, book, allWidgets, onBack, patchBook, patchBook
                 <span style={{ fontSize: 8, fontWeight: 700, lineHeight: 1, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 15%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)', borderRadius: 10, padding: '0 5px', height: 16, boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{total}</span>
               )}
               <div style={{ flex: 1 }} />
-              <button onClick={() => setShowSidebar(false)} title={t('Close')}
+              <button onClick={() => setShowSidebarPersist(false)} title={t('Close')}
                 style={{ width: 18, height: 18, borderRadius: 5, border: 'none', background: 'var(--surface)', color: 'var(--text3)', fontSize: 13, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}>
                 ×
               </button>

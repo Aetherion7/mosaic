@@ -310,14 +310,20 @@ export default function TopBar() {
               vergrößert die Clip-Box selbst nach oben, marginTop gleicht die
               dadurch verschobene Position wieder aus (Netto-Verschiebung 0),
               sodass oben Platz für das nach oben herausragende Badge ist,
-              ohne dass sich der Button optisch bewegt. */}
+              ohne dass sich der Button optisch bewegt. Dieselbe Idee jetzt
+              auch nach rechts (paddingRight/marginRight place statt reinem
+              margin) — das Badge sitzt bei right:-4 und wurde bislang von
+              genau dieser Clip-Box rechts abgeschnitten; box-sizing:border-box
+              (global) heißt maxWidth muss um denselben Betrag mitwachsen,
+              sonst würde der Button selbst um die neue Innenpolsterung
+              schrumpfen. */}
           <div style={{
-            maxWidth: mode === 'edit' ? 46 : 0,
+            maxWidth: mode === 'edit' ? 52 : 0,
             opacity: mode === 'edit' ? 1 : 0,
             overflow: 'hidden',
             paddingTop: 8, marginTop: -8,
-            marginRight: mode === 'edit' ? 6 : 0,
-            transition: 'max-width 0.3s ease, opacity 0.2s ease, margin-right 0.3s ease',
+            paddingRight: 6, marginRight: 0,
+            transition: 'max-width 0.3s ease, opacity 0.2s ease',
             flexShrink: 0,
             display: 'flex', alignItems: 'center',
           }}>

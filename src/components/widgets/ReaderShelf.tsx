@@ -6,6 +6,7 @@ import ePub from 'epubjs'
 import type Book from 'epubjs/types/book'
 import { saveBlob, getBlob, useBlobUrl } from '@/lib/blobStore'
 import { useT } from '@/hooks/useT'
+import { Dropdown } from '@/components/ui/Dropdown'
 import type { ReaderBook, ReaderFileType } from '@/types'
 
 function timeAgo(ts: number, t: (s: string) => string) {
@@ -573,12 +574,17 @@ export default function ReaderShelf({ books, tags: tagList, onOpen, onAdd, onDel
           </button>
         )}
         <div style={{ flex: 1 }} />
-        <select value={sort} onChange={e => setSort(e.target.value as SortMode)}
-          style={{ fontSize: 10, fontWeight: 600, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text2)', padding: '4px 6px', flexShrink: 0 }}>
-          <option value="recent">{t('Recently opened')}</option>
-          <option value="title">{t('Title')}</option>
-          <option value="progress">{t('Progress')}</option>
-        </select>
+        <Dropdown
+          value={sort}
+          onChange={v => setSort(v as SortMode)}
+          align="right"
+          buttonStyle={{ fontSize: 10, fontWeight: 600, borderRadius: 6, color: 'var(--text2)', padding: '4px 6px', flexShrink: 0 }}
+          options={[
+            { value: 'recent',   label: t('Recently opened') },
+            { value: 'title',    label: t('Title') },
+            { value: 'progress', label: t('Progress') },
+          ]}
+        />
       </div>
 
       <div ref={gridScrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 12 }}>

@@ -87,7 +87,8 @@ function makeDotIcon(L: typeof import('leaflet'), color: string, endpoint: boole
 export default function MapWidget({ widget }: { widget: Widget }) {
   const t = useT()
   const lang = useSettings(s => s.language)
-  const updateWidget = useBoardStore(s => s.updateWidget)
+  const updateWidget      = useBoardStore(s => s.updateWidget)
+  const updateWidgetQuiet = useBoardStore(s => s.updateWidgetQuiet)
   const mode         = useUIStore(s => s.mode)
   const d            = widget.data as MapData
 
@@ -106,12 +107,41 @@ export default function MapWidget({ widget }: { widget: Widget }) {
   const clickHandlerRef = useRef<((e: import('leaflet').LeafletMouseEvent) => void) | null>(null)
   const skipNextMapClickRef = useRef(false)
 
-  const [tool,           setTool]          = useState<Tool>('none')
+  const [tool,           setTool]          = useState<Tool>(d.tool ?? 'none')
   const [routePts,       setRoutePts]      = useState<Array<{ lat: number; lng: number }>>([])
-  const [activeColor,    setActiveColor]   = useState(COLORS[4])
+  const [activeColor,    setActiveColor]   = useState(d.activeColor ?? COLORS[4])
   const [initialized,    setInitialized]   = useState(false)
-  const [directoryOpen,  setDirectoryOpen] = useState(false)
-  const [dirTab,         setDirTab]        = useState<'markers' | 'routes'>('markers')
+  const [directoryOpen,  setDirectoryOpen] = useState(d.directoryOpen ?? false)
+  const [dirTab,         setDirTab]        = useState<'markers' | 'routes'>(d.dirTab ?? 'markers')
+
+  // Board-Kachel + Fokus-Overlay sind zwei unabhängig gemountete Instanzen —
+  // ohne Re-Sync blieben Werkzeugwahl/Farbe/Verzeichnis-Ansicht in der einen
+  // Instanz hängen, während die andere weiter den alten Stand zeigte.
+  useEffect(() => {
+    const next = d.tool ?? 'none'
+    if (next !== tool) setTool(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.tool])
+  useEffect(() => {
+    const next = d.activeColor ?? COLORS[4]
+    if (next !== activeColor) setActiveColor(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.activeColor])
+  useEffect(() => {
+    const next = d.directoryOpen ?? false
+    if (next !== directoryOpen) setDirectoryOpen(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.directoryOpen])
+  useEffect(() => {
+    const next = d.dirTab ?? 'markers'
+    if (next !== dirTab) setDirTab(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.dirTab])
+
+  function setToolPersist(v: Tool) { setTool(v); updateWidgetQuiet(widget.id, { data: { ...dRef.current, tool: v } }) }
+  function setActiveColorPersist(v: string) { setActiveColor(v); updateWidgetQuiet(widget.id, { data: { ...dRef.current, activeColor: v } }) }
+  function setDirectoryOpenPersist(v: boolean) { setDirectoryOpen(v); updateWidgetQuiet(widget.id, { data: { ...dRef.current, directoryOpen: v } }) }
+  function setDirTabPersist(v: 'markers' | 'routes') { setDirTab(v); updateWidgetQuiet(widget.id, { data: { ...dRef.current, dirTab: v } }) }
   const [editingLabel,   setEditingLabel]  = useState<{ type: 'marker' | 'route'; id: string; val: string } | null>(null)
 
   const [markerPanel, setMarkerPanel] = useState<{ id: string; label: string } | null>(null)
@@ -158,7 +188,9 @@ export default function MapWidget({ widget }: { widget: Widget }) {
 
       map.on('moveend', () => {
         const c = map.getCenter()
-        updateWidget(widget.id, { data: { ...dRef.current, centerLat: c.lat, centerLng: c.lng, zoom: map.getZoom() } })
+        const z = map.getZoom()
+        lastAppliedViewRef.current = { lat: c.lat, lng: c.lng, zoom: z }
+        updateWidget(widget.id, { data: { ...dRef.current, centerLat: c.lat, centerLng: c.lng, zoom: z } })
       })
 
       map.on('click', () => {
@@ -187,6 +219,28 @@ export default function MapWidget({ widget }: { widget: Widget }) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Board-Kachel + Fokus-Overlay sind zwei unabhängig gemountete Instanzen,
+  // jede mit ihrer EIGENEN Leaflet-Karte — panning/zooming in einer ließ die
+  // andere bisher stehen, weil `moveend` zwar in den Store schreibt, aber
+  // niemand die eigene, schon initialisierte Karte danach erneut ausrichtet.
+  // lastAppliedViewRef verhindert dabei die Rückkopplungsschleife: eine
+  // Instanz, die den Wert selbst per moveend geschrieben hat, würde sonst
+  // ihre eigene Änderung als "von außen" erneut auf sich selbst anwenden.
+  const lastAppliedViewRef = useRef({ lat: d.centerLat, lng: d.centerLng, zoom: d.zoom })
+  useEffect(() => {
+    if (!initialized || !mapRef.current) return
+    const { centerLat, centerLng, zoom } = widget.data as MapData
+    const last = lastAppliedViewRef.current
+    if (centerLat === last.lat && centerLng === last.lng && zoom === last.zoom) return
+    lastAppliedViewRef.current = { lat: centerLat, lng: centerLng, zoom }
+    const cur = mapRef.current.getCenter()
+    const curZoom = mapRef.current.getZoom()
+    const closeEnough = Math.abs(cur.lat - centerLat) < 1e-6 && Math.abs(cur.lng - centerLng) < 1e-6 && curZoom === zoom
+    if (closeEnough) return
+    mapRef.current.setView([centerLat, centerLng], zoom, { animate: false })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialized, widget.data.centerLat, widget.data.centerLng, widget.data.zoom])
 
   // ── Sync markers ─────────────────────────────────────────────────────────
 
@@ -395,7 +449,7 @@ export default function MapWidget({ widget }: { widget: Widget }) {
   }
 
   function selectTool(t: Tool) {
-    setTool(prev => prev === t ? 'none' : t)
+    setToolPersist(tool === t ? 'none' : t)
     setRoutePts([])
     setMarkerPanel(null)
   }
@@ -506,7 +560,7 @@ export default function MapWidget({ widget }: { widget: Widget }) {
 
             <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
               {COLORS.map(c => (
-                <button key={c} onClick={() => setActiveColor(c)} style={{
+                <button key={c} onClick={() => setActiveColorPersist(c)} style={{
                   width: 13, height: 13, borderRadius: '50%', background: c,
                   border: activeColor === c ? '2px solid var(--text1)' : '1.5px solid rgba(255,255,255,0.18)',
                   cursor: 'pointer', padding: 0, flexShrink: 0,
@@ -542,7 +596,7 @@ export default function MapWidget({ widget }: { widget: Widget }) {
         )}
 
         {/* Directory button — always visible */}
-        <ToolBtn active={directoryOpen} title={t('Open directory')} onClick={() => setDirectoryOpen(v => !v)}>
+        <ToolBtn active={directoryOpen} title={t('Open directory')} onClick={() => setDirectoryOpenPersist(!directoryOpen)}>
           <ListSvg />
         </ToolBtn>
       </div>
@@ -600,7 +654,7 @@ export default function MapWidget({ widget }: { widget: Widget }) {
           <div style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', borderBottom: '1px solid var(--border)', gap: 7, flexShrink: 0 }}>
             <ListSvg />
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text1)', flex: 1 }}>{t('Directory')}</span>
-            <button onClick={() => setDirectoryOpen(false)} title={t('Close')}
+            <button onClick={() => setDirectoryOpenPersist(false)} title={t('Close')}
               style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 2px' }}>×</button>
           </div>
 
@@ -612,7 +666,7 @@ export default function MapWidget({ widget }: { widget: Widget }) {
                 { value: 'routes',  icon: <RouteSvg />, label: `${t('Routes')} (${d.routes.length})` },
               ]}
               value={dirTab}
-              onChange={setDirTab}
+              onChange={setDirTabPersist}
               slotH={24} radius={6} fontSize={10} soft
             />
           </div>

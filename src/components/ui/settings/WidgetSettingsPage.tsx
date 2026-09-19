@@ -6,6 +6,7 @@ import { TYPE_LABELS } from '@/components/board/TileWrapper'
 import type { WidgetType } from '@/types'
 import { Row, SectionTitle, SettingItem } from './shared'
 import { BUILT_IN_WIDGETS } from './widgetCatalog'
+import { Dropdown } from '@/components/ui/Dropdown'
 
 // Eigene Unterseite je Widget-Typ (Sidebar → "WIDGETS" → einzelner Eintrag):
 // Kopf mit Icon/Name/Beschreibung + Ein/Aus-Schalter, darunter typ-spezifische
@@ -137,13 +138,12 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
               <SettingItem
                 label={t('Reminders per day')}
                 control={
-                  <select
-                    value={waterReminderCount}
-                    onChange={e => setSetting({ waterReminderCount: Number(e.target.value) })}
-                    style={selStyle}
-                  >
-                    {[3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
-                  </select>
+                  <Dropdown
+                    value={String(waterReminderCount)}
+                    onChange={v => setSetting({ waterReminderCount: Number(v) })}
+                    buttonStyle={selStyle}
+                    options={[3, 4, 5, 6].map(n => ({ value: String(n), label: String(n) }))}
+                  />
                 }
               />
               <SettingItem

@@ -3,6 +3,7 @@ import { useRef, useEffect, useCallback, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ColorSwatch } from '@/components/ui/ColorSwatch'
 import { PortalPopover } from '@/components/ui/PortalPopover'
+import { Dropdown } from '@/components/ui/Dropdown'
 import { useBoardStore } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { useT } from '@/hooks/useT'
@@ -1774,14 +1775,13 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
 
         {/* Font size — only shown when text tool is active */}
         {tool === 'text' && (
-          <select
-            value={fontSize}
-            onChange={e => setFontSize(+e.target.value)}
+          <Dropdown
+            value={String(fontSize)}
+            onChange={v => setFontSize(+v)}
             title={t('Font size')}
-            style={{ fontSize: 11, background: 'var(--surface)', color: 'var(--text1)', border: '1px solid var(--border)', borderRadius: 5, padding: '2px 4px', height: 28, cursor: 'pointer' }}
-          >
-            {[10, 12, 14, 16, 20, 24, 32, 48].map(s => <option key={s} value={s}>{s}px</option>)}
-          </select>
+            buttonStyle={{ fontSize: 11, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 5, padding: '2px 4px', height: 28 }}
+            options={[10, 12, 14, 16, 20, 24, 32, 48].map(s => ({ value: String(s), label: `${s}px` }))}
+          />
         )}
 
         {/* Eraser */}

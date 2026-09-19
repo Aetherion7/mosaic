@@ -93,7 +93,7 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
       padding: 14,
     }}>
       {/* Kopfzeile */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6, flexShrink: 0 }}>
         <span style={{ color: 'var(--accent)', display: 'flex' }}><IconSparkle size={13} /></span>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {label}
@@ -110,8 +110,13 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
         </button>
       </div>
 
-      {/* Verlauf */}
-      <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 8 }}>
+      {/* Verlauf — top edge fades out instead of a hard line under the
+          header (same mask-fade idea as AiPanel/TilePicker's scroll area) */}
+      <div ref={scrollRef} style={{
+        flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, padding: '14px 0 8px',
+        maskImage: 'linear-gradient(to bottom, transparent, black 14px)',
+        WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 14px)',
+      }}>
         {items.length === 0 && !running && (
           <div style={{ fontSize: 11, color: 'var(--text3)', lineHeight: 1.7, textAlign: 'center', padding: '16px 8px', margin: 'auto' }}>
             {t('Changes apply only to this widget.')}

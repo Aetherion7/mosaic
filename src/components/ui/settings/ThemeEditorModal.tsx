@@ -7,6 +7,7 @@ import { ColorSwatch } from '@/components/ui/ColorSwatch'
 import SlidingTabs from '@/components/ui/SlidingTabs'
 import { useT } from '@/hooks/useT'
 import { useSettings, type CustomTheme } from '@/store/settingsStore'
+import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { DEFAULT_THEME } from '@/lib/themes'
 import { DEFAULT_BG } from '@/lib/defaults'
 import { todayStr } from '@/lib/dates'
@@ -101,13 +102,23 @@ export default function ThemeEditorModal({ initial, onClose }: { initial?: Custo
   function setStyle(patch: Partial<WidgetStyle>) { setStyleState(prev => ({ ...prev, ...patch })) }
 
   const canSave = name.trim().length > 0
+  const applyTheme = useBoardStore(s => s.applyTheme)
   function save() {
     if (!canSave) return
+    const id = initial?.id ?? `custom_${Date.now()}`
     addCustomTheme({
-      id: initial?.id ?? `custom_${Date.now()}`,
+      id,
       name: name.trim().slice(0, 40),
       cssVars, bg, widgetStyle: style,
     })
+    // Editing the theme the board is ALREADY on updates the stored
+    // definition, but nothing re-reads it from there — applyTheme() (CSS
+    // vars + the per-widget style migration) only ever runs when a theme is
+    // actively switched TO. Without this, saved changes to the active
+    // custom theme stayed invisible until switching away and back, since
+    // that round trip is what re-triggers applyTheme() for the same id.
+    const board = selectBoard(useBoardStore.getState())
+    if (board?.themeId === id) applyTheme(id)
     onClose()
   }
 

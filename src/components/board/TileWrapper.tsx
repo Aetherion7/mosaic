@@ -511,7 +511,12 @@ function TileWrapperInner({ widget, gridRef }: Props) {
     note:        { colSpan: 4, rowSpan: 2 },
     water:       { colSpan: 2, rowSpan: 1 },
     image:       { colSpan: 2, rowSpan: 1 },
-    sleep:       { colSpan: 3, rowSpan: 2 },
+    // War 3×2 — mit dem redesignten Zifferblatt (Zeitformat-Auswahl oben,
+    // Bettzeit/Aufwachzeit-Anzeigen, Dauer-Anzeige) plus der Sleep-Goal-Zeile
+    // (Bearbeitungsmodus) und geöffneter Statistik überlappte bei rowSpan 4
+    // bereits das Zifferblatt mit dem Log-Button — erst ab rowSpan 5 zeigt
+    // jede Zeile vollständig, per Screenshot am Resize-Griff bestätigt.
+    sleep:       { colSpan: 3, rowSpan: 5 },
     agenda:      { colSpan: 2, rowSpan: 2 },
     quicklinks:  { colSpan: 2, rowSpan: 1 },
     // Fehlte komplett — ließ sich auf 1×1 schrumpfen und quetschte den fixen
