@@ -322,8 +322,12 @@ export default function TopBar() {
             opacity: mode === 'edit' ? 1 : 0,
             overflow: 'hidden',
             paddingTop: 8, marginTop: -8,
-            paddingRight: 6, marginRight: 0,
-            transition: 'max-width 0.3s ease, opacity 0.2s ease',
+            // Padding nur im Bearbeitungsmodus: bei border-box bleibt es sonst
+            // auch bei maxWidth 0 stehen und lässt den (unsichtbaren) Wrapper
+            // im Ansichtsmodus 6px breit — die linke Seite des Umschalters
+            // wirkt dann länger als die rechte.
+            paddingRight: mode === 'edit' ? 6 : 0, marginRight: 0,
+            transition: 'max-width 0.3s ease, opacity 0.2s ease, padding-right 0.3s ease',
             flexShrink: 0,
             display: 'flex', alignItems: 'center',
           }}>

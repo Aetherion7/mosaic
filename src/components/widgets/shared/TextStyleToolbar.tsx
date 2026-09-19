@@ -220,6 +220,31 @@ export function FontPicker({ value, onChange }: {
     return () => document.removeEventListener('pointerdown', onPointerDown)
   }, [open])
 
+  // Position is measured once in openPicker() and never re-measured — if the
+  // board moves while this stays open, the fixed-position dropdown was left
+  // behind at its old screen position instead of following the trigger,
+  // drifting over whatever widget moved into that spot. Close instead of
+  // trying to keep it pinned (same call PortalPopover makes). Two listeners:
+  // a real scrollable ancestor fires "scroll" (capture phase — it doesn't
+  // bubble); the infinite-canvas board mode pans/zooms via an imperative
+  // transform on every wheel tick and never fires "scroll" at all (by
+  // design, to skip a React re-render per frame — see InfiniteCanvas.tsx),
+  // so that needs its own "wheel" listener.
+  useEffect(() => {
+    if (!open) return
+    // Ignore scrolling INSIDE the dropdown (its own long font list)
+    const onScroll = (e: Event) => {
+      if (dropdownRef.current?.contains(e.target as Node)) return
+      setOpen(false); setAdding(false)
+    }
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('wheel', onScroll, true)
+    return () => {
+      window.removeEventListener('scroll', onScroll, true)
+      window.removeEventListener('wheel', onScroll, true)
+    }
+  }, [open])
+
   function openPicker() {
     if (!open && triggerRef.current) {
       const r = triggerRef.current.getBoundingClientRect()
@@ -669,6 +694,22 @@ export function MiniSelect({ value, options, onChange, title, width }: {
     }
     document.addEventListener('pointerdown', onPointerDown)
     return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [open])
+
+  // Same fix as FontPicker above (both listeners — see its comment for why
+  // the infinite-canvas board mode needs "wheel" too, not just "scroll").
+  useEffect(() => {
+    if (!open) return
+    const onScroll = (e: Event) => {
+      if (dropdownRef.current?.contains(e.target as Node)) return
+      setOpen(false)
+    }
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('wheel', onScroll, true)
+    return () => {
+      window.removeEventListener('scroll', onScroll, true)
+      window.removeEventListener('wheel', onScroll, true)
+    }
   }, [open])
 
   function openPicker() {

@@ -54,6 +54,34 @@ export function PortalPopover({
     return () => window.removeEventListener('mousedown', onDown)
   }, [open, onClose, anchorRef])
 
+  // Position is measured once at open time and never re-measured — moving
+  // the board while open left the popover fixed at its old screen position,
+  // visually detaching from its trigger and drifting over whatever content
+  // moved into that spot. Closing instead of tracking matches how a native
+  // <select>'s dropdown behaves and avoids the cost/jitter of repositioning
+  // a possibly-tall list continuously.
+  //
+  // Two listeners because this app has two unrelated ways the board moves
+  // under a fixed-position popover: a real scrollable ancestor (native
+  // "scroll", doesn't bubble — capture phase on window catches it from any
+  // nested scroller) and the infinite-canvas board mode, which pans/zooms by
+  // applying a transform imperatively on every wheel tick (by design, to
+  // avoid a React re-render per scroll frame — see InfiniteCanvas.tsx) and
+  // so never fires "scroll" at all. The existing outside-mousedown handler
+  // above already closes this for the OTHER infinite-canvas pan path
+  // (space+drag), since that starts with a mousedown on the canvas.
+  useEffect(() => {
+    if (!open) return
+    // Ignore scrolling INSIDE the popover (its own long option list)
+    const onScroll = (e: Event) => { if (!popRef.current?.contains(e.target as Node)) onClose() }
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('wheel', onScroll, true)
+    return () => {
+      window.removeEventListener('scroll', onScroll, true)
+      window.removeEventListener('wheel', onScroll, true)
+    }
+  }, [open, onClose])
+
   if (!open || typeof document === 'undefined') return null
 
   return createPortal(
