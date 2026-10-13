@@ -87,6 +87,18 @@ export default function WidgetStylePanel() {
   const g0 = s.gradient?.[0] ?? s.bgColor
   const g1 = s.gradient?.[1] ?? s.bgColor
 
+  // Same "background removed" detection as TileWrapper.tsx's isTransparent —
+  // when a widget's own "hide background" toggle (Note/Image/Clock) is on,
+  // it renders fully transparent regardless of these color/gradient/opacity/
+  // blur values, so editing them here would silently do nothing until the
+  // widget's own toggle is switched back off. Dimming + disabling the
+  // section makes that dependency visible instead of leaving a "why doesn't
+  // this work" dead control.
+  const bgRemoved =
+    (widget.type === 'note'  && !!widget.data?.noBg) ||
+    (widget.type === 'image' && !!widget.data?.noBar) ||
+    (widget.type === 'clock' && !!widget.data?.noBg)
+
   const desktopMotion = {
     initial:    { opacity: 0, x: pos.onLeft ? -8 : 8, scale: 0.97 },
     animate:    { opacity: 1, x: 0, scale: 1 },
@@ -118,65 +130,76 @@ export default function WidgetStylePanel() {
           <PanelHeader title={t('Widget style')} onClose={() => openPanel(null)} />
 
           {/* ── Background ── */}
-          <Section label={t('Background')}>
-            {/* Solid / Gradient toggle — gleitende Pille (SlidingTabs) */}
-            <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 50, padding: 2, marginBottom: 10 }}>
-              <SlidingTabs
-                options={[
-                  { value: 'solid',    label: t('Solid') },
-                  { value: 'gradient', label: t('Gradient') },
-                ]}
-                value={isGradient ? 'gradient' : 'solid'}
-                onChange={v => set(v === 'gradient'
-                  ? { gradient: [s.bgColor.startsWith('#') ? s.bgColor : '#16192b', '#8b74f0'] }
-                  : { gradient: null })}
-                slotH={24} radius={50} fontSize={11}
-              />
-            </div>
-
-            {!isGradient ? (
-              <Row label={t('Color')}>
-                <ColorSwatch value={s.bgColor} onChange={v => set({ bgColor: v })} />
+          <div style={bgRemoved ? { opacity: 0.4, pointerEvents: 'none' } : undefined}>
+            <Section label={t('Background')}>
+              {bgRemoved && (
                 <div style={{
-                  flex: 1, height: 24, borderRadius: 7,
-                  background: s.bgColor, border: '1px solid var(--border)',
-                }} />
-              </Row>
-            ) : (
-              <>
-                <Row label={t('From / To')}>
-                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flex: 1 }}>
-                    <ColorSwatch value={g0.startsWith('#') ? g0 : '#16192b'} onChange={v => set({ gradient: [v, g1] })} />
-                    <div style={{
-                      flex: 1, height: 24, borderRadius: 7,
-                      background: `linear-gradient(to right, ${g0}, ${g1})`,
-                      border: '1px solid var(--border)',
-                    }} />
-                    <ColorSwatch value={g1.startsWith('#') ? g1 : '#8b74f0'} onChange={v => set({ gradient: [g0, v] })} />
-                  </div>
-                </Row>
-                <Row label={t('Direction')}>
-                  <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', flex: 1 }}>
-                    {DIR_OPTIONS.map(d => (
-                      <button key={d.value} onClick={() => set({ gradientDir: d.value })} style={{
-                        width: 24, height: 24, borderRadius: 6,
-                        border: '1px solid var(--border)',
-                        background: s.gradientDir === d.value ? 'var(--accent)' : 'var(--surface2)',
-                        color: s.gradientDir === d.value ? 'var(--on-accent, white)' : 'var(--text2)',
-                        fontSize: 11, cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>{d.label}</button>
-                    ))}
-                  </div>
-                </Row>
-              </>
-            )}
+                  fontSize: 10.5, color: 'var(--text3)', lineHeight: 1.5,
+                  background: 'var(--surface2)', border: '1px solid var(--border)',
+                  borderRadius: 8, padding: '6px 9px', marginBottom: 2,
+                }}>
+                  {t('This widget\'s own "hide background" option is on, so these have no effect until it\'s switched off.')}
+                </div>
+              )}
+              {/* Solid / Gradient toggle — gleitende Pille (SlidingTabs) */}
+              <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 50, padding: 2, marginBottom: 10 }}>
+                <SlidingTabs
+                  options={[
+                    { value: 'solid',    label: t('Solid') },
+                    { value: 'gradient', label: t('Gradient') },
+                  ]}
+                  value={isGradient ? 'gradient' : 'solid'}
+                  onChange={v => set(v === 'gradient'
+                    ? { gradient: [s.bgColor.startsWith('#') ? s.bgColor : '#16192b', '#8b74f0'] }
+                    : { gradient: null })}
+                  slotH={24} radius={50} fontSize={11}
+                />
+              </div>
 
-            <SliderRow label={t('Transparency')} min={0.05} max={1} step={0.05} value={s.opacity}
-              onChange={v => set({ opacity: v })} display={`${Math.round(s.opacity * 100)}%`} />
-            <SliderRow label={t('Glass (blur)')} min={0} max={30} step={1} value={s.blur}
-              onChange={v => set({ blur: v })} display={`${s.blur}px`} />
-          </Section>
+              {!isGradient ? (
+                <Row label={t('Color')}>
+                  <ColorSwatch value={s.bgColor} onChange={v => set({ bgColor: v })} />
+                  <div style={{
+                    flex: 1, height: 24, borderRadius: 7,
+                    background: s.bgColor, border: '1px solid var(--border)',
+                  }} />
+                </Row>
+              ) : (
+                <>
+                  <Row label={t('From / To')}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flex: 1 }}>
+                      <ColorSwatch value={g0.startsWith('#') ? g0 : '#16192b'} onChange={v => set({ gradient: [v, g1] })} />
+                      <div style={{
+                        flex: 1, height: 24, borderRadius: 7,
+                        background: `linear-gradient(to right, ${g0}, ${g1})`,
+                        border: '1px solid var(--border)',
+                      }} />
+                      <ColorSwatch value={g1.startsWith('#') ? g1 : '#8b74f0'} onChange={v => set({ gradient: [g0, v] })} />
+                    </div>
+                  </Row>
+                  <Row label={t('Direction')}>
+                    <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', flex: 1 }}>
+                      {DIR_OPTIONS.map(d => (
+                        <button key={d.value} onClick={() => set({ gradientDir: d.value })} style={{
+                          width: 24, height: 24, borderRadius: 6,
+                          border: '1px solid var(--border)',
+                          background: s.gradientDir === d.value ? 'var(--accent)' : 'var(--surface2)',
+                          color: s.gradientDir === d.value ? 'var(--on-accent, white)' : 'var(--text2)',
+                          fontSize: 11, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>{d.label}</button>
+                      ))}
+                    </div>
+                  </Row>
+                </>
+              )}
+
+              <SliderRow label={t('Transparency')} min={0.05} max={1} step={0.05} value={s.opacity}
+                onChange={v => set({ opacity: v })} display={`${Math.round(s.opacity * 100)}%`} />
+              <SliderRow label={t('Glass (blur)')} min={0} max={30} step={1} value={s.blur}
+                onChange={v => set({ blur: v })} display={`${s.blur}px`} />
+            </Section>
+          </div>
 
           <Divider />
 

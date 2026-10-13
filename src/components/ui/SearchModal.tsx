@@ -68,7 +68,13 @@ export default function SearchModal({ onClose }: Props) {
     for (const widget of Object.values(board.widgets)) {
       const d = widget.data as Record<string, unknown>
       const noteTitle = widget.type === 'note' ? extractNoteTitle(d.content as string | undefined) : null
+      // customName: the generic per-widget rename from TileWrapper.tsx's
+      // header pencil icon — takes priority over everything else here since
+      // it's an explicit, deliberate name the user gave this widget instance
+      // specifically so it CAN be told apart in places like this search.
+      const customName = (d.customName as string | undefined)?.trim()
       const label =
+        customName ||
         (d.name as string | undefined) ||
         noteTitle ||
         (d.title as string | undefined) ||

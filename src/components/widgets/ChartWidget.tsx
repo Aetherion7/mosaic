@@ -1,9 +1,13 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { ColorSwatch } from '@/components/ui/ColorSwatch'
+import { PortalPopover } from '@/components/ui/PortalPopover'
 import { useUIStore } from '@/store/uiStore'
-import { useBoardStore } from '@/store/boardStore'
+import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useT } from '@/hooks/useT'
+import { isChartLinkSource, computeLinkedChartData } from '@/lib/chartLink'
+import { labelForWidget } from '@/lib/widgetLabel'
 import type { Widget, ChartType, ChartDataset, ChartData, WidgetData } from '@/types'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -83,6 +87,8 @@ export default function ChartWidget({ widget }: { widget: Widget }) {
 
   const pickerRef       = useRef<HTMLDivElement>(null)
   const [pickerOpen,    setPickerOpen]    = useState(false)
+  const linkBtnRef      = useRef<HTMLButtonElement>(null)
+  const [linkPickerOpen, setLinkPickerOpen] = useState(false)
 
   useEffect(() => {
     if (!pickerOpen) return
@@ -97,7 +103,26 @@ export default function ChartWidget({ widget }: { widget: Widget }) {
 
   const chartType  = d.chartType ?? 'column'
   const chartDef   = CHART_TYPES.find(c => c.type === chartType) ?? CHART_TYPES[0]
-  const displayData: ChartD = { labels: d.labels, datasets: d.datasets }
+
+  // Live link to a Sleep/Water/Task widget's own stats (see src/lib/chartLink.ts) —
+  // a pure useMemo read of the source widget's current data, no store writes
+  // while linked (mirrors AgendaWidget's cross-widget aggregation pattern).
+  const allWidgets  = useBoardStore(useShallow(s => selectBoard(s)?.widgets ?? {}))
+  const linkedId     = d.linkedWidgetId
+  const linkedSource = linkedId ? allWidgets[linkedId] : undefined
+  const liveLinked   = useMemo(
+    () => linkedSource ? computeLinkedChartData(linkedSource, t) : null,
+    [linkedSource, t],
+  )
+  const displayData: ChartD = liveLinked ?? { labels: d.labels, datasets: d.datasets }
+
+  const eligibleLinkSources = Object.values(allWidgets).filter(w => w.id !== widget.id && isChartLinkSource(w))
+
+  function handleUnlink() {
+    // Snapshot the last live values into the now-manual labels/datasets so
+    // the chart doesn't visually collapse the moment the link is removed.
+    patch({ ...(liveLinked ?? { labels: d.labels, datasets: d.datasets }), linkedWidgetId: undefined })
+  }
 
   function renderChart() {
     if (chartType === 'column') return <ColumnChart d={displayData} />
@@ -125,6 +150,38 @@ export default function ChartWidget({ widget }: { widget: Widget }) {
             borderRadius: 4, padding: '1px 4px', border: 'none', outline: 'none',
           }}
         />
+
+        {/* ── Data-source link ── */}
+        {mode === 'edit' && (
+          <>
+            <button
+              ref={linkBtnRef}
+              onClick={() => setLinkPickerOpen(o => !o)}
+              title={linkedId ? t('Linked to:') + ' ' + (linkedSource ? labelForWidget(linkedSource, allWidgets, t) : '') : t('Link to widget')}
+              style={{
+                flexShrink: 0, width: 22, height: 22, borderRadius: 6,
+                border: `1px solid ${linkedId ? 'var(--accent)' : 'var(--border)'}`,
+                background: linkedId ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'var(--surface2)',
+                color: linkedId ? 'var(--accent)' : 'var(--text2)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
+            </button>
+            <PortalPopover open={linkPickerOpen} anchorRef={linkBtnRef} onClose={() => setLinkPickerOpen(false)} width={180}>
+              <ChartLinkPicker
+                eligible={eligibleLinkSources}
+                allWidgets={allWidgets}
+                currentLinkId={linkedId}
+                onSelect={id => { patch({ linkedWidgetId: id }); setLinkPickerOpen(false) }}
+                t={t}
+              />
+            </PortalPopover>
+          </>
+        )}
 
         {/* ── Chart-type picker ── */}
         {mode === 'edit' && (
@@ -201,6 +258,41 @@ export default function ChartWidget({ widget }: { widget: Widget }) {
         )}
       </div>
 
+      {/* ── Linked-source indicator ── */}
+      {/* Editing stays available on the right exactly like a normal manual
+          chart (ManualEditPanel below is never hidden) — this bar just names
+          where the CURRENT values came from and offers Unlink. The panel is
+          pre-filled with the live values (via displayData) rather than
+          replaced by a read-only summary. */}
+      {mode === 'edit' && linkedId && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', flexShrink: 0,
+          background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)',
+          borderRadius: 7, fontSize: 10, color: 'var(--accent)',
+        }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
+            {t('Data from')} {linkedSource ? labelForWidget(linkedSource, allWidgets, t) : ''}
+          </span>
+          <button
+            onClick={handleUnlink}
+            title={t('Unlink')}
+            style={{
+              flexShrink: 0, padding: '2px 7px', fontSize: 9, fontWeight: 700,
+              color: 'var(--accent)', background: 'var(--surface)',
+              border: '1px solid color-mix(in srgb, var(--accent) 35%, transparent)',
+              borderRadius: 999, cursor: 'pointer',
+            }}
+          >
+            {t('Unlink')}
+          </button>
+        </div>
+      )}
+
       {/* ── Main area ── */}
       {/* Immer nebeneinander (Settings links, Diagramm rechts) — unabhängig
           von der Widget-Höhe, damit das Diagramm bei einer langen/schmalen
@@ -210,11 +302,70 @@ export default function ChartWidget({ widget }: { widget: Widget }) {
         display: 'flex', flexDirection: 'row',
         gap: 6, overflow: 'hidden',
       }}>
-        {mode === 'edit' && <ManualEditPanel d={d} patch={patch} />}
+        {mode === 'edit' && (
+          <ManualEditPanel
+            d={displayData}
+            // Editing a linked chart's data takes over from the live source —
+            // same one atomic write, so there's no in-between state where an
+            // edit appears to not stick (displayData would otherwise keep
+            // re-deriving from the still-linked source on every render).
+            patch={linkedId ? p => patch({ ...p, linkedWidgetId: undefined }) : patch}
+          />
+        )}
         <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
           {renderChart()}
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Data-source link picker + linked-state readout ────────────────────────────
+
+function ChartLinkPicker({
+  eligible, allWidgets, currentLinkId, onSelect, t,
+}: {
+  eligible: Widget[]
+  allWidgets: Record<string, Widget>
+  currentLinkId?: string
+  onSelect: (id: string) => void
+  t: (s: string) => string
+}) {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 1, padding: 4, maxHeight: 240, overflowY: 'auto',
+      background: 'var(--popover-bg)',
+      backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+      border: '1px solid var(--border)', borderRadius: 10,
+      boxShadow: '0 8px 28px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)',
+    }}>
+      <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.07em', textTransform: 'uppercase', padding: '4px 8px 6px' }}>
+        {t('Choose data source')}
+      </div>
+      {eligible.length === 0 && (
+        <div style={{ fontSize: 11, color: 'var(--text3)', padding: '2px 8px 8px', lineHeight: 1.5 }}>
+          {t('No eligible widgets on this board')}
+        </div>
+      )}
+      {eligible.map(w => {
+        const active = w.id === currentLinkId
+        return (
+          <button
+            key={w.id}
+            onClick={() => onSelect(w.id)}
+            style={{
+              display: 'flex', alignItems: 'center', width: '100%',
+              fontSize: 11, fontWeight: active ? 700 : 500, padding: '6px 9px', borderRadius: 7,
+              border: 'none', textAlign: 'left', whiteSpace: 'nowrap',
+              background: active ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'transparent',
+              color: active ? 'var(--accent)' : 'var(--text2)',
+              cursor: 'pointer',
+            }}
+          >
+            {labelForWidget(w, allWidgets, t)}
+          </button>
+        )
+      })}
     </div>
   )
 }

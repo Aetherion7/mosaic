@@ -537,6 +537,7 @@ export const de: Record<string, string> = {
   'Open a board': 'Board öffnen',
 
   // ── TileWrapper (Widget-Toolbar) ──
+  'Rename widget': 'Widget umbenennen',
   'in': 'in',
   'copied': 'kopiert',
   'moved': 'verschoben',
@@ -579,6 +580,8 @@ export const de: Record<string, string> = {
 
   // ── WidgetStylePanel ──
   'Widget style': 'Widget-Stil',
+  'This widget\'s own "hide background" option is on, so these have no effect until it\'s switched off.':
+    'Bei diesem Widget ist die eigene Option „Hintergrund ausblenden" aktiv — diese Einstellungen wirken erst, wenn sie wieder ausgeschaltet ist.',
   'Solid': 'Einfarbig',
   'Transparency': 'Transparenz',
   'Glass (blur)': 'Glasur (Blur)',
@@ -633,6 +636,10 @@ export const de: Record<string, string> = {
   'Pin to desktop': 'Auf Desktop anheften',
   'Unpin from desktop': 'Vom Desktop lösen',
   'Now': 'Jetzt',
+  'Schedule in calendar': 'Im Kalender einplanen',
+  'Target calendar': 'Ziel-Kalender',
+  'Add a calendar widget to this board first': 'Füge zuerst ein Kalender-Widget zu diesem Board hinzu',
+  'Add to calendar': 'Zum Kalender hinzufügen',
 
   // ── NoteWidget ──
   '# Heading\n\nNote here…': '# Überschrift\n\nNotiz hier…',
@@ -781,6 +788,12 @@ export const de: Record<string, string> = {
   'total': 'gesamt',
   'Delete dataset': 'Datensatz löschen',
   'Delete data point': 'Datenpunkt löschen',
+  'Link to widget': 'Mit Widget verknüpfen',
+  'Linked to:': 'Verknüpft mit:',
+  'Unlink': 'Verknüpfung lösen',
+  'No eligible widgets on this board': 'Keine geeigneten Widgets auf diesem Board',
+  'Choose data source': 'Datenquelle wählen',
+  'Data from': 'Daten aus',
 
   // ── CalendarWidget ──
   'January': 'Januar',
@@ -1114,8 +1127,6 @@ export const de: Record<string, string> = {
   'Code': 'Code',
   'Paste HTML': 'HTML einfügen',
 
-  // ── InfiniteCanvas ──
-  'Reset view': 'Ansicht zurücksetzen',
 }
 
 export function translate(lang: Lang, text: string): string {

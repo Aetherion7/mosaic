@@ -1,20 +1,25 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useShallow } from 'zustand/react/shallow'
 import { ColorSwatch } from '@/components/ui/ColorSwatch'
-import { IconDrag } from '@/components/ui/Icons'
-import { useBoardStore } from '@/store/boardStore'
+import { IconDrag, IconCalendar } from '@/components/ui/Icons'
+import { Dropdown } from '@/components/ui/Dropdown'
+import { PortalPopover } from '@/components/ui/PortalPopover'
+import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { uid } from '@/lib/defaults'
 import StatsToggle from '@/components/ui/StatsToggle'
 import SlidingTabs from '@/components/ui/SlidingTabs'
 import { useSettings } from '@/store/settingsStore'
 import { useT } from '@/hooks/useT'
-import type { Widget, TaskData, HabitEntry } from '@/types'
+import { getWeekKey, getWeekKeyOffset, getWeekMonday, weekShortLabel, todayStr } from '@/lib/dates'
+import { labelForWidget } from '@/lib/widgetLabel'
+import type { Widget, TaskData, HabitEntry, CalendarRecurrence } from '@/types'
 
 type ChartMode     = 'kachel' | 'balken' | 'verlauf'
 type ViewMode      = 'weekly' | 'daily'
@@ -38,37 +43,11 @@ const HABIT_COLORS = [
 ]
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
-
-function getWeekKey(date = new Date()): string {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  const day = d.getDay() || 7
-  d.setDate(d.getDate() + 4 - day)
-  const yearStart = new Date(d.getFullYear(), 0, 1)
-  const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
-  return `${d.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`
-}
-
-function getWeekKeyOffset(offset: number): string {
-  const d = new Date()
-  d.setDate(d.getDate() + offset * 7)
-  return getWeekKey(d)
-}
-
-function getWeekMonday(wk: string): Date {
-  const [yr, w] = wk.split('-W')
-  const jan4 = new Date(Number(yr), 0, 4)
-  const monday = new Date(jan4)
-  monday.setDate(jan4.getDate() - (jan4.getDay() || 7) + 1 + (Number(w) - 1) * 7)
-  return monday
-}
+// getWeekKey/getWeekKeyOffset/getWeekMonday/weekShortLabel moved to
+// src/lib/dates.ts so chartLink.ts (Chart widget's live link to this
+// widget's per-habit weekly history) can reuse the exact same math.
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-
-function weekShortLabel(wk: string, t: (s: string) => string): string {
-  const monday = getWeekMonday(wk)
-  return `${monday.getDate()}. ${t(MONTHS[monday.getMonth()])}`
-}
 
 function weekRangeLabel(offset: number, t: (s: string) => string): string {
   if (offset === 0) return t('This week')
@@ -535,6 +514,8 @@ function SortableHabitRow({
       style={{ width: 15, height: 15, borderRadius: 4, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
   )
 
+  const scheduleBtn = mode === 'edit' && <HabitScheduleButton habit={h} t={t} />
+
   // Farbpunkt — in beiden Ansichten identisch, damit die Farbe auch in der
   // Tagesansicht (nicht nur der Wochenansicht) änderbar ist.
   const colorDot = mode === 'edit' ? (
@@ -636,6 +617,7 @@ function SortableHabitRow({
           {dragHandle}
           {colorDot}
           {nameField}
+          {scheduleBtn}
           {removeBtn}
         </div>
       </div>
@@ -653,6 +635,7 @@ function SortableHabitRow({
 
         <span style={{ fontSize: 9, fontWeight: 700, color: h.color, flexShrink: 0 }}>{h.weekDays.length}/7</span>
 
+        {scheduleBtn}
         {removeBtn}
       </div>
 
@@ -684,6 +667,178 @@ function SortableHabitRow({
       </div>
     </div>
   )
+}
+
+// ── Schedule a habit occurrence in a Calendar widget ───────────────────────────
+// Fully self-contained: reads the board's widgets and addCalendarEvent
+// itself instead of taking them as props (same independence ColorSwatch
+// already demonstrates for per-row popovers elsewhere in this codebase) —
+// lets multiple rows' buttons coexist with zero coordination between them.
+// Popover open/closed + draft form state is plain instance-local useState,
+// matching CalendarWidget's own "New event" popup state — not persisted to
+// widget.data, and intentionally doesn't sync between a grid-tile mount and
+// a Focus-overlay mount of the same Task widget.
+function HabitScheduleButton({ habit, t }: { habit: HabitEntry; t: (s: string) => string }) {
+  const allWidgets = useBoardStore(useShallow(s => selectBoard(s)?.widgets ?? {}))
+  const addCalendarEvent = useBoardStore(s => s.addCalendarEvent)
+  const calendarWidgets = Object.values(allWidgets).filter(w => w.type === 'calendar')
+
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState({
+    targetCalendarId: '', date: '', startTime: '', endTime: '',
+    recurrence: '' as CalendarRecurrence | '', reminderMin: null as number | null,
+  })
+
+  function openPopover() {
+    setDraft({
+      targetCalendarId: calendarWidgets.length === 1 ? calendarWidgets[0].id : '',
+      date: todayStr(), startTime: '', endTime: '', recurrence: '', reminderMin: null,
+    })
+    setOpen(true)
+  }
+
+  function submit() {
+    if (!draft.targetCalendarId) return
+    addCalendarEvent(draft.targetCalendarId, {
+      id: uid(), date: draft.date,
+      timeStart: draft.startTime || undefined,
+      timeEnd:   draft.endTime || undefined,
+      title: habit.name, color: habit.color,
+      recurrence: draft.recurrence || undefined,
+      reminderMinutesBefore: (draft.startTime && draft.reminderMin !== null) ? draft.reminderMin : undefined,
+    })
+    setOpen(false)
+  }
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onPointerDown={e => e.stopPropagation()}
+        onClick={() => { if (open) { setOpen(false) } else { openPopover() } }}
+        title={t('Schedule in calendar')}
+        style={{
+          width: 15, height: 15, borderRadius: 4, border: 'none',
+          background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}
+      >
+        <IconCalendar size={11} />
+      </button>
+
+      <PortalPopover open={open} anchorRef={btnRef} onClose={() => setOpen(false)} width={210}>
+        <div
+          onPointerDown={e => e.stopPropagation()}
+          style={{
+            display: 'flex', flexDirection: 'column', gap: 8, padding: 10,
+            background: 'var(--popover-bg)',
+            backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid var(--border)', borderRadius: 12,
+            boxShadow: '0 8px 28px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)',
+          }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text1)' }}>
+            {t('Schedule in calendar')}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              {t('Target calendar')}
+            </span>
+            {calendarWidgets.length === 0 ? (
+              <div style={{ fontSize: 10.5, color: 'var(--text3)', lineHeight: 1.5 }}>
+                {t('Add a calendar widget to this board first')}
+              </div>
+            ) : (
+              <Dropdown
+                value={draft.targetCalendarId}
+                onChange={v => setDraft(d => ({ ...d, targetCalendarId: v }))}
+                buttonStyle={{ width: '100%' }}
+                placeholder={t('Target calendar')}
+                options={calendarWidgets.map(w => ({ value: w.id, label: labelForWidget(w, allWidgets, t) }))}
+              />
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input type="date" value={draft.date}
+              onChange={e => setDraft(d => ({ ...d, date: e.target.value }))}
+              style={dateTimeInputStyle} />
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input type="time" value={draft.startTime}
+              onChange={e => setDraft(d => ({ ...d, startTime: e.target.value }))}
+              style={dateTimeInputStyle} />
+            <input type="time" value={draft.endTime}
+              onChange={e => setDraft(d => ({ ...d, endTime: e.target.value }))}
+              style={dateTimeInputStyle} />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              {t('Repeat')}
+            </span>
+            <Dropdown
+              value={draft.recurrence}
+              onChange={v => setDraft(d => ({ ...d, recurrence: v as CalendarRecurrence | '' }))}
+              buttonStyle={{ width: '100%' }}
+              options={[
+                { value: '',        label: t('None') },
+                { value: 'daily',   label: t('Daily') },
+                { value: 'weekly',  label: t('Weekly') },
+                { value: 'monthly', label: t('Monthly') },
+                { value: 'yearly',  label: t('Yearly') },
+              ]}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              {t('Reminder')}
+            </span>
+            <Dropdown
+              value={draft.reminderMin === null ? '' : String(draft.reminderMin)}
+              disabled={!draft.startTime}
+              onChange={v => setDraft(d => ({ ...d, reminderMin: v === '' ? null : Number(v) }))}
+              buttonStyle={{ width: '100%' }}
+              options={[
+                { value: '',     label: t('None') },
+                { value: '0',    label: t('At time of event') },
+                { value: '5',    label: t('5 minutes before') },
+                { value: '10',   label: t('10 minutes before') },
+                { value: '30',   label: t('30 minutes before') },
+                { value: '60',   label: t('1 hour before') },
+                { value: '1440', label: t('1 day before') },
+              ]}
+            />
+            {!draft.startTime && (
+              <div style={{ fontSize: 9.5, color: 'var(--text3)' }}>{t('Add a start time to enable a reminder.')}</div>
+            )}
+          </div>
+
+          <button
+            onClick={submit}
+            disabled={!draft.targetCalendarId}
+            style={{
+              padding: '7px 0', borderRadius: 8, border: 'none',
+              background: draft.targetCalendarId ? 'var(--accent)' : 'var(--surface2)',
+              color: draft.targetCalendarId ? 'var(--on-accent, white)' : 'var(--text3)',
+              fontSize: 11, fontWeight: 700, cursor: draft.targetCalendarId ? 'pointer' : 'default',
+            }}
+          >
+            {t('Add to calendar')}
+          </button>
+        </div>
+      </PortalPopover>
+    </>
+  )
+}
+
+const dateTimeInputStyle: React.CSSProperties = {
+  flex: 1, minWidth: 0, fontSize: 11, padding: '5px 7px', borderRadius: 7,
+  border: '1px solid var(--border)', background: 'var(--surface2)',
+  color: 'var(--text1)', outline: 'none', colorScheme: 'dark',
 }
 
 // ── Kachel (heatmap grid) ─────────────────────────────────────────────────────

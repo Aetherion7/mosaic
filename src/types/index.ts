@@ -184,6 +184,11 @@ export interface ChartData {
   chartType: ChartType
   labels:    string[]
   datasets:  ChartDataset[]
+  // Live one-way link to a Sleep/Water/Task widget on the same board — when
+  // set, the chart displays that widget's stats instead of `labels`/
+  // `datasets` above (which stay in storage as the last-known snapshot, used
+  // the moment the link is removed or the source widget is deleted).
+  linkedWidgetId?: string
 }
 
 // ─── Widget discriminated union ───────────────────────────────────────────────

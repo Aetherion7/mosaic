@@ -175,6 +175,7 @@ interface HeaderAction {
 
 function TileWrapperInner({ widget, gridRef }: Props) {
   const deleteWidget    = useBoardStore(s => s.deleteWidget)
+  const updateWidget    = useBoardStore(s => s.updateWidget)
   const duplicateWidget = useBoardStore(s => s.duplicateWidget)
   const setWidgetLocked = useBoardStore(s => s.setWidgetLocked)
   const moveWidget      = useBoardStore(s => s.moveWidget)
@@ -207,6 +208,20 @@ function TileWrapperInner({ widget, gridRef }: Props) {
   // Header-Container-Ref fürs responsive Kebab-Menü (WidgetHeaderActions
   // beobachtet dessen Breite, um zwischen Button-Reihe und ⋮-Menü umzuschalten)
   const headerRef = useRef<HTMLDivElement>(null)
+
+  // Generic per-widget custom name ("[icon] TASK • My habits"), editable via
+  // a small pencil button next to the type label — same "pencil toggles an
+  // inline input" idiom as TopBar.tsx's board-name rename. Instance-local
+  // open/draft state (not widget.data) — same category as every other
+  // popover/inline-edit toggle in this codebase, doesn't need Focus-mode sync.
+  const [editingName, setEditingName] = useState(false)
+  const [nameVal,     setNameVal]     = useState('')
+  const customName = (widget.data as { customName?: string } | undefined)?.customName
+  function commitCustomName() {
+    setEditingName(false)
+    const v = nameVal.trim()
+    if (v !== (customName ?? '')) updateWidget(widget.id, { data: { ...widget.data, customName: v || undefined } })
+  }
 
   // Widget-gepinnter KI-Chat: öffnet neben dem Widget; Seite hängt vom
   // freien Platz rechts im Viewport ab (sonst links), und vertikal wird so
@@ -748,24 +763,67 @@ function TileWrapperInner({ widget, gridRef }: Props) {
               </span>
             )}
             <span style={{ opacity: 0.55, color: 'var(--text2)', display:'flex' }}>{widgetTypeIcon(widget)}</span>
-            <span style={{
-              fontSize: 10, fontWeight: 700, color: 'var(--text3)',
-              textTransform: 'uppercase', letterSpacing: '0.05em',
-              flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              {t(TYPE_LABELS[widget.type])}
-              {/* Notiz-Name = erste Markdown-Überschrift im Inhalt (s. lib/noteTitle.ts) —
-                  steht neben dem Typ, ersetzt ihn nicht */}
-              {widget.type === 'note' && (() => {
-                const title = extractNoteTitle(widget.data.content as string | undefined)
-                return title && (
-                  <span style={{ textTransform: 'none', fontWeight: 600, color: 'var(--text2)' }}>
-                    {' · '}
-                    <span dangerouslySetInnerHTML={{ __html: renderNoteTitleHtml(title) }} />
-                  </span>
-                )
-              })()}
-            </span>
+            {editingName ? (
+              <input
+                autoFocus maxLength={60} value={nameVal}
+                onChange={e => setNameVal(e.target.value)}
+                onBlur={commitCustomName}
+                onKeyDown={e => { if (e.key === 'Enter') commitCustomName(); if (e.key === 'Escape') setEditingName(false) }}
+                onPointerDown={e => e.stopPropagation()}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  flex: 1, minWidth: 0, fontSize: 10, fontWeight: 600, color: 'var(--text1)',
+                  background: 'var(--surface)', border: 'none', outline: 'none',
+                  borderRadius: 4, padding: '1px 4px',
+                }}
+              />
+            ) : (
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: 'var(--text3)',
+                textTransform: 'uppercase', letterSpacing: '0.05em',
+                flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}>
+                {t(TYPE_LABELS[widget.type])}
+                {/* Custom name (any widget type) takes precedence; NoteWidget
+                    falls back to its first Markdown heading (s. lib/noteTitle.ts)
+                    when no explicit name has been set. Either way it's shown
+                    next to the type label, not instead of it. */}
+                {(() => {
+                  const autoTitle = widget.type === 'note' && !customName
+                    ? extractNoteTitle(widget.data.content as string | undefined)
+                    : undefined
+                  if (customName) return (
+                    <span style={{ textTransform: 'none', fontWeight: 600, color: 'var(--text2)' }}>
+                      {' · '}{customName}
+                    </span>
+                  )
+                  if (autoTitle) return (
+                    <span style={{ textTransform: 'none', fontWeight: 600, color: 'var(--text2)' }}>
+                      {' · '}
+                      <span dangerouslySetInnerHTML={{ __html: renderNoteTitleHtml(autoTitle) }} />
+                    </span>
+                  )
+                  return null
+                })()}
+                {mode === 'edit' && (
+                  <button
+                    onPointerDown={e => e.stopPropagation()}
+                    onClick={e => { e.stopPropagation(); setNameVal(customName ?? ''); setEditingName(true) }}
+                    title={t('Rename widget')}
+                    style={{
+                      flexShrink: 0, width: 13, height: 13, border: 'none', background: 'none',
+                      color: 'var(--text3)', cursor: 'pointer', padding: 0, opacity: 0.65,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 2 L14 5 L5 14 L2 14 L2 11 Z"/><line x1="9.5" y1="3.5" x2="12.5" y2="6.5"/>
+                    </svg>
+                  </button>
+                )}
+              </span>
+            )}
             {mode === 'edit' && isSelected && (
               <WidgetHeaderActions actions={headerActions} headerRef={headerRef} canvasZoom={canvasZoom} />
             )}

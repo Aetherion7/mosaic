@@ -737,7 +737,13 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
                 value={d.textStrokeWidth ?? 1}
                 onChange={v => patch({ textStrokeWidth: Number(v) })}
                 title={t('Outline width')}
-                options={[1, 2, 3, 4, 5].map(v => ({ value: v, label: `${v}px` }))}
+                // Was [1,2,3,4,5] — at note-sized text (as small as 10px,
+                // default 13px) anything past ~2px stroke fills in the
+                // letterforms' counters entirely, turning the text into a
+                // solid black blob instead of an outline (confirmed via
+                // screenshot: 1px legible, 5px illegible). Halved range
+                // keeps every option legible across the widget's font sizes.
+                options={[0.5, 1, 1.5, 2, 2.5].map(v => ({ value: v, label: `${v}px` }))}
               />
             </div>
           )}

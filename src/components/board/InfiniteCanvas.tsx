@@ -334,10 +334,17 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
     applyZoom(zoomRef.current * factor, rect.width / 2, rect.height / 2)
   }, [applyZoom])
 
-  const resetView = useCallback(() => {
-    const init = getInitialOffset()
-    applyView(init, 1)
-  }, [applyView])
+  // Zoom to 100% anchored on the current viewport CENTER, not a jump back to
+  // the widget-centroid pan position getInitialOffset() computes — clicking
+  // "100%" is a zoom-level reset, not a "take me back to where the board
+  // started" command. Same anchor math as zoomCenter (which multiplies the
+  // current zoom by a factor); this instead targets an absolute zoom of 1,
+  // so whatever content point is centered on screen stays centered.
+  const resetZoom = useCallback(() => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    applyZoom(1, rect.width / 2, rect.height / 2)
+  }, [applyZoom])
 
   // Tastatur: Ctrl/Cmd/Super +/- zoomt (wie die HUD-Buttons), Pfeiltasten
   // schieben die Ansicht — gehalten für flüssige, auch diagonale Bewegung
@@ -468,8 +475,8 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
           ) : (
             <button
               key="pct"
-              title={t('Reset view')}
-              onClick={resetView}
+              title={t('Reset zoom')}
+              onClick={resetZoom}
               style={{
                 height: 26, padding: '0 8px', borderRadius: 7, border: 'none',
                 background: 'transparent', color: 'var(--text1)',

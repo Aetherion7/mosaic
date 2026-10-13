@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useBoardStore } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
-import { todayStr, getWeekDates, weekRangeLabel } from '@/lib/dates'
+import { todayStr, getWeekDates, weekRangeLabel, sleepDurationH } from '@/lib/dates'
 import StatsToggle from '@/components/ui/StatsToggle'
 import { useT } from '@/hooks/useT'
 import { useSettings } from '@/store/settingsStore'
@@ -10,16 +10,6 @@ import type { Widget, SleepData, SleepEntry } from '@/types'
 
 const GOAL_MIN = 4, GOAL_MAX = 12, GOAL_STEP = 0.5
 const WEEK_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-
-// Duration in hours; a wake time "before" bed time means sleeping past midnight
-function durationH(e: SleepEntry | undefined): number | null {
-  if (!e?.bed || !e?.wake) return null
-  const [bh, bm] = e.bed.split(':').map(Number)
-  const [wh, wm] = e.wake.split(':').map(Number)
-  let mins = (wh * 60 + wm) - (bh * 60 + bm)
-  if (mins <= 0) mins += 24 * 60
-  return mins / 60
-}
 
 function fmtH(h: number, lang: 'en' | 'de'): string {
   return h.toLocaleString(lang === 'de' ? 'de-DE' : 'en-US', { maximumFractionDigits: 1 }) + ' h'
@@ -75,7 +65,7 @@ export default function SleepWidget({ widget }: { widget: Widget }) {
   // sich automatisch, ganz ohne eigenen Re-Sync-Effekt, weil beide Instanzen
   // bei jedem Render denselben Store-Wert lesen.
   const draft    = d.draft ?? { bed: '', wake: '' }
-  const durDraft = durationH(draft)
+  const durDraft = sleepDurationH(draft)
   const use12h   = d.timeFormat24 === false
   const canLog   = !!draft.bed && !!draft.wake
 
@@ -92,7 +82,7 @@ export default function SleepWidget({ widget }: { widget: Widget }) {
   }
 
   const weekDates = getWeekDates(weekOffset)
-  const values    = weekDates.map(date => durationH(log[date]) ?? 0)
+  const values    = weekDates.map(date => sleepDurationH(log[date]) ?? 0)
   const yMax      = Math.max(goalH + 1, Math.ceil(Math.max(...values, 0)))
   const statsOpen = d.statsOpen ?? false
   const showStats = useSettings(st => !st.statsDisabledTypes.includes('sleep'))

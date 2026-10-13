@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { idbStorage } from '@/lib/idbStorage'
 import type {
-  Board, Widget, BoardBg, WidgetStyle, TilePos, CalendarEvent,
+  Board, Widget, BoardBg, WidgetStyle, TilePos, CalendarEvent, ChartData,
 } from '@/types'
 import { DEFAULT_STYLE, makeBoard, uid } from '@/lib/defaults'
 import { GRID_COLS } from '@/lib/constants'
@@ -11,6 +11,7 @@ import { findTheme } from '@/lib/themes'
 import { useSettings } from '@/store/settingsStore'
 import { translate } from '@/lib/i18n'
 import { stripPdfRefSpans } from '@/lib/pdfRefCleanup'
+import { computeLinkedChartData } from '@/lib/chartLink'
 
 // Deleting a Reader widget used to leave its note links dangling (clicking
 // them silently no-ops, since navigateRef looks the widget up and finds
@@ -44,6 +45,24 @@ function stripReaderRefs(widgets: Record<string, Widget>, readerIds: string[]) {
       changed = true
     }
     if (changed) widgets[nid] = { ...w, data: { ...w.data, content } }
+  }
+}
+
+// Same idea as stripReaderRefs, for Chart widgets linked (ChartData.
+// linkedWidgetId) to a Sleep/Water/Task widget that's about to be deleted.
+// MUST run before the source widget is removed from `widgets` — it reads
+// the source's still-present data to snapshot the chart's last-known
+// values into its own labels/datasets, then clears the link. Same atomic
+// set() as the deletion itself, so one undo restores both the deleted
+// widget and the chart's link together.
+function stripChartLinks(widgets: Record<string, Widget>, deletedIds: string[], t: (s: string) => string) {
+  for (const [cid, w] of Object.entries(widgets)) {
+    if (w.type !== 'chart') continue
+    const linked = (w.data as ChartData).linkedWidgetId
+    if (!linked || !deletedIds.includes(linked)) continue
+    const source = widgets[linked]
+    const snap   = source ? computeLinkedChartData(source, t) : null
+    widgets[cid] = { ...w, data: { ...w.data, ...(snap ?? {}), linkedWidgetId: undefined } }
   }
 }
 
@@ -508,6 +527,9 @@ export const useBoardStore = create<S>()(
       deleteWidget: (id) => set(s => ({ ...snap(s), ...patchCur(s, b => {
         const next = { ...b.widgets }
         const deleted = next[id]
+        // Must run BEFORE the delete below — it needs to read the
+        // still-present source widget to snapshot the linked chart's data.
+        stripChartLinks(next, [id], txt => translate(useSettings.getState().language, txt))
         delete next[id]
         if (deleted?.type === 'reader') stripReaderRefs(next, [id])
         return { widgets: next }
@@ -516,6 +538,7 @@ export const useBoardStore = create<S>()(
       deleteWidgets: (ids) => set(s => ({ ...snap(s), ...patchCur(s, b => {
         const next = { ...b.widgets }
         const deletedReaderIds = ids.filter(id => next[id]?.type === 'reader')
+        stripChartLinks(next, ids, txt => translate(useSettings.getState().language, txt))
         ids.forEach(id => delete next[id])
         if (deletedReaderIds.length > 0) stripReaderRefs(next, deletedReaderIds)
         return { widgets: next }
