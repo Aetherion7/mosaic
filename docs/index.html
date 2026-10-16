@@ -32,7 +32,7 @@
    Deep blue/violet night. Surfaces are translucent "glass" over a slowly
    flowing gradient field (.aura), so depth comes from light, not lines. */
 :root {
-  --night:   #02040b;
+  --night:   #010208;
   --glass:   rgba(255,255,255,.045);
   --glass-2: rgba(255,255,255,.075);
   --edge:    rgba(255,255,255,.07);
@@ -64,13 +64,13 @@ code, .mono { font-family: 'JetBrains Mono', monospace; font-size: .88em; }
 /* ── Atmosphere: flowing gradient field ───────────────────────────────── */
 .aura { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
 .aura i {
-  position: absolute; border-radius: 50%; filter: blur(120px); opacity: .45;
+  position: absolute; border-radius: 50%; filter: blur(120px); opacity: .4;
   will-change: transform;
 }
-.aura i:nth-child(1) { width: 62vw; height: 62vw; left: -18vw; top: -22vw; background: #0a2260; animation: f1 34s ease-in-out infinite alternate; }
-.aura i:nth-child(2) { width: 55vw; height: 55vw; right: -20vw; top: 10vh;  background: #061741; animation: f2 41s ease-in-out infinite alternate; }
-.aura i:nth-child(3) { width: 48vw; height: 48vw; left: 20vw; bottom: -30vw; background: #0b2a6e; animation: f3 38s ease-in-out infinite alternate; opacity: .45; }
-.aura i:nth-child(4) { width: 30vw; height: 30vw; left: 45vw; top: 30vh;  background: #083a6e; animation: f4 29s ease-in-out infinite alternate; opacity: .25; }
+.aura i:nth-child(1) { width: 62vw; height: 62vw; left: -18vw; top: -22vw; background: #07184a; animation: f1 34s ease-in-out infinite alternate; }
+.aura i:nth-child(2) { width: 55vw; height: 55vw; right: -20vw; top: 10vh;  background: #040f2e; animation: f2 41s ease-in-out infinite alternate; }
+.aura i:nth-child(3) { width: 48vw; height: 48vw; left: 20vw; bottom: -30vw; background: #081e52; animation: f3 38s ease-in-out infinite alternate; opacity: .45; }
+.aura i:nth-child(4) { width: 30vw; height: 30vw; left: 45vw; top: 30vh;  background: #062a52; animation: f4 29s ease-in-out infinite alternate; opacity: .25; }
 @keyframes f1 { to { transform: translate(22vw, 18vh) scale(1.15); } }
 @keyframes f2 { to { transform: translate(-26vw, 30vh) scale(.9); } }
 @keyframes f3 { to { transform: translate(18vw, -40vh) scale(1.2); } }
@@ -123,6 +123,7 @@ header .bar {
 .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 .logo img { width: 30px; height: 30px; border-radius: 50%; }
 .logo span { font-family: var(--title); font-size: 23px; }
+.logo small { font: 300 11.5px/1 var(--body); color: var(--dim); letter-spacing: .02em; margin-left: 2px; padding-top: 5px; }
 header nav { display: flex; align-items: center; gap: 26px; margin-left: auto; }
 header nav a:not(.btn) { font-size: 13.5px; font-weight: 500; color: var(--soft); text-decoration: none; transition: color .2s; }
 header nav a:not(.btn):hover { color: var(--text); }
@@ -233,6 +234,8 @@ header .btn { padding: 11px 20px; font-size: 13.5px; }
 /* ── Closing ──────────────────────────────────────────────────────────── */
 .closing { text-align: center; }
 .closing .glass { max-width: 900px; margin: 0 auto; padding: 80px 32px; }
+.closing .btn { padding: 12px 22px; }
+.badge { height: 22px; width: auto; }
 .closing .fine { margin-top: 44px; font-size: 13px; color: var(--dim); }
 .closing .fine a { color: var(--soft); }
 
@@ -274,8 +277,11 @@ footer a:hover { color: var(--text); }
 
 /* ── Motion ───────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
-  .reveal { opacity: 0; transform: translateY(18px); transition: opacity 1.1s var(--ease), transform 1.1s var(--ease); }
-  .reveal.in { opacity: 1; transform: none; }
+  .reveal { opacity: 0; transform: translateY(34px); filter: blur(6px); transition: opacity 1.6s var(--ease), transform 1.6s var(--ease), filter 1.6s var(--ease); }
+  .reveal.in { opacity: 1; transform: none; filter: none; }
+  .feats .reveal:nth-child(3n+2), .details .reveal:nth-child(3n+2), .dls .reveal:nth-child(2), .priv .reveal:nth-child(2) { transition-delay: .15s; }
+  .feats .reveal:nth-child(3n), .details .reveal:nth-child(3n), .dls .reveal:nth-child(3) { transition-delay: .3s; }
+  .chips .reveal:nth-child(odd) { transition-delay: .1s; } .chips .reveal:nth-child(3n) { transition-delay: .2s; }
   .hero-anim { opacity: 0; animation: rise 1.4s var(--ease) forwards; }
   .hero-anim:nth-child(2) { animation-delay: .12s; }
   .hero-anim:nth-child(3) { animation-delay: .24s; }
@@ -306,7 +312,7 @@ footer a:hover { color: var(--text); }
 
 <header>
   <div class="bar">
-    <a href="#" class="logo"><img src="mosaiclogo.png" alt=""><span>mosaic</span></a>
+    <a href="#" class="logo"><img src="mosaiclogo.png" alt=""><span>mosaic</span><small>by Aetherion7</small></a>
     <nav>
       <a href="#features">Features</a>
       <a href="#tour">Tour</a>
@@ -553,8 +559,8 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
         <div class="kicker">Support</div>
         <h2>Free, and staying that way.</h2>
         <div class="ctas">
-          <a class="btn btn-main" href="https://ko-fi.com/mosaicboard">Support on Ko-fi</a>
-          <a class="btn" href="https://github.com/Aetherion7/mosaic">★ Star on GitHub</a>
+          <a class="btn" href="https://ko-fi.com/mosaicboard"><img src="badges/kofi.png" alt="Ko-fi" class="badge">Support</a>
+          <a class="btn" href="https://github.com/Aetherion7/mosaic"><img src="badges/github-star.webp" alt="" class="badge">Star on GitHub</a>
         </div>
         <p class="fine" id="license">Source-available under the <a href="https://github.com/Aetherion7/mosaic?tab=License-1-ov-file">PolyForm Noncommercial License</a> — free for personal use.</p>
       </div>
@@ -757,41 +763,59 @@ document.querySelectorAll('.shot img').forEach(function (img) {
   var c = document.getElementById('tiles');
   if (!c || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   if (!window.matchMedia('(hover: hover)').matches) return;
-  var ctx = c.getContext('2d'), dpr = 1, W = 0, H = 0, G = 26, tiles = [], raf = null, lastSpawn = 0;
+  var ctx = c.getContext('2d'), dpr = 1, W = 0, H = 0, G = 30, tiles = [], raf = null, lastSpawn = 0;
   function size() {
     dpr = Math.min(2, window.devicePixelRatio || 1);
     W = c.width = innerWidth * dpr; H = c.height = innerHeight * dpr;
     c.style.width = innerWidth + 'px'; c.style.height = innerHeight + 'px';
   }
   size(); addEventListener('resize', size);
+  // Occupied grid cells: a tile only appears where all of its cells are
+  // free, so tiles never overlap and keep the same gap (GAP) between them.
+  var used = {}, GAP = 6;
+  function free(gx, gy, n) {
+    for (var i = 0; i < n; i++) for (var j = 0; j < n; j++) if (used[(gx + i) + ',' + (gy + j)]) return false;
+    return true;
+  }
+  function mark(q, v) {
+    for (var i = 0; i < q.n; i++) for (var j = 0; j < q.n; j++) {
+      var k = (q.gx + i) + ',' + (q.gy + j);
+      if (v) used[k] = 1; else delete used[k];
+    }
+  }
   function spawn(x, y) {
-    var n = 1 + (Math.random() * 2 | 0);
-    for (var k = 0; k < n; k++) {
-      var s = [1, 1, 2, 2, 3, 4][Math.random() * 6 | 0];
-      var gx = Math.floor((x + (Math.random() - .5) * 200) / G), gy = Math.floor((y + (Math.random() - .5) * 200) / G);
-      tiles.push({ x: gx * G, y: gy * G, s: s * G, t: 0, life: 1400 + Math.random() * 1600,
-        hue: 210 + Math.random() * 18, l: 38 + Math.random() * 22 });
+    for (var tries = 0; tries < 6; tries++) {
+      var n = [1, 1, 1, 2, 2, 3][Math.random() * 6 | 0];
+      var gx = Math.floor((x + (Math.random() - .5) * 220) / G), gy = Math.floor((y + (Math.random() - .5) * 220) / G);
+      if (!free(gx, gy, n)) continue;
+      var q = { gx: gx, gy: gy, n: n, t: 0, life: 1800 + Math.random() * 1800, l: 34 + Math.random() * 16 };
+      mark(q, true); tiles.push(q);
+      break;
     }
     if (!raf) raf = requestAnimationFrame(draw);
   }
   addEventListener('pointermove', function (e) {
     var now = performance.now();
-    if (now - lastSpawn < 45) return;
+    if (now - lastSpawn < 70) return;
+    // Only on the open background, never under the glass fields, images or buttons.
+    if (e.target.closest && e.target.closest('.glass, .hov, img, .btn, header, .tabs')) return;
     lastSpawn = now; spawn(e.clientX, e.clientY);
   }, { passive: true });
   var prev = 0;
   function draw(t) {
     var dt = prev ? t - prev : 16; prev = t;
     ctx.clearRect(0, 0, W, H);
-    tiles = tiles.filter(function (q) { q.t += dt; return q.t < q.life; });
+    tiles = tiles.filter(function (q) { q.t += dt; if (q.t >= q.life) { mark(q, false); return false; } return true; });
     tiles.forEach(function (q) {
-      var p = q.t / q.life, a = p < .2 ? p / .2 : 1 - (p - .2) / .8;
-      a = a * a * .32;
-      var x = q.x * dpr + 1.5, y = q.y * dpr + 1.5, s = q.s * dpr - 3;
-      ctx.fillStyle = 'hsla(' + q.hue + ',85%,' + q.l + '%,' + (a * .35) + ')';
-      ctx.fillRect(x, y, s, s);
-      ctx.strokeStyle = 'hsla(' + q.hue + ',90%,70%,' + a + ')';
-      ctx.lineWidth = dpr; ctx.strokeRect(x, y, s, s);
+      var p = q.t / q.life, a = p < .25 ? p / .25 : 1 - (p - .25) / .75;
+      a = a * a * .14;
+      var x = (q.gx * G + GAP / 2) * dpr, y = (q.gy * G + GAP / 2) * dpr, sz = (q.n * G - GAP) * dpr;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(x, y, sz, sz, 5 * dpr); else ctx.rect(x, y, sz, sz);
+      ctx.fillStyle = 'hsla(218,80%,' + q.l + '%,' + (a * .45) + ')';
+      ctx.fill();
+      ctx.strokeStyle = 'hsla(215,85%,62%,' + a + ')';
+      ctx.lineWidth = dpr; ctx.stroke();
     });
     if (tiles.length) raf = requestAnimationFrame(draw); else { raf = null; prev = 0; }
   }
