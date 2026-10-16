@@ -15,7 +15,7 @@
 <meta name="twitter:title" content="mosaic — a personal dashboard you actually own">
 <meta name="twitter:description" content="A local-first, widget-based personal dashboard. 17 widgets, 20 themes, an optional BYOK AI assistant, and native desktop apps — no account, no server, your data stays on your device.">
 <meta name="twitter:image" content="https://aetherion7.github.io/mosaic/screenshots/board.png">
-<meta name="theme-color" content="#070818">
+<meta name="theme-color" content="#050a18">
 <link rel="icon" href="mosaiclogo-round.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,16 +32,16 @@
    Deep blue/violet night. Surfaces are translucent "glass" over a slowly
    flowing gradient field (.aura), so depth comes from light, not lines. */
 :root {
-  --night:   #070818;
+  --night:   #050a18;
   --glass:   rgba(255,255,255,.045);
   --glass-2: rgba(255,255,255,.075);
   --edge:    rgba(255,255,255,.07);
-  --text:    #eceaff;
-  --soft:    #a6a7d0;
-  --dim:     #6f7199;
-  --violet:  #9d8cff;
-  --blue:    #6aa8ff;
-  --r:       22px;
+  --text:    #e8eefc;
+  --soft:    #9fb0cf;
+  --dim:     #66789a;
+  --violet:  #6ea8ff;
+  --blue:    #3d7bff;
+  --r:       10px;
   --title:   'Guavine', serif;
   --body:    'Manrope', system-ui, sans-serif;
   --ease:    cubic-bezier(.2,.7,.2,1);
@@ -67,17 +67,17 @@ code, .mono { font-family: 'JetBrains Mono', monospace; font-size: .88em; }
   position: absolute; border-radius: 50%; filter: blur(110px); opacity: .55;
   will-change: transform;
 }
-.aura i:nth-child(1) { width: 62vw; height: 62vw; left: -18vw; top: -22vw; background: #3a2bb0; animation: f1 34s ease-in-out infinite alternate; }
-.aura i:nth-child(2) { width: 55vw; height: 55vw; right: -20vw; top: 10vh;  background: #1b4fc4; animation: f2 41s ease-in-out infinite alternate; }
-.aura i:nth-child(3) { width: 48vw; height: 48vw; left: 20vw; bottom: -30vw; background: #6a2aa8; animation: f3 38s ease-in-out infinite alternate; opacity: .45; }
-.aura i:nth-child(4) { width: 30vw; height: 30vw; left: 45vw; top: 30vh;  background: #1d7fb8; animation: f4 29s ease-in-out infinite alternate; opacity: .25; }
+.aura i:nth-child(1) { width: 62vw; height: 62vw; left: -18vw; top: -22vw; background: #123a8f; animation: f1 34s ease-in-out infinite alternate; }
+.aura i:nth-child(2) { width: 55vw; height: 55vw; right: -20vw; top: 10vh;  background: #0d2a6b; animation: f2 41s ease-in-out infinite alternate; }
+.aura i:nth-child(3) { width: 48vw; height: 48vw; left: 20vw; bottom: -30vw; background: #1a4fb0; animation: f3 38s ease-in-out infinite alternate; opacity: .45; }
+.aura i:nth-child(4) { width: 30vw; height: 30vw; left: 45vw; top: 30vh;  background: #0b5fa8; animation: f4 29s ease-in-out infinite alternate; opacity: .25; }
 @keyframes f1 { to { transform: translate(22vw, 18vh) scale(1.15); } }
 @keyframes f2 { to { transform: translate(-26vw, 30vh) scale(.9); } }
 @keyframes f3 { to { transform: translate(18vw, -40vh) scale(1.2); } }
 @keyframes f4 { to { transform: translate(-30vw, -10vh) scale(1.4); } }
 .aura::after {
   content: ''; position: absolute; inset: 0;
-  background: radial-gradient(ellipse at center, transparent 30%, rgba(7,8,24,.75) 100%);
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(5,10,24,.75) 100%);
 }
 body::after {
   content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 2000; opacity: .06;
@@ -94,13 +94,13 @@ body::after {
 .btn {
   display: inline-flex; align-items: center; gap: 9px; cursor: pointer;
   font: 600 14px/1 var(--body); text-decoration: none; color: var(--text);
-  padding: 14px 24px; border-radius: 999px; border: 0;
+  padding: 14px 24px; border-radius: 8px; border: 0;
   background: var(--glass-2); box-shadow: inset 0 1px 0 var(--edge);
   transition: background .3s var(--ease), transform .3s var(--ease);
 }
 .btn:hover { background: rgba(255,255,255,.12); transform: translateY(-1px); }
-.btn-main { background: linear-gradient(120deg, #8a7bff, #5b8dff); color: #fff; box-shadow: 0 10px 34px -10px rgba(122,120,255,.7); }
-.btn-main:hover { background: linear-gradient(120deg, #9a8dff, #6c9bff); }
+.btn-main { background: linear-gradient(120deg, #2f6bff, #2a8cff); color: #fff; box-shadow: 0 10px 34px -10px rgba(47,107,255,.6); }
+.btn-main:hover { background: linear-gradient(120deg, #4a80ff, #46a0ff); }
 .kicker { font: 600 12px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; color: var(--violet); }
 h1, h2, h3 { font-family: var(--title); font-weight: 400; }
 h2 { font-size: clamp(34px, 4.6vw, 54px); line-height: 1.08; margin: 14px 0 0; }
@@ -114,7 +114,7 @@ header { position: fixed; top: 16px; left: 0; right: 0; z-index: 100; }
 header .bar {
   max-width: 1120px; margin: 0 auto; padding: 0 10px 0 20px; height: 58px;
   display: flex; align-items: center; gap: 24px;
-  background: rgba(12,13,36,.55); border-radius: 999px;
+  background: rgba(8,14,34,.6); border-radius: 8px;
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   box-shadow: inset 0 1px 0 var(--edge);
 }
@@ -131,40 +131,40 @@ header .btn { padding: 11px 20px; font-size: 13.5px; }
 .hero h1 { font-size: clamp(52px, 9vw, 112px); line-height: .98; letter-spacing: -.01em; margin-top: 22px; }
 .hero h1 em {
   font-style: normal;
-  background: linear-gradient(100deg, #b7a9ff, #78b4ff 60%, #c79bff);
+  background: linear-gradient(100deg, #9cc4ff, #4d8dff 60%, #8fd0ff);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .hero .lead { margin: 26px auto 0; font-size: 18px; }
 .ctas { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 40px; }
 .shot {
   margin: 90px auto 0; max-width: 1040px; padding: 10px;
-  box-shadow: inset 0 1px 0 var(--edge), 0 50px 120px -30px rgba(40,30,140,.65);
+  box-shadow: inset 0 1px 0 var(--edge), 0 50px 120px -30px rgba(15,50,140,.6);
 }
 .shot img { border-radius: calc(var(--r) - 8px); cursor: zoom-in; }
 
 /* ── Features ─────────────────────────────────────────────────────────── */
 .feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 .feat { padding: 34px 30px; transition: background .4s var(--ease), transform .4s var(--ease); }
-.feat:hover { background: var(--glass-2); transform: translateY(-3px); }
-.feat .big { font-family: var(--title); font-size: 46px; line-height: 1; background: linear-gradient(120deg, #b7a9ff, #78b4ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+.feat .big { font-family: var(--title); font-size: 46px; line-height: 1; background: linear-gradient(120deg, #9cc4ff, #4d8dff); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .feat h3 { font-size: 22px; margin: 18px 0 8px; }
 .feat p { color: var(--soft); font-size: 14.5px; }
 
 /* ── Widgets ──────────────────────────────────────────────────────────── */
 .chips { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 860px; margin: 0 auto; }
 .chip {
-  display: inline-flex; align-items: center; gap: 9px; padding: 11px 18px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 9px; padding: 11px 18px; border-radius: 8px;
   background: var(--glass); box-shadow: inset 0 1px 0 var(--edge); font-size: 14px; font-weight: 500;
   transition: background .3s var(--ease);
 }
-.chip:hover { background: var(--glass-2); }
+
 .chip svg { width: 16px; height: 16px; color: var(--violet); stroke-width: 1.1; }
 
 /* ── Showcase (tabs + image) ──────────────────────────────────────────── */
 .tabs { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin-bottom: 28px; }
 .tabs button {
   border: 0; cursor: pointer; font: 500 14px/1 var(--body); color: var(--soft);
-  background: transparent; padding: 11px 18px; border-radius: 999px; transition: all .3s var(--ease);
+  background: transparent; padding: 11px 18px; border-radius: 8px; transition: all .3s var(--ease);
 }
 .tabs button:hover { color: var(--text); }
 .tabs button[aria-selected="true"] { background: var(--glass-2); color: var(--text); box-shadow: inset 0 1px 0 var(--edge); }
@@ -188,7 +188,7 @@ header .btn { padding: 11px 20px; font-size: 13.5px; }
   position: relative; padding: 34px 24px; text-align: center; text-decoration: none; color: var(--text);
   transition: background .3s var(--ease), transform .3s var(--ease);
 }
-a.dl:hover, .dl:has(.dl-hit:hover) { background: var(--glass-2); transform: translateY(-3px); }
+
 .dl .ico { height: 34px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
 .dl .ico img { filter: brightness(0) invert(1); opacity: .9; }
 .dl h3 { font-size: 26px; }
@@ -217,8 +217,8 @@ a.dl:hover, .dl:has(.dl-hit:hover) { background: var(--glass-2); transform: tran
 .install-body a { color: var(--violet); }
 .distro-label { display: block; font-size: 12px; font-weight: 600; color: var(--dim); margin: 16px 0 8px; }
 .codeblock {
-  background: rgba(0,0,0,.35); border-radius: 12px; padding: 13px 15px;
-  font: 400 12px/1.6 'JetBrains Mono', monospace; color: #b9c8ff; overflow-x: auto; white-space: pre; margin-bottom: 10px;
+  background: rgba(0,0,0,.35); border-radius: 8px; padding: 13px 15px;
+  font: 400 12px/1.6 'JetBrains Mono', monospace; color: #a9c8ff; overflow-x: auto; white-space: pre; margin-bottom: 10px;
 }
 
 /* ── Privacy ──────────────────────────────────────────────────────────── */
@@ -245,14 +245,29 @@ footer a:hover { color: var(--text); }
 /* ── Lightbox ─────────────────────────────────────────────────────────── */
 .lightbox {
   display: none; position: fixed; inset: 0; z-index: 1000; align-items: center; justify-content: center;
-  padding: 5vh 5vw; background: rgba(7,8,24,.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); cursor: zoom-out;
+  padding: 5vh 5vw; background: rgba(5,10,24,.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); cursor: zoom-out;
 }
 .lightbox.open { display: flex; }
-.lightbox img { max-width: 100%; max-height: 100%; border-radius: 14px; cursor: default; }
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 8px; cursor: default; }
 .lightbox-close {
   position: absolute; top: 22px; right: 24px; width: 42px; height: 42px; border: 0; border-radius: 50%;
   background: var(--glass-2); color: var(--text); font-size: 16px; cursor: pointer;
 }
+
+/* ── Hover: blue outline that travels around the field ──────────────── */
+@property --a { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+.hov { position: relative; transition: background .4s var(--ease), box-shadow .4s var(--ease); }
+.hov::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none;
+  background: conic-gradient(from var(--a), transparent 0deg, transparent 200deg, #2f6bff 290deg, #9cc4ff 340deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity .45s var(--ease);
+}
+.hov:hover { background: var(--glass-2); box-shadow: inset 0 0 0 1px rgba(77,141,255,.22), 0 0 30px -12px rgba(47,107,255,.6); }
+.hov:hover::before { opacity: 1; animation: orbit 2.8s linear infinite; }
+@keyframes orbit { to { --a: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .hov:hover::before { animation: none; background: rgba(77,141,255,.6); } }
 
 /* ── Motion ───────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
@@ -320,12 +335,12 @@ footer a:hover { color: var(--text); }
         <h2 class="reveal">Everything you need.<br>Nothing you don't.</h2>
       </div>
       <div class="feats">
-        <div class="feat glass reveal"><div class="big">17</div><h3>Widgets</h3><p>From spreadsheets with formulas to a PDF &amp; EPUB reader.</p></div>
-        <div class="feat glass reveal"><div class="big">20</div><h3>Themes</h3><p>Plus per-widget styling — color, gradient, glow.</p></div>
-        <div class="feat glass reveal"><div class="big">0</div><h3>Servers</h3><p>Your data lives in your browser. Export anytime.</p></div>
-        <div class="feat glass reveal"><div class="big">AI</div><h3>Bring your own key</h3><p>An optional assistant that builds boards with you.</p></div>
-        <div class="feat glass reveal"><div class="big">3</div><h3>Desktop apps</h3><p>Windows, macOS, Linux — updating themselves.</p></div>
-        <div class="feat glass reveal"><div class="big">2</div><h3>Languages</h3><p>English and German, with undo everywhere.</p></div>
+        <div class="feat glass hov reveal"><div class="big">17</div><h3>Widgets</h3><p>From spreadsheets with formulas to a PDF &amp; EPUB reader.</p></div>
+        <div class="feat glass hov reveal"><div class="big">20</div><h3>Themes</h3><p>Plus per-widget styling — color, gradient, glow.</p></div>
+        <div class="feat glass hov reveal"><div class="big">0</div><h3>Servers</h3><p>Your data lives in your browser. Export anytime.</p></div>
+        <div class="feat glass hov reveal"><div class="big">AI</div><h3>Bring your own key</h3><p>An optional assistant that builds boards with you.</p></div>
+        <div class="feat glass hov reveal"><div class="big">3</div><h3>Desktop apps</h3><p>Windows, macOS, Linux — updating themselves.</p></div>
+        <div class="feat glass hov reveal"><div class="big">2</div><h3>Languages</h3><p>English and German, with undo everywhere.</p></div>
       </div>
     </div>
   </section>
@@ -336,24 +351,24 @@ footer a:hover { color: var(--text); }
         <div class="kicker reveal">Widgets</div>
         <h2 class="reveal">Mix and match.</h2>
       </div>
-      <ul class="chips">
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><polyline points="5.5,8 7,9.5 10.5,6"/></svg>Task &amp; habits</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="11" rx="1.5"/><line x1="2" y1="7" x2="14" y2="7"/><line x1="5.5" y1="1.5" x2="5.5" y2="4.5"/><line x1="10.5" y1="1.5" x2="10.5" y2="4.5"/><rect x="5" y="9" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/><rect x="9" y="9" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/></svg>Calendar</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><polyline points="10,2 10,5 13,5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="9" y2="11"/></svg>Notes</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="2" y1="6" x2="14" y2="6"/><line x1="2" y1="10" x2="14" y2="10"/><line x1="6" y1="2" x2="6" y2="14"/><line x1="10" y1="2" x2="10" y2="14"/></svg>Spreadsheet</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="13" height="13" rx="2"/><path d="M4 10 Q6 5.5 8.5 8 Q10.5 10 12.5 6"/></svg>Drawboard</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3.4C6.3 2.4 4 2.2 2 2.8v9.6c2-0.6 4.3-0.4 6 0.6"/><path d="M8 3.4c1.7-1 4-1.2 6-0.6v9.6c-2-0.6-4.3-0.4-6 0.6"/><line x1="8" y1="3.4" x2="8" y2="13.4"/></svg>PDF/EPUB reader</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="13.5" x2="14" y2="13.5"/><rect x="2.5" y="9" width="2.5" height="4.5" rx="0.5" fill="currentColor" stroke="none" opacity="0.5"/><rect x="6.5" y="6.5" width="2.5" height="7" rx="0.5" fill="currentColor" stroke="none" opacity="0.5"/><rect x="10.5" y="10.5" width="2.5" height="3" rx="0.5" fill="currentColor" stroke="none" opacity="0.5"/><polyline points="3.75,7 7.75,4 11.75,8.5" fill="none"/><circle cx="3.75" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="7.75" cy="4" r="1.2" fill="currentColor" stroke="none"/><circle cx="11.75" cy="8.5" r="1.2" fill="currentColor" stroke="none"/></svg>Charts</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13a2.5 2.5 0 0 1 0-5h.3a3.5 3.5 0 0 1 6.8-1A2.5 2.5 0 0 1 13 9.5a2 2 0 0 1-2 3.5H3z"/></svg>Weather</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5C5.52 1.5 3.5 3.52 3.5 6c0 3.75 4.5 8.5 4.5 8.5s4.5-4.75 4.5-8.5C12.5 3.52 10.48 1.5 8 1.5z"/><circle cx="8" cy="6" r="1.6" fill="none"/></svg>Map</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8.5" r="6"/><polyline points="8,5.5 8,8.5 10.5,10.5"/></svg>Clock</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9.5" r="5.5"/><polyline points="8,6.5 8,9.5 10,11.5"/><line x1="6" y1="1.5" x2="10" y2="1.5"/><line x1="8" y1="1.5" x2="8" y2="4"/></svg>Timer</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 C8 2 3 8 3 10 a5 5 0 0 0 10 0 C13 8 8 2 8 2Z"/></svg>Water tracker</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 9.8A6 6 0 0 1 6.2 2.5 6 6 0 1 0 13.5 9.8Z"/><line x1="10.5" y1="3" x2="13.5" y2="3"/><line x1="13.5" y1="3" x2="10.5" y2="6"/><line x1="10.5" y1="6" x2="13.5" y2="6"/></svg>Sleep tracker</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="3" cy="4" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="12" r="1" fill="currentColor" stroke="none"/><line x1="6" y1="4" x2="14" y2="4"/><line x1="6" y1="8" x2="14" y2="8"/><line x1="6" y1="12" x2="11" y2="12"/></svg>Agenda</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><line x1="10" y1="13" x2="14" y2="9"/><polyline points="11,9 14,9 14,12"/></svg>Quicklinks</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><circle cx="5.5" cy="6.5" r="1.3" fill="currentColor" stroke="none"/><polyline points="2,12 5,9 8,11 11,7 14,12"/></svg>Image</li>
-        <li class="chip reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="5.5,4 1.5,8 5.5,12"/><polyline points="10.5,4 14.5,8 10.5,12"/></svg>HTML</li>
+      <ul class="chip hovs">
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><polyline points="5.5,8 7,9.5 10.5,6"/></svg>Task &amp; habits</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="11" rx="1.5"/><line x1="2" y1="7" x2="14" y2="7"/><line x1="5.5" y1="1.5" x2="5.5" y2="4.5"/><line x1="10.5" y1="1.5" x2="10.5" y2="4.5"/><rect x="5" y="9" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/><rect x="9" y="9" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/></svg>Calendar</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><polyline points="10,2 10,5 13,5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="9" y2="11"/></svg>Notes</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="2" y1="6" x2="14" y2="6"/><line x1="2" y1="10" x2="14" y2="10"/><line x1="6" y1="2" x2="6" y2="14"/><line x1="10" y1="2" x2="10" y2="14"/></svg>Spreadsheet</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="13" height="13" rx="2"/><path d="M4 10 Q6 5.5 8.5 8 Q10.5 10 12.5 6"/></svg>Drawboard</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3.4C6.3 2.4 4 2.2 2 2.8v9.6c2-0.6 4.3-0.4 6 0.6"/><path d="M8 3.4c1.7-1 4-1.2 6-0.6v9.6c-2-0.6-4.3-0.4-6 0.6"/><line x1="8" y1="3.4" x2="8" y2="13.4"/></svg>PDF/EPUB reader</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="13.5" x2="14" y2="13.5"/><rect x="2.5" y="9" width="2.5" height="4.5" rx="0.5" fill="currentColor" stroke="none" opacity="0.5"/><rect x="6.5" y="6.5" width="2.5" height="7" rx="0.5" fill="currentColor" stroke="none" opacity="0.5"/><rect x="10.5" y="10.5" width="2.5" height="3" rx="0.5" fill="currentColor" stroke="none" opacity="0.5"/><polyline points="3.75,7 7.75,4 11.75,8.5" fill="none"/><circle cx="3.75" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="7.75" cy="4" r="1.2" fill="currentColor" stroke="none"/><circle cx="11.75" cy="8.5" r="1.2" fill="currentColor" stroke="none"/></svg>Charts</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13a2.5 2.5 0 0 1 0-5h.3a3.5 3.5 0 0 1 6.8-1A2.5 2.5 0 0 1 13 9.5a2 2 0 0 1-2 3.5H3z"/></svg>Weather</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5C5.52 1.5 3.5 3.52 3.5 6c0 3.75 4.5 8.5 4.5 8.5s4.5-4.75 4.5-8.5C12.5 3.52 10.48 1.5 8 1.5z"/><circle cx="8" cy="6" r="1.6" fill="none"/></svg>Map</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8.5" r="6"/><polyline points="8,5.5 8,8.5 10.5,10.5"/></svg>Clock</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9.5" r="5.5"/><polyline points="8,6.5 8,9.5 10,11.5"/><line x1="6" y1="1.5" x2="10" y2="1.5"/><line x1="8" y1="1.5" x2="8" y2="4"/></svg>Timer</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 C8 2 3 8 3 10 a5 5 0 0 0 10 0 C13 8 8 2 8 2Z"/></svg>Water tracker</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 9.8A6 6 0 0 1 6.2 2.5 6 6 0 1 0 13.5 9.8Z"/><line x1="10.5" y1="3" x2="13.5" y2="3"/><line x1="13.5" y1="3" x2="10.5" y2="6"/><line x1="10.5" y1="6" x2="13.5" y2="6"/></svg>Sleep tracker</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="3" cy="4" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="12" r="1" fill="currentColor" stroke="none"/><line x1="6" y1="4" x2="14" y2="4"/><line x1="6" y1="8" x2="14" y2="8"/><line x1="6" y1="12" x2="11" y2="12"/></svg>Agenda</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><line x1="10" y1="13" x2="14" y2="9"/><polyline points="11,9 14,9 14,12"/></svg>Quicklinks</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><circle cx="5.5" cy="6.5" r="1.3" fill="currentColor" stroke="none"/><polyline points="2,12 5,9 8,11 11,7 14,12"/></svg>Image</li>
+        <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="5.5,4 1.5,8 5.5,12"/><polyline points="10.5,4 14.5,8 10.5,12"/></svg>HTML</li>
       </ul>
     </div>
   </section>
@@ -388,12 +403,12 @@ footer a:hover { color: var(--text); }
         <h2 class="reveal">Small things, done right.</h2>
       </div>
       <div class="details">
-        <div class="detail glass reveal"><h3>Focus mode</h3><p>Double-click any widget — full-screen and fully interactive.</p></div>
-        <div class="detail glass reveal"><h3>Desktop pinning</h3><p>Detach a widget into its own always-on-top window.</p></div>
-        <div class="detail glass reveal"><h3>Linked highlights</h3><p>Link book highlights into notes and jump right back.</p></div>
-        <div class="detail glass reveal"><h3>Real formulas</h3><p>SUM, IF, COUNTIF and 40+ more — safely evaluated.</p></div>
-        <div class="detail glass reveal"><h3>Smart reminders</h3><p>Water and sleep nudges that know your progress.</p></div>
-        <div class="detail glass reveal"><h3>Live minimap</h3><p>Zooms in lockstep with your board, like radar.</p></div>
+        <div class="detail glass hov reveal"><h3>Focus mode</h3><p>Double-click any widget — full-screen and fully interactive.</p></div>
+        <div class="detail glass hov reveal"><h3>Desktop pinning</h3><p>Detach a widget into its own always-on-top window.</p></div>
+        <div class="detail glass hov reveal"><h3>Linked highlights</h3><p>Link book highlights into notes and jump right back.</p></div>
+        <div class="detail glass hov reveal"><h3>Real formulas</h3><p>SUM, IF, COUNTIF and 40+ more — safely evaluated.</p></div>
+        <div class="detail glass hov reveal"><h3>Smart reminders</h3><p>Water and sleep nudges that know your progress.</p></div>
+        <div class="detail glass hov reveal"><h3>Live minimap</h3><p>Zooms in lockstep with your board, like radar.</p></div>
       </div>
     </div>
   </section>
@@ -406,15 +421,15 @@ footer a:hover { color: var(--text); }
         <p class="lead reveal">Free. Auto-updating. Or run it straight in your browser.</p>
       </div>
       <div class="dls">
-        <a class="dl glass reveal" id="dl-win" href="https://github.com/Aetherion7/mosaic/releases/latest">
+        <a class="dl glass hov reveal" id="dl-win" href="https://github.com/Aetherion7/mosaic/releases/latest">
           <div class="ico"><svg width="28" height="28" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6.3" height="6.3"/><rect x="8.3" y="1" width="6.3" height="6.3"/><rect x="1" y="8.3" width="6.3" height="6.3"/><rect x="8.3" y="8.3" width="6.3" height="6.3"/></svg></div>
           <h3>Windows</h3><div class="meta" id="dl-win-sub">.exe installer</div>
         </a>
-        <a class="dl glass reveal" id="dl-mac" href="https://github.com/Aetherion7/mosaic/releases/latest">
+        <a class="dl glass hov reveal" id="dl-mac" href="https://github.com/Aetherion7/mosaic/releases/latest">
           <div class="ico"><img src="icons/apple.png" alt="" width="26" height="31"></div>
           <h3>macOS</h3><div class="meta" id="dl-mac-sub">.dmg, Apple Silicon</div>
         </a>
-        <div class="dl glass reveal">
+        <div class="dl glass hov reveal">
           <a class="dl-hit" id="dl-linux" href="https://github.com/Aetherion7/mosaic/releases/latest" aria-label="Download mosaic for Linux (.AppImage)"></a>
           <div class="ico"><img src="icons/linux.png" alt="" width="26" height="30"></div>
           <h3>Linux</h3><div class="meta"><span id="dl-linux-sub">.AppImage</span> · <a id="dl-deb" href="https://github.com/Aetherion7/mosaic/releases/latest">.deb</a></div>
@@ -507,7 +522,7 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
         <h2 class="reveal">No tracking. Ever.</h2>
       </div>
       <div class="priv">
-        <div class="glass reveal">
+        <div class="glass hov reveal">
           <h3>Always local</h3>
           <ul>
             <li>Boards, widgets, settings</li>
@@ -515,7 +530,7 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
             <li>Works fully offline</li>
           </ul>
         </div>
-        <div class="glass ext reveal">
+        <div class="glass hov ext reveal">
           <h3>Only when used</h3>
           <ul>
             <li>Map &amp; weather — OpenStreetMap, Open-Meteo</li>
