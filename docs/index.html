@@ -149,6 +149,10 @@ header nav a:not(.btn) .i { width: 14px; height: 14px; opacity: .7; }
 .feat { padding: 34px 30px; transition: background .4s var(--ease), transform .4s var(--ease); }
 
 .feat .big { font-family: var(--title); font-size: 46px; line-height: 1; color: #6ea8ff; }
+.ftop { display: flex; align-items: flex-start; justify-content: space-between; }
+.tic { display: inline-flex; padding: 10px; border-radius: 8px; background: rgba(77,141,255,.1); color: var(--violet); }
+.tic .i { width: 22px; height: 22px; }
+.detail .tic { margin-bottom: 18px; }
 .feat h3 { font-size: 22px; margin: 18px 0 8px; }
 .feat p { color: var(--soft); font-size: 14.5px; }
 
@@ -241,7 +245,14 @@ header nav a:not(.btn) .i { width: 14px; height: 14px; opacity: .7; }
 /* ── Closing ──────────────────────────────────────────────────────────── */
 .closing { text-align: center; }
 .closing .glass { max-width: 900px; margin: 0 auto; padding: 80px 32px; }
-.closing .btn { padding: 12px 22px; }
+.closing .ctas { gap: 18px; margin-top: 44px; }
+.scard {
+  width: 280px; padding: 30px 24px 26px; text-decoration: none; color: var(--text);
+  display: flex; flex-direction: column; align-items: center; gap: 6px; background: rgba(255,255,255,.06);
+}
+.scard .slogo { height: 40px; width: auto; margin-bottom: 12px; }
+.scard b { font-family: var(--title); font-weight: 400; font-size: 21px; }
+.scard span { font-size: 13px; color: var(--soft); }
 .badge { height: 22px; width: auto; }
 .closing .fine { margin-top: 44px; font-size: 13px; color: var(--dim); }
 .closing .fine a { color: var(--soft); }
@@ -322,12 +333,12 @@ footer a:hover { color: var(--text); }
   <div class="bar">
     <a href="#" class="logo"><img src="mosaiclogo.png" alt=""><span>mosaic</span><small>by Aetherion7</small></a>
     <nav>
-      <a href="#features"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Features</a>
-      <a href="#tour"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Tour</a>
-      <a href="#privacy"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Privacy</a>
+      <a href="#features">Features</a>
+      <a href="#tour">Tour</a>
+      <a href="#privacy">Privacy</a>
       <a class="btn" href="https://github.com/Aetherion7/mosaic"><svg class="i" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
       <a class="btn" href="#support"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>Support</a>
-      <a class="btn btn-main" href="#download"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Download</a>
+      <a class="btn btn-main" href="#download">Download</a>
     </nav>
   </div>
 </header>
@@ -355,12 +366,12 @@ footer a:hover { color: var(--text); }
         <h2 class="reveal">Everything you need.<br>Nothing you don't.</h2>
       </div>
       <div class="feats">
-        <div class="feat glass hov reveal"><div class="big">17</div><h3>Widgets</h3><p>From spreadsheets with formulas to a PDF &amp; EPUB reader.</p></div>
-        <div class="feat glass hov reveal"><div class="big">20</div><h3>Themes</h3><p>Plus per-widget styling — color, gradient, glow.</p></div>
-        <div class="feat glass hov reveal"><div class="big">0</div><h3>Servers</h3><p>Your data lives in your browser. Export anytime.</p></div>
-        <div class="feat glass hov reveal"><div class="big">AI</div><h3>Bring your own key</h3><p>An optional assistant that builds boards with you.</p></div>
-        <div class="feat glass hov reveal"><div class="big">3</div><h3>Desktop apps</h3><p>Windows, macOS, Linux — updating themselves.</p></div>
-        <div class="feat glass hov reveal"><div class="big">2</div><h3>Languages</h3><p>English and German, with undo everywhere.</p></div>
+        <div class="feat glass hov reveal"><div class="ftop"><div class="big">17</div><div class="tic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div></div><h3>Widgets</h3><p>From spreadsheets with formulas to a PDF &amp; EPUB reader.</p></div>
+        <div class="feat glass hov reveal"><div class="ftop"><div class="big">20</div><div class="tic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2a10 10 0 0 0 0 20c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16a6 6 0 0 0 6-6c0-4.9-4.5-8.6-10-8.6z"/></svg></div></div><h3>Themes</h3><p>Plus per-widget styling — color, gradient, glow.</p></div>
+        <div class="feat glass hov reveal"><div class="ftop"><div class="big">0</div><div class="tic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div></div><h3>Servers</h3><p>Your data lives in your browser. Export anytime.</p></div>
+        <div class="feat glass hov reveal"><div class="ftop"><div class="big">AI</div><div class="tic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg></div></div><h3>Bring your own key</h3><p>An optional assistant that builds boards with you.</p></div>
+        <div class="feat glass hov reveal"><div class="ftop"><div class="big">3</div><div class="tic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div></div><h3>Desktop apps</h3><p>Windows, macOS, Linux — updating themselves.</p></div>
+        <div class="feat glass hov reveal"><div class="ftop"><div class="big">2</div><div class="tic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg></div></div><h3>Languages</h3><p>English and German, with undo everywhere.</p></div>
       </div>
     </div>
   </section>
@@ -423,12 +434,12 @@ footer a:hover { color: var(--text); }
         <h2 class="reveal">Small things, done right.</h2>
       </div>
       <div class="details">
-        <div class="detail glass hov reveal"><h3>Focus mode</h3><p>Double-click any widget — full-screen and fully interactive.</p></div>
-        <div class="detail glass hov reveal"><h3>Desktop pinning</h3><p>Detach a widget into its own always-on-top window.</p></div>
-        <div class="detail glass hov reveal"><h3>Linked highlights</h3><p>Link book highlights into notes and jump right back.</p></div>
-        <div class="detail glass hov reveal"><h3>Real formulas</h3><p>SUM, IF, COUNTIF and 40+ more — safely evaluated.</p></div>
-        <div class="detail glass hov reveal"><h3>Smart reminders</h3><p>Water and sleep nudges that know your progress.</p></div>
-        <div class="detail glass hov reveal"><h3>Live minimap</h3><p>Zooms in lockstep with your board, like radar.</p></div>
+        <div class="detail glass hov reveal"><div class="tic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V3h5M21 8V3h-5M3 16v5h5M21 16v5h-5"/></svg></div><h3>Focus mode</h3><p>Double-click any widget — full-screen and fully interactive.</p></div>
+        <div class="detail glass hov reveal"><div class="tic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.8a2 2 0 0 1-1.1 1.8l-1.8.9A2 2 0 0 0 5 15.2V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.8a2 2 0 0 0-1.1-1.8l-1.8-.9A2 2 0 0 1 15 10.8V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></div><h3>Desktop pinning</h3><p>Detach a widget into its own always-on-top window.</p></div>
+        <div class="detail glass hov reveal"><div class="tic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></div><h3>Linked highlights</h3><p>Link book highlights into notes and jump right back.</p></div>
+        <div class="detail glass hov reveal"><div class="tic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/><path d="m13 13 4 4m0-4-4 4"/></svg></div><h3>Real formulas</h3><p>SUM, IF, COUNTIF and 40+ more — safely evaluated.</p></div>
+        <div class="detail glass hov reveal"><div class="tic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><h3>Smart reminders</h3><p>Water and sleep nudges that know your progress.</p></div>
+        <div class="detail glass hov reveal"><div class="tic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.1 6 9.9 4 3 7v13l6.9-3 4.2 2 6.9-3V3z"/><path d="M9.9 4v13M14.1 6v13"/></svg></div><h3>Live minimap</h3><p>Zooms in lockstep with your board, like radar.</p></div>
       </div>
     </div>
   </section>
@@ -539,7 +550,6 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
     <div class="wrap">
       <div class="head">
         <div class="kicker reveal">Privacy</div>
-        <div class="bigicon reveal"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
         <h2 class="reveal">No tracking. Ever.</h2>
       </div>
       <div class="priv">
@@ -570,8 +580,16 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
         <h2>Free, and staying that way.</h2>
         <p class="lead" style="margin:18px auto 0">mosaic is a student project, designed and built independently alongside my studies. As a student, I'm genuinely grateful for every donation and every star — each one helps keep the project free, maintained and growing.</p>
         <div class="ctas">
-          <a class="btn" href="https://ko-fi.com/mosaicboard"><img src="badges/kofi.png" alt="Ko-fi" class="badge">Support</a>
-          <a class="btn" href="https://github.com/Aetherion7/mosaic"><img src="badges/github-star.webp" alt="" class="badge">Star on GitHub</a>
+          <a class="scard glass hov" href="https://ko-fi.com/mosaicboard">
+            <img src="badges/kofi.png" alt="Ko-fi" class="slogo">
+            <b>Buy me a coffee</b>
+            <span>A one-time or monthly donation on Ko-fi</span>
+          </a>
+          <a class="scard glass hov" href="https://github.com/Aetherion7/mosaic">
+            <img src="badges/github-star.webp" alt="" class="slogo">
+            <b>Star on GitHub</b>
+            <span>Free, takes a second, and helps others find mosaic</span>
+          </a>
         </div>
         <p class="fine" id="license">Source-available under the <a href="https://github.com/Aetherion7/mosaic?tab=License-1-ov-file">PolyForm Noncommercial License</a> — free for personal use.</p>
       </div>
@@ -668,9 +686,7 @@ document.querySelectorAll('.shot img').forEach(function (img) {
   } else {
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('in');
-        io.unobserve(entry.target);
+        entry.target.classList.toggle('in', entry.isIntersecting);
       });
     }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
     els.forEach(function (el) { io.observe(el); });
