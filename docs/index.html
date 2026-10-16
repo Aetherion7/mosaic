@@ -236,6 +236,7 @@ header nav a:not(.btn) .i { width: 14px; height: 14px; opacity: .7; }
 .ih .i { width: 22px; height: 22px; color: var(--violet); }
 .bigicon { display: inline-flex; padding: 14px; border-radius: 10px; background: var(--glass); color: var(--violet); margin-bottom: 18px; }
 .bigicon .i { width: 28px; height: 28px; }
+.privnote { max-width: 720px; margin: 40px auto 0; text-align: center; color: var(--soft); font-size: 15px; }
 .priv h3 { font-size: 24px; margin-bottom: 14px; }
 .priv ul { list-style: none; }
 .priv li { color: var(--soft); font-size: 14.5px; padding: 5px 0 5px 22px; position: relative; }
@@ -571,6 +572,7 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
           </ul>
         </div>
       </div>
+      <p class="privnote reveal">mosaic has no backend and no user accounts. Everything you create is stored locally in your browser or desktop app, and nothing is sent anywhere unless you use a feature that needs the internet. Even then, requests go directly from your device to that service — never through us. You can export a full backup at any time and delete everything with a single click.</p>
     </div>
   </section>
 
