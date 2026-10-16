@@ -124,18 +124,20 @@ header .bar {
 .logo img { width: 30px; height: 30px; border-radius: 50%; }
 .logo span { font-family: var(--title); font-size: 23px; }
 .logo small { font: 300 11.5px/1 var(--body); color: var(--dim); letter-spacing: .02em; margin-left: -4px; padding-top: 5px; }
-header nav { display: flex; align-items: center; gap: 26px; margin-left: auto; }
-header nav a:not(.btn) { font-size: 13.5px; font-weight: 500; color: var(--soft); text-decoration: none; transition: color .2s; }
+header nav { display: flex; align-items: center; gap: 22px; margin-left: auto; }
+header nav a:not(.btn) { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 500; color: var(--soft); text-decoration: none; transition: color .2s; }
 header nav a:not(.btn):hover { color: var(--text); }
-header .btn { padding: 11px 20px; font-size: 13.5px; }
+header .btn { padding: 10px 16px; font-size: 13.5px; }
+header nav .btn + .btn { margin-left: -12px; }
+.i { width: 16px; height: 16px; flex-shrink: 0; }
+header nav a:not(.btn) .i { width: 14px; height: 14px; opacity: .7; }
 
 /* ── Hero ─────────────────────────────────────────────────────────────── */
 .hero { padding: 190px 0 110px; text-align: center; }
 .hero h1 { font-size: clamp(52px, 9vw, 112px); line-height: .98; letter-spacing: -.01em; margin-top: 22px; }
 .hero h1 em {
   font-style: normal;
-  background: linear-gradient(100deg, #9cc4ff, #4d8dff 60%, #8fd0ff);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  color: #6ea8ff;
 }
 .hero .lead { margin: 26px auto 0; font-size: 18px; }
 .ctas { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 40px; }
@@ -146,7 +148,7 @@ header .btn { padding: 11px 20px; font-size: 13.5px; }
 .feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 .feat { padding: 34px 30px; transition: background .4s var(--ease), transform .4s var(--ease); }
 
-.feat .big { font-family: var(--title); font-size: 46px; line-height: 1; background: linear-gradient(120deg, #9cc4ff, #4d8dff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.feat .big { font-family: var(--title); font-size: 46px; line-height: 1; color: #6ea8ff; }
 .feat h3 { font-size: 22px; margin: 18px 0 8px; }
 .feat p { color: var(--soft); font-size: 14.5px; }
 
@@ -226,6 +228,10 @@ header .btn { padding: 11px 20px; font-size: 13.5px; }
 /* ── Privacy ──────────────────────────────────────────────────────────── */
 .priv { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 900px; margin: 0 auto; }
 .priv > div { padding: 32px; }
+.ih { display: flex; align-items: center; gap: 12px; }
+.ih .i { width: 22px; height: 22px; color: var(--violet); }
+.bigicon { display: inline-flex; padding: 14px; border-radius: 10px; background: var(--glass); color: var(--violet); margin-bottom: 18px; }
+.bigicon .i { width: 28px; height: 28px; }
 .priv h3 { font-size: 24px; margin-bottom: 14px; }
 .priv ul { list-style: none; }
 .priv li { color: var(--soft); font-size: 14.5px; padding: 5px 0 5px 22px; position: relative; }
@@ -299,6 +305,7 @@ footer a:hover { color: var(--text); }
 }
 @media (max-width: 900px) { .chip { flex-basis: calc((100% - 2 * 12px) / 3); } }
 @media (max-width: 600px) {
+  header nav a.btn[href*="github.com"] { display: none; }
   .chip { flex-basis: calc((100% - 12px) / 2); }
   .wrap { padding: 0 16px; }
   header { top: 10px; padding: 0 10px; }
@@ -315,11 +322,12 @@ footer a:hover { color: var(--text); }
   <div class="bar">
     <a href="#" class="logo"><img src="mosaiclogo.png" alt=""><span>mosaic</span><small>by Aetherion7</small></a>
     <nav>
-      <a href="#features">Features</a>
-      <a href="#tour">Tour</a>
-      <a href="#privacy">Privacy</a>
-      <a href="https://github.com/Aetherion7/mosaic">GitHub</a>
-      <a class="btn btn-main" href="#download">Download</a>
+      <a href="#features"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Features</a>
+      <a href="#tour"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Tour</a>
+      <a href="#privacy"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Privacy</a>
+      <a class="btn" href="https://github.com/Aetherion7/mosaic"><svg class="i" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+      <a class="btn" href="#support"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>Support</a>
+      <a class="btn btn-main" href="#download"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Download</a>
     </nav>
   </div>
 </header>
@@ -331,8 +339,8 @@ footer a:hover { color: var(--text); }
       <h1 class="hero-anim">Your dashboard.<br><em>Truly yours.</em></h1>
       <p class="lead hero-anim">Tasks, notes, calendar, trackers and more — on boards you design. Everything stays on your device.</p>
       <div class="ctas hero-anim">
-        <a class="btn btn-main" href="#download">Download for free</a>
-        <a class="btn" href="https://github.com/Aetherion7/mosaic">View on GitHub</a>
+        <a class="btn btn-main" href="#download"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Download for free</a>
+        <a class="btn" href="https://github.com/Aetherion7/mosaic"><svg class="i" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>View on GitHub</a>
       </div>
       <div class="shot hero-anim">
         <img src="screenshots/board.png" alt="A mosaic board with task, calendar, water tracker, weather, note, clock and chart widgets arranged together" onclick="openLightbox(this)" tabindex="0" role="button" aria-label="Enlarge screenshot">
@@ -531,11 +539,12 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
     <div class="wrap">
       <div class="head">
         <div class="kicker reveal">Privacy</div>
+        <div class="bigicon reveal"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
         <h2 class="reveal">No tracking. Ever.</h2>
       </div>
       <div class="priv">
         <div class="glass hov reveal">
-          <h3>Always local</h3>
+          <h3 class="ih"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Always local</h3>
           <ul>
             <li>Boards, widgets, settings</li>
             <li>Your files and API key</li>
@@ -543,7 +552,7 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
           </ul>
         </div>
         <div class="glass hov ext reveal">
-          <h3>Only when used</h3>
+          <h3 class="ih"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20"/></svg>Only when used</h3>
           <ul>
             <li>Map &amp; weather — OpenStreetMap, Open-Meteo</li>
             <li>Quicklink icons — DuckDuckGo</li>
@@ -786,12 +795,16 @@ document.querySelectorAll('.shot img').forEach(function (img) {
     }
   }
   function spawn(x, y) {
-    // Elongated rectangles: one side 1 cell, the other 2–5, randomly
-    // horizontal or vertical; occasionally a larger 2×n block.
+    // Pool: mostly squares of mixed size, some elongated rectangles.
     for (var tries = 0; tries < 8; tries++) {
-      var long = 2 + (Math.random() * 4 | 0), short = Math.random() < .25 ? 2 : 1;
-      if (long <= short) long = short + 1;
-      var horiz = Math.random() < .5, w = horiz ? long : short, h = horiz ? short : long;
+      var w, h;
+      if (Math.random() < .7) {            // squares, small to large
+        w = h = [1, 1, 1, 2, 2, 2, 3, 3, 4, 5][Math.random() * 10 | 0];
+      } else {                             // elongated, horizontal or vertical
+        var long = 2 + (Math.random() * 4 | 0), short = Math.random() < .3 ? 2 : 1;
+        if (long <= short) long = short + 1;
+        var horiz = Math.random() < .5; w = horiz ? long : short; h = horiz ? short : long;
+      }
       var gx = Math.floor((x + (Math.random() - .5) * 160) / G - w / 2), gy = Math.floor((y + (Math.random() - .5) * 160) / G - h / 2);
       if (!free(gx, gy, w, h)) continue;
       var q = { gx: gx, gy: gy, w: w, h: h, t: 0, life: 1800 + Math.random() * 1800, l: 34 + Math.random() * 16 };
