@@ -245,14 +245,15 @@ header nav a:not(.btn) .i { width: 14px; height: 14px; opacity: .7; }
 /* ── Closing ──────────────────────────────────────────────────────────── */
 .closing { text-align: center; }
 .closing .glass { max-width: 900px; margin: 0 auto; padding: 80px 32px; }
-.closing .ctas { gap: 18px; margin-top: 44px; }
+.closing .ctas { gap: 12px; margin-top: 32px; }
 .scard {
-  width: 280px; padding: 30px 24px 26px; text-decoration: none; color: var(--text);
-  display: flex; flex-direction: column; align-items: center; gap: 6px; background: rgba(255,255,255,.06);
+  display: flex; align-items: center; gap: 14px; padding: 14px 20px; text-align: left;
+  text-decoration: none; color: var(--text); border-radius: 8px;
+  background: rgba(47,107,255,.14); box-shadow: inset 0 0 0 1px rgba(77,141,255,.25);
 }
-.scard .slogo { height: 40px; width: auto; margin-bottom: 12px; }
-.scard b { font-family: var(--title); font-weight: 400; font-size: 21px; }
-.scard span { font-size: 13px; color: var(--soft); }
+.scard .slogo { height: 24px; width: auto; flex-shrink: 0; }
+.scard b { display: block; font-weight: 600; font-size: 14px; }
+.scard span { display: block; font-size: 12px; color: var(--soft); }
 .badge { height: 22px; width: auto; }
 .closing .fine { margin-top: 44px; font-size: 13px; color: var(--dim); }
 .closing .fine a { color: var(--soft); }
@@ -578,17 +579,15 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
       <div class="glass reveal">
         <div class="kicker">Support</div>
         <h2>Free, and staying that way.</h2>
-        <p class="lead" style="margin:18px auto 0">mosaic is a student project, designed and built independently alongside my studies. As a student, I'm genuinely grateful for every donation and every star — each one helps keep the project free, maintained and growing.</p>
+        <p class="lead" style="margin:18px auto 0">mosaic is a student project. Every donation or star is genuinely appreciated.</p>
         <div class="ctas">
-          <a class="scard glass hov" href="https://ko-fi.com/mosaicboard">
+          <a class="scard hov" href="https://ko-fi.com/mosaicboard">
             <img src="badges/kofi.png" alt="Ko-fi" class="slogo">
-            <b>Buy me a coffee</b>
-            <span>A one-time or monthly donation on Ko-fi</span>
+            <div><b>Buy me a coffee</b><span>Donate via Ko-fi</span></div>
           </a>
-          <a class="scard glass hov" href="https://github.com/Aetherion7/mosaic">
+          <a class="scard hov" href="https://github.com/Aetherion7/mosaic">
             <img src="badges/github-star.webp" alt="" class="slogo">
-            <b>Star on GitHub</b>
-            <span>Free, takes a second, and helps others find mosaic</span>
+            <div><b>Star on GitHub</b><span>Free and takes a second</span></div>
           </a>
         </div>
         <p class="fine" id="license">Source-available under the <a href="https://github.com/Aetherion7/mosaic?tab=License-1-ov-file">PolyForm Noncommercial License</a> — free for personal use.</p>
@@ -817,8 +816,7 @@ document.querySelectorAll('.shot img').forEach(function (img) {
       if (Math.random() < .7) {            // squares, small to large
         w = h = [1, 1, 1, 2, 2, 2, 3, 3, 4, 5][Math.random() * 10 | 0];
       } else {                             // elongated, horizontal or vertical
-        var long = 2 + (Math.random() * 4 | 0), short = Math.random() < .3 ? 2 : 1;
-        if (long <= short) long = short + 1;
+        var short = 2 + (Math.random() * 2 | 0), long = short + 1 + (Math.random() * 3 | 0);
         var horiz = Math.random() < .5; w = horiz ? long : short; h = horiz ? short : long;
       }
       var gx = Math.floor((x + (Math.random() - .5) * 160) / G - w / 2), gy = Math.floor((y + (Math.random() - .5) * 160) / G - h / 2);
