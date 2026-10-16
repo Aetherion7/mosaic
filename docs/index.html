@@ -33,7 +33,7 @@
    flowing gradient field (.aura), so depth comes from light, not lines. */
 :root {
   --night:   #010208;
-  --glass:   rgba(255,255,255,.045);
+  --glass:   rgba(255,255,255,.05);
   --glass-2: rgba(255,255,255,.075);
   --edge:    rgba(255,255,255,.07);
   --text:    #e8eefc;
@@ -90,7 +90,7 @@ body::after {
 /* ── Primitives ───────────────────────────────────────────────────────── */
 .glass {
   background: var(--glass); border-radius: var(--r);
-  backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  backdrop-filter: blur(48px) saturate(1.2); -webkit-backdrop-filter: blur(48px) saturate(1.2);
   box-shadow: inset 0 1px 0 var(--edge);
 }
 .btn {
@@ -123,7 +123,7 @@ header .bar {
 .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 .logo img { width: 30px; height: 30px; border-radius: 50%; }
 .logo span { font-family: var(--title); font-size: 23px; }
-.logo small { font: 300 11.5px/1 var(--body); color: var(--dim); letter-spacing: .02em; margin-left: 2px; padding-top: 5px; }
+.logo small { font: 300 11.5px/1 var(--body); color: var(--dim); letter-spacing: .02em; margin-left: -4px; padding-top: 5px; }
 header nav { display: flex; align-items: center; gap: 26px; margin-left: auto; }
 header nav a:not(.btn) { font-size: 13.5px; font-weight: 500; color: var(--soft); text-decoration: none; transition: color .2s; }
 header nav a:not(.btn):hover { color: var(--text); }
@@ -157,6 +157,7 @@ header .btn { padding: 11px 20px; font-size: 13.5px; }
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
   text-align: center; padding: 18px 10px; border-radius: 8px;
   background: var(--glass); box-shadow: inset 0 1px 0 var(--edge); font-size: 14px; font-weight: 500;
+  backdrop-filter: blur(48px); -webkit-backdrop-filter: blur(48px);
   transition: background .3s var(--ease);
 }
 
@@ -558,6 +559,7 @@ curl -s https://api.github.com/repos/Aetherion7/mosaic/releases/latest | grep br
       <div class="glass reveal">
         <div class="kicker">Support</div>
         <h2>Free, and staying that way.</h2>
+        <p class="lead" style="margin:18px auto 0">mosaic is a student project, designed and built independently alongside my studies. As a student, I'm genuinely grateful for every donation and every star — each one helps keep the project free, maintained and growing.</p>
         <div class="ctas">
           <a class="btn" href="https://ko-fi.com/mosaicboard"><img src="badges/kofi.png" alt="Ko-fi" class="badge">Support</a>
           <a class="btn" href="https://github.com/Aetherion7/mosaic"><img src="badges/github-star.webp" alt="" class="badge">Star on GitHub</a>
@@ -763,7 +765,7 @@ document.querySelectorAll('.shot img').forEach(function (img) {
   var c = document.getElementById('tiles');
   if (!c || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   if (!window.matchMedia('(hover: hover)').matches) return;
-  var ctx = c.getContext('2d'), dpr = 1, W = 0, H = 0, G = 30, tiles = [], raf = null, lastSpawn = 0;
+  var ctx = c.getContext('2d'), dpr = 1, W = 0, H = 0, G = 22, tiles = [], raf = null, lastSpawn = 0;
   function size() {
     dpr = Math.min(2, window.devicePixelRatio || 1);
     W = c.width = innerWidth * dpr; H = c.height = innerHeight * dpr;
@@ -773,22 +775,26 @@ document.querySelectorAll('.shot img').forEach(function (img) {
   // Occupied grid cells: a tile only appears where all of its cells are
   // free, so tiles never overlap and keep the same gap (GAP) between them.
   var used = {}, GAP = 6;
-  function free(gx, gy, n) {
-    for (var i = 0; i < n; i++) for (var j = 0; j < n; j++) if (used[(gx + i) + ',' + (gy + j)]) return false;
+  function free(gx, gy, w, h) {
+    for (var i = 0; i < w; i++) for (var j = 0; j < h; j++) if (used[(gx + i) + ',' + (gy + j)]) return false;
     return true;
   }
   function mark(q, v) {
-    for (var i = 0; i < q.n; i++) for (var j = 0; j < q.n; j++) {
+    for (var i = 0; i < q.w; i++) for (var j = 0; j < q.h; j++) {
       var k = (q.gx + i) + ',' + (q.gy + j);
       if (v) used[k] = 1; else delete used[k];
     }
   }
   function spawn(x, y) {
-    for (var tries = 0; tries < 6; tries++) {
-      var n = [1, 1, 1, 2, 2, 3][Math.random() * 6 | 0];
-      var gx = Math.floor((x + (Math.random() - .5) * 220) / G), gy = Math.floor((y + (Math.random() - .5) * 220) / G);
-      if (!free(gx, gy, n)) continue;
-      var q = { gx: gx, gy: gy, n: n, t: 0, life: 1800 + Math.random() * 1800, l: 34 + Math.random() * 16 };
+    // Elongated rectangles: one side 1 cell, the other 2–5, randomly
+    // horizontal or vertical; occasionally a larger 2×n block.
+    for (var tries = 0; tries < 8; tries++) {
+      var long = 2 + (Math.random() * 4 | 0), short = Math.random() < .25 ? 2 : 1;
+      if (long <= short) long = short + 1;
+      var horiz = Math.random() < .5, w = horiz ? long : short, h = horiz ? short : long;
+      var gx = Math.floor((x + (Math.random() - .5) * 160) / G - w / 2), gy = Math.floor((y + (Math.random() - .5) * 160) / G - h / 2);
+      if (!free(gx, gy, w, h)) continue;
+      var q = { gx: gx, gy: gy, w: w, h: h, t: 0, life: 1800 + Math.random() * 1800, l: 34 + Math.random() * 16 };
       mark(q, true); tiles.push(q);
       break;
     }
@@ -796,10 +802,10 @@ document.querySelectorAll('.shot img').forEach(function (img) {
   }
   addEventListener('pointermove', function (e) {
     var now = performance.now();
-    if (now - lastSpawn < 70) return;
+    if (now - lastSpawn < 18) return;
     // Only on the open background, never under the glass fields, images or buttons.
-    if (e.target.closest && e.target.closest('.glass, .hov, img, .btn, header, .tabs')) return;
-    lastSpawn = now; spawn(e.clientX, e.clientY);
+    if (e.target.closest && e.target.closest('header')) return;
+    lastSpawn = now; spawn(e.clientX, e.clientY); spawn(e.clientX, e.clientY);
   }, { passive: true });
   var prev = 0;
   function draw(t) {
@@ -809,9 +815,9 @@ document.querySelectorAll('.shot img').forEach(function (img) {
     tiles.forEach(function (q) {
       var p = q.t / q.life, a = p < .25 ? p / .25 : 1 - (p - .25) / .75;
       a = a * a * .14;
-      var x = (q.gx * G + GAP / 2) * dpr, y = (q.gy * G + GAP / 2) * dpr, sz = (q.n * G - GAP) * dpr;
+      var x = (q.gx * G + GAP / 2) * dpr, y = (q.gy * G + GAP / 2) * dpr, ww = (q.w * G - GAP) * dpr, hh = (q.h * G - GAP) * dpr;
       ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(x, y, sz, sz, 5 * dpr); else ctx.rect(x, y, sz, sz);
+      if (ctx.roundRect) ctx.roundRect(x, y, ww, hh, 5 * dpr); else ctx.rect(x, y, ww, hh);
       ctx.fillStyle = 'hsla(218,80%,' + q.l + '%,' + (a * .45) + ')';
       ctx.fill();
       ctx.strokeStyle = 'hsla(215,85%,62%,' + a + ')';
