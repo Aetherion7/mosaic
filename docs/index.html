@@ -1655,10 +1655,10 @@ document.querySelectorAll('.shot img').forEach(function (img) {
 
     // ── QuicklinksWidget.tsx (favicons via DuckDuckGo, like the app) ──────
     'Quicklinks': function () {
-      var links = [['GitHub', 'github.com'], ['YouTube', 'youtube.com'], ['Wikipedia', 'wikipedia.org'], ['Gmail', 'mail.google.com'], ['Spotify', 'spotify.com'], ['Notion', 'notion.so'], ['Reddit', 'reddit.com'], ['DeepL', 'deepl.com']];
+      var links = [['GitHub', 'github.com', 'https://github.com/Aetherion7'], ['mosaic', 'aetherion7.github.io', 'https://aetherion7.github.io/mosaic/'], ['Reddit', 'reddit.com', 'https://www.reddit.com/user/Aetherion-of-Treva/'], ['DuckDuckGo', 'duckduckgo.com', 'https://duckduckgo.com/']];
       return { w: 340, h: 220, title: 'Quicklinks', body:
         '<div style="display:flex;flex-direction:column;height:100%;gap:6px"><div style="flex:1;min-height:0;overflow-y:auto"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:5px">' + links.map(function (l) {
-          return '<a href="https://' + l[1] + '" target="_blank" rel="noopener noreferrer" class="ql" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 3px 6px;border-radius:8px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);transition:border-color .12s;text-decoration:none">' +
+          return '<a href="' + l[2] + '" target="_blank" rel="noopener noreferrer" class="ql" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 3px 6px;border-radius:8px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);transition:border-color .12s;text-decoration:none">' +
             '<span style="width:26px;height:26px;border-radius:7px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--surface3);border:1px solid var(--border)"><img src="https://icons.duckduckgo.com/ip3/' + l[1] + '.ico" alt="" width="18" height="18" style="display:block" onerror="this.outerHTML=\'<span style=&quot;font-size:12px;font-weight:800;color:var(--accent)&quot;>' + l[0][0] + '</span>\'"></span>' +
             '<span style="font-size:8.5px;font-weight:600;color:var(--text2);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + l[0] + '</span></a>';
         }).join('') + '</div></div></div>',
