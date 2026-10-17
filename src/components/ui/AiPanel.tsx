@@ -101,7 +101,7 @@ export default function AiPanel() {
   const frameStyle: React.CSSProperties = {
     position: 'fixed', top: 60, right: 16, zIndex: 900,
     width: 360,
-    borderRadius: 20, padding: 3,
+    borderRadius: 10, padding: 3,
     boxShadow: '0 24px 64px rgba(0,0,0,.55)',
     height: 'min(740px, calc(100vh - 80px))', display: 'flex',
   }
@@ -146,7 +146,7 @@ export default function AiPanel() {
           {!hasKey ? (
             /* ── Einrichtung nötig ── */
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center', padding: 16 }}>
-              <div style={{ width: 46, height: 46, borderRadius: 14, background: 'var(--surface2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
+              <div style={{ width: 46, height: 46, borderRadius: 9, background: 'var(--surface2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
                 <IconSparkle size={22} />
               </div>
               <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.6, maxWidth: 260 }}>
@@ -181,7 +181,7 @@ export default function AiPanel() {
                   if (group.kind === 'chips') return (
                     <div key={group.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignSelf: 'flex-start', maxWidth: '92%' }}>
                       {group.items.map(chip => (
-                        <span key={chip.id} style={{ display: 'inline-flex', alignItems: 'center', fontSize: 10, fontWeight: 600, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)', borderRadius: 999, padding: '2px 9px', whiteSpace: 'nowrap' }}>
+                        <span key={chip.id} style={{ display: 'inline-flex', alignItems: 'center', fontSize: 10, fontWeight: 600, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)', borderRadius: 8, padding: '2px 9px', whiteSpace: 'nowrap' }}>
                           {chip.text === '🔍' ? <IconSearchGlass size={10} /> : chip.text}
                         </span>
                       ))}
@@ -191,7 +191,7 @@ export default function AiPanel() {
                   if (item.kind === 'error') {
                     const [first, ...rest] = (item.text === 'NO_KEY' ? t('No API key configured.') : item.text === 'NO_PROVIDER' ? t('No provider selected.') : item.text).split('\n')
                     return (
-                      <div key={item.id} style={{ alignSelf: 'stretch', fontSize: 11, color: '#e53e3e', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.25)', borderRadius: 10, padding: '7px 10px', lineHeight: 1.5, wordBreak: 'break-word' }}>
+                      <div key={item.id} style={{ alignSelf: 'stretch', fontSize: 11, color: '#e53e3e', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.25)', borderRadius: 7, padding: '7px 10px', lineHeight: 1.5, wordBreak: 'break-word' }}>
                         {first}
                         {rest.length > 0 && <div style={{ fontSize: 9.5, opacity: 0.7, marginTop: 3 }}>{rest.join(' ')}</div>}
                       </div>
@@ -238,7 +238,7 @@ export default function AiPanel() {
                   rows={1}
                   style={{
                     flex: 1, resize: 'none', fontSize: 12, lineHeight: 1.5,
-                    background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10,
+                    background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 7,
                     color: 'var(--text1)', padding: '8px 10px', outline: 'none', fontFamily: 'inherit',
                     maxHeight: 120, overflowY: 'auto',
                   }}
@@ -249,7 +249,7 @@ export default function AiPanel() {
                   disabled={!running && !input.trim()}
                   title={running ? t('Stop') : t('Send')} aria-label={running ? t('Stop') : t('Send')}
                   style={{
-                    width: 34, height: 34, borderRadius: 10, border: 'none', flexShrink: 0,
+                    width: 34, height: 34, borderRadius: 7, border: 'none', flexShrink: 0,
                     background: running ? 'var(--accent)' : (!input.trim() ? 'var(--surface2)' : 'var(--accent)'),
                     color: running ? 'var(--on-accent, white)' : (!input.trim() ? 'var(--text3)' : 'var(--on-accent, white)'),
                     cursor: running || input.trim() ? 'pointer' : 'default',

@@ -55,7 +55,7 @@ export default function ThemePanel() {
     background: panelBg,
     backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
     border: '1px solid var(--border)',
-    borderRadius: 20, padding: 16,
+    borderRadius: 10, padding: 16,
     boxShadow: '0 24px 64px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,0.04)',
     maxHeight: 'calc(100vh - 80px)', overflowY: 'auto',
   }
@@ -156,7 +156,7 @@ export default function ThemePanel() {
                 <button
                   onClick={() => fileRef.current?.click()}
                   style={{
-                    padding: '9px 12px', fontSize: 11, borderRadius: 10,
+                    padding: '9px 12px', fontSize: 11, borderRadius: 7,
                     border: '1.5px dashed var(--text3)',
                     background: 'var(--surface2)', color: bg.imageName ? 'var(--text1)' : 'var(--text3)',
                     cursor: 'pointer', transition: 'border-color 0.12s, color 0.12s',
@@ -240,7 +240,7 @@ function BoardPatternSection() {
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
               padding: '8px 6px 10px',
-              borderRadius: 10, border: `2px solid ${bg.pattern === p.id ? 'var(--accent)' : 'var(--border)'}`,
+              borderRadius: 7, border: `2px solid ${bg.pattern === p.id ? 'var(--accent)' : 'var(--border)'}`,
               background: bg.pattern === p.id ? 'color-mix(in srgb, var(--accent) 8%, var(--surface2))' : 'var(--surface2)',
               cursor: 'pointer', transition: 'all 0.14s',
             }}
@@ -304,7 +304,7 @@ function ThemeGroup({ label, icon, themes, themeId, hoveredTheme, setHoveredThem
               onMouseEnter={() => setHoveredTheme(t.id)}
               onMouseLeave={() => setHoveredTheme(null)}
               style={{
-                padding: '10px 8px 8px', borderRadius: 12,
+                padding: '10px 8px 8px', borderRadius: 8,
                 border: `2px solid ${isActive ? accent : isHov ? accent + '66' : 'rgba(128,128,128,0.2)'}`,
                 background: bgColor,
                 cursor: 'pointer',
@@ -420,7 +420,7 @@ function IconPen() {
 
 const tabBtn = (active: boolean): React.CSSProperties => ({
   display: 'flex', alignItems: 'center', gap: 6,
-  padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 50,
+  padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 8,
   border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
   background: active ? 'var(--accent)' : 'var(--surface2)',
   color: active ? 'var(--on-accent, white)' : 'var(--text2)',

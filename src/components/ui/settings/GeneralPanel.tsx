@@ -221,7 +221,7 @@ function VersionSection() {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-      padding: '14px 16px', borderRadius: 12,
+      padding: '14px 16px', borderRadius: 8,
       border: '1px solid var(--border)', background: 'var(--surface2)',
     }}>
       <div style={{ minWidth: 0 }}>
@@ -246,7 +246,7 @@ function VersionSection() {
         onClick={ready ? () => window.mosaicDesktop?.installUpdate() : check}
         disabled={checking}
         style={{
-          flexShrink: 0, fontSize: 12.5, fontWeight: 700, padding: '9px 16px', borderRadius: 999, border: 'none', whiteSpace: 'nowrap',
+          flexShrink: 0, fontSize: 12.5, fontWeight: 700, padding: '9px 16px', borderRadius: 8, border: 'none', whiteSpace: 'nowrap',
           background: ready ? 'var(--accent)' : 'var(--surface3)',
           color: ready ? 'white' : 'var(--text2)',
           cursor: checking ? 'default' : 'pointer',
@@ -305,7 +305,7 @@ function ThemeModeSelect({ value, onChange }: { value: ThemeMode; onChange: (m: 
           minWidth: 130,
           background: 'var(--popover-bg)',
           backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid var(--border)', borderRadius: 10,
+          border: '1px solid var(--border)', borderRadius: 7,
           boxShadow: '0 8px 24px rgba(0,0,0,0.35)', overflow: 'hidden',
         }}>
           {THEME_MODES.map(mode => {
@@ -389,7 +389,7 @@ function LanguageSelect({ value, onChange }: { value: Lang; onChange: (l: Lang) 
           // (Crystal-Glass-Theme) deckend & lesbar statt komplett durchsichtig
           background: 'var(--popover-bg)',
           backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid var(--border)', borderRadius: 10,
+          border: '1px solid var(--border)', borderRadius: 7,
           boxShadow: '0 8px 24px rgba(0,0,0,0.35)', overflow: 'hidden',
         }}>
           {LANGUAGES.map(lng => {

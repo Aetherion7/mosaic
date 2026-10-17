@@ -188,7 +188,7 @@ export default function TopBar() {
     backdropFilter: 'blur(16px)',
     WebkitBackdropFilter: 'blur(16px)',
     border: '1px solid var(--border)',
-    borderRadius: 999,
+    borderRadius: 8,
     padding: '4px 8px',
     boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
     width: 'fit-content',
@@ -297,7 +297,7 @@ export default function TopBar() {
           ...(isIsland ? {
             background: 'var(--popover-bg)',
             backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid var(--border)', borderRadius: 999,
+            border: '1px solid var(--border)', borderRadius: 8,
             padding: '4px 8px', boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
             transition: 'padding 0.3s ease',
           } : {}),
@@ -339,7 +339,7 @@ export default function TopBar() {
             </div>
           </div>
 
-          <div id="tour-mode-toggle" style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--surface)', borderRadius: 999, padding: 3, border: '1px solid var(--border)' }}>
+          <div id="tour-mode-toggle" style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--surface)', borderRadius: 8, padding: 3, border: '1px solid var(--border)' }}>
             <SlidingTabs
               options={[
                 { value: 'edit', icon: <IconPencil />, title: t('Edit mode') },
@@ -473,7 +473,7 @@ function IconCircleBtn({ children, onClick, active, accent, title, id }: {
       aria-label={title}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: 36, height: 36, borderRadius: 50,
+        width: 36, height: 36, borderRadius: 8,
         border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
         background: active ? (accent ? 'var(--accent)' : 'var(--surface2)') : accent ? 'var(--accent)' : 'var(--surface)',
         color: accent ? 'var(--on-accent, white)' : active ? 'var(--accent)' : 'var(--text2)',

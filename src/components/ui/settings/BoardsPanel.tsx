@@ -62,7 +62,7 @@ export default function BoardsPanel() {
           {t('The trash is empty. Deleted boards stay here for 30 days and can be restored (section at the bottom of the board overview).')}
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 7, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
           <div style={{
             width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
             background: 'color-mix(in srgb, var(--danger) 14%, var(--surface))',
@@ -82,18 +82,18 @@ export default function BoardsPanel() {
           {emptyConfirm ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
               <button onClick={() => setEmptyConfirm(false)}
-                style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
+                style={{ fontSize: 11, padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
                 {t('Cancel')}
               </button>
               <button onClick={() => { emptyTrash(); setEmptyConfirm(false) }}
-                style={{ fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 999, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer' }}>
+                style={{ fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 8, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer' }}>
                 {t('Yes, empty it')}
               </button>
             </div>
           ) : (
             <button onClick={() => setEmptyConfirm(true)} title={t('Empty trash')}
               style={{
-                flexShrink: 0, padding: '4px 12px', borderRadius: 999,
+                flexShrink: 0, padding: '4px 12px', borderRadius: 8,
                 border: '1px solid color-mix(in srgb, var(--danger) 40%, transparent)',
                 background: 'none', color: 'var(--danger)', cursor: 'pointer',
                 fontSize: 11, fontWeight: 600,
@@ -173,7 +173,7 @@ function ThemeSelect({ options, value, onChange }: {
           // Deckend auch bei transparentem --surface (Crystal-Glass-Theme)
           background: 'var(--popover-bg)',
           backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid var(--border)', borderRadius: 10,
+          border: '1px solid var(--border)', borderRadius: 7,
           boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
         }}>
           {options.map(o => {

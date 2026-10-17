@@ -141,7 +141,7 @@ export default function ChatHistoryModal({ onClose }: { onClose: () => void }) {
             width: 'min(920px, 94vw)', height: 'min(640px, 88vh)',
             background: 'var(--popover-bg)',
             backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
-            border: '1px solid var(--border)', borderRadius: 18,
+            border: '1px solid var(--border)', borderRadius: 10,
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
             boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
           }}
@@ -223,7 +223,7 @@ export default function ChatHistoryModal({ onClose }: { onClose: () => void }) {
                     const isError = item.kind === 'error'
                     if (isError) {
                       return (
-                        <div key={item.id} style={{ fontSize: 11, color: '#e53e3e', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.25)', borderRadius: 10, padding: '7px 10px', lineHeight: 1.5, wordBreak: 'break-word', alignSelf: 'flex-start', maxWidth: '85%' }}>
+                        <div key={item.id} style={{ fontSize: 11, color: '#e53e3e', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.25)', borderRadius: 7, padding: '7px 10px', lineHeight: 1.5, wordBreak: 'break-word', alignSelf: 'flex-start', maxWidth: '85%' }}>
                           {item.text}
                         </div>
                       )

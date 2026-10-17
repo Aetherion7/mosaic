@@ -23,6 +23,31 @@ import { useT } from '@/hooks/useT'
 import type { Board, WidgetType } from '@/types'
 
 // Waehlbare Ordnerfarben (Kachel-Rahmen + Tint der Ordner-Kacheln)
+// Farbpaletten der Board-Übersicht (Hell/Dunkel) — bläulich, abgeleitet aus der
+// Website (docs/index.html): Nachtblau-Grund, Glas-Flächen, Akzent #2f6bff.
+// Gelten nur für die Übersicht; Boards behalten ihre eigenen Themes.
+const HOME_UI: Record<'dark' | 'light', Record<string, string>> = {
+  dark: {
+    '--bg': '#03060f', '--surface': '#0a1224', '--surface2': '#0f1a33', '--surface3': '#15223f',
+    '--border': '#1c2a4a', '--accent': '#3d7bff', '--accent2': '#6ea8ff',
+    '--text1': '#e8eefc', '--text2': '#9fb0cf', '--text3': '#66789a',
+    '--danger': '#f87171', '--success': '#4ade80', '--amber': '#fbbf24',
+    '--shadow-color': '#000000', '--popover-bg': 'rgba(10, 18, 36, 0.94)', '--on-accent': '#ffffff',
+  },
+  light: {
+    '--bg': '#eef3fc', '--surface': '#ffffff', '--surface2': '#f4f7fd', '--surface3': '#e7eefb',
+    '--border': '#d6e0f2', '--accent': '#2f6bff', '--accent2': '#0b8cff',
+    '--text1': '#0e1a33', '--text2': '#4a5b7d', '--text3': '#7d8cab',
+    '--danger': '#ef4444', '--success': '#16a34a', '--amber': '#d97706',
+    '--shadow-color': 'rgba(30, 60, 140, 0.18)', '--popover-bg': 'var(--surface)', '--on-accent': '#ffffff',
+  },
+}
+
+// Kachelmaße der Board-Übersicht — kleiner als früher (280 px), damit mehr
+// Boards nebeneinander passen; Haupt- und Ordnerraster nutzen dieselben Werte.
+const CARD_MIN = 180
+const CARD_GAP = 14
+
 const FOLDER_COLORS = ['#7c6fe8', '#5b8fff', '#4ecdc4', '#5fd68a', '#f5c04b', '#f58b4b', '#ef5b6e', '#e46bd8', '#8a93a8']
 
 // Gleiches Muster wie TopBar.tsx's kbdBadgeStyle — eigene Konstante hier, da
@@ -149,7 +174,7 @@ function DragPreviewCard({ board, rotate }: { board: Board | undefined; rotate: 
   if (!board) return null
   return (
     <motion.div style={{
-      width: 280, borderRadius: 18, boxSizing: 'border-box',
+      width: 200, borderRadius: 8, boxSizing: 'border-box',
       border: '2px solid var(--accent)',
       // Nur noch der weiche Tiefenschatten hier — der Akzentring läuft als
       // echter Border statt als zweiter box-shadow-Layer. Zwei box-shadows auf
@@ -158,8 +183,8 @@ function DragPreviewCard({ board, rotate }: { board: Board | undefined; rotate: 
       boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
       cursor: 'grabbing', scale: 1.04, rotate,
     }}>
-      <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ height: 140, position: 'relative', ...bgPreview(board) }}>
+      <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ height: 96, position: 'relative', ...bgPreview(board) }}>
           <BoardMiniMap board={board} />
           {board.pinned && (
             <div style={{
@@ -173,8 +198,8 @@ function DragPreviewCard({ board, rotate }: { board: Board | undefined; rotate: 
             </div>
           )}
         </div>
-        <div style={{ padding: '12px 16px', background: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ padding: '9px 12px', background: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {board.name}
           </span>
           <span style={{ fontSize: 11, color: 'var(--text3)', flexShrink: 0 }} suppressHydrationWarning>
@@ -215,16 +240,9 @@ function FolderSection({
   const dur = animations ? 0.35 : 0
   // Exakte Rasterbreite für N Karten (Karte 280 + Lücke 20 dazwischen) — dient
   // sowohl der Kachelbreite als auch als maxWidth des Rasters selbst (siehe unten).
-  const gridWidth = list.length * 280 + Math.max(0, list.length - 1) * 20
-  // Kachel-/Leistenbreite spiegelt die Board-Anzahl wider; wächst/schrumpft
-  // animiert. Puffer 40px statt exakt padding+border (32+3=35): schon 1px zu
-  // wenig ließ auf manchen Geräten/Zoomstufen (Subpixel-Rundung) die letzte
-  // Spalte nicht mehr passen — das Raster brach dann fälschlich um, obwohl
-  // genug Platz da war. Der zusätzliche Puffer fängt solche Rundungsfehler ab.
-  const tileW = Math.max(320, gridWidth + 40)
 
   return (
-    <div style={{ padding: '14px 36px 0', position: 'relative', zIndex: menuOpen ? 60 : undefined }}>
+    <div style={{ position: 'relative', zIndex: menuOpen ? 60 : undefined }}>
       {/* Breite wird NIE animiert (kein `transition: width`, auch nicht via
           Framer Motion): Egal ob CSS-Transition oder Framer-Motion-`animate`,
           beide wenden den neuen Wert erst einen Frame NACH dem Commit an, in
@@ -241,12 +259,12 @@ function FolderSection({
       <div
         ref={setNodeRef}
         style={{
-          width: tileW,
+          width: '100%',
           paddingTop: collapsed ? 7 : 12,
           paddingBottom: collapsed ? 7 : 18,
           // Radius bleibt konstant — bei der flachen Leiste klemmt CSS ihn
           // automatisch auf die halbe Höhe (= Pillenform), ohne Ecken-Springen
-          borderRadius: 18,
+          borderRadius: 8,
           maxWidth: '100%', boxSizing: 'border-box',
           // overflow bleibt sichtbar, damit das ⋯-Menü auch aus der
           // zugeklappten Leiste herausragen kann — das Höhen-Clipping
@@ -301,7 +319,7 @@ function FolderSection({
                 background: 'var(--popover-bg)',
                 backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
                 border: '1px solid var(--border)',
-                borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
+                borderRadius: 8, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
               }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.07em', textTransform: 'uppercase', padding: '0 12px 7px' }}>
                   {t('Folder color')}
@@ -368,14 +386,14 @@ function FolderSection({
             >
               {list.length === 0 ? (
                 <div style={{
-                  marginTop: 14, padding: '20px 8px', textAlign: 'center', borderRadius: 12,
+                  marginTop: 14, padding: '20px 8px', textAlign: 'center', borderRadius: 6,
                   border: `1.5px dashed color-mix(in srgb, ${color} 35%, var(--border))`,
                   color: 'var(--text3)', fontSize: 12,
                 }}>
                   {t('This folder is empty — drag a board here.')}
                 </div>
               ) : (
-                <div style={{ paddingTop: 14, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 280px)', gap: 20, maxWidth: gridWidth }}>
+                <div style={{ paddingTop: 14, display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_MIN}px, 1fr))`, gap: CARD_GAP }}>
                   {list.map(renderBoardCard)}
                 </div>
               )}
@@ -384,6 +402,79 @@ function FolderSection({
         </AnimatePresence>
       </div>
     </div>
+  )
+}
+
+// Breite Leiste „Zuletzt geöffnet" ganz oben auf der Übersicht: links die
+// Board-Vorschau, daneben Name und Öffnen-Button, rechts Kennzahlen des Boards.
+function LastBoardBar({ board, animations, onOpen }: { board: Board; animations: boolean; onOpen: () => void }) {
+  const t = useT()
+  const widgets = Object.values(board.widgets)
+  const types = [...new Set(widgets.map(w => w.type))]
+  const theme = getTheme(board.themeId)
+  const created = board.createdAt ? new Date(board.createdAt).toLocaleDateString() : '—'
+  const facts: { label: string; value: React.ReactNode }[] = [
+    { label: t('Widgets'), value: widgets.length },
+    { label: t('Theme'),   value: theme.name },
+    { label: t('Layout'),  value: board.layoutMode === 'infinite' ? t('Infinite canvas') : t('Grid') },
+    { label: t('Folder'),  value: board.folder ?? '—' },
+    { label: t('Edited'),  value: <span suppressHydrationWarning>{timeAgo(board.lastEdited, t)}</span> },
+    { label: t('Created'), value: <span suppressHydrationWarning>{created}</span> },
+  ]
+  return (
+    <motion.div
+      initial={animations ? { opacity: 0, y: 10 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: animations ? 0.22 : 0 }}
+      style={{ padding: '18px 36px 0' }}
+    >
+      <div style={{
+        display: 'flex', alignItems: 'stretch', gap: 18, flexWrap: 'wrap',
+        padding: 12, borderRadius: 8,
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
+      }}>
+        <Link href={`/board/${board.id}`} style={{ flexShrink: 0, width: 200, height: 112, borderRadius: 6, overflow: 'hidden', position: 'relative', display: 'block', ...bgPreview(board) }}>
+          <BoardMiniMap board={board} />
+        </Link>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, minWidth: 160, flex: '1 1 200px' }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+            {t('Last opened')}
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {board.name}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <button onClick={onOpen} style={{
+              display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 6, border: 'none',
+              background: 'var(--accent)', color: 'var(--on-accent, white)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            }}>
+              {t('Continue')}
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {types.slice(0, 8).map(type => (
+                <span key={type} title={t(TYPE_LABELS[type] ?? type)} style={{
+                  width: 24, height: 24, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text2)',
+                }}>{TYPE_ICONS[type]}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(3, minmax(90px, auto))', gap: 6, alignContent: 'center',
+          flex: '0 1 auto', marginLeft: 'auto',
+        }}>
+          {facts.map(f => (
+            <div key={f.label} style={{ padding: '6px 10px', borderRadius: 5, background: 'var(--surface2)', border: '1px solid var(--border)', minWidth: 0 }}>
+              <div style={{ fontSize: 8, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{f.label}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text1)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>{f.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
   )
 }
 
@@ -456,7 +547,7 @@ function BoardMenuButton({
             visibility: ready ? 'visible' : 'hidden',
             minWidth: 190, overflow: 'hidden',
             background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
+            borderRadius: 8, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
           }}
         >
           {items.map((item, i) => (
@@ -502,6 +593,7 @@ export default function HomePage() {
   const router = useRouter()
   const boards = useBoardStore(useShallow(s => Object.values(s.boards)))
   const trash  = useBoardStore(s => s.trash)
+  const lastBoardId = useBoardStore(s => s.currentBoardId)
   const createBoard      = useBoardStore(s => s.createBoard)
   const deleteBoard      = useBoardStore(s => s.deleteBoard)
   const duplicateBoard   = useBoardStore(s => s.duplicateBoard)
@@ -668,11 +760,11 @@ export default function HomePage() {
     ? (systemPrefersDark ? 'dark' : 'light')
     : homeThemeMode
   useEffect(() => {
-    // Setzt die CSS-Variablen der Seite (Deep Space bzw. Light-Theme);
-    // beim Öffnen eines Boards übernimmt dessen eigenes Theme wieder.
-    const theme = getTheme(uiMode === 'light' ? 'light' : 'dark')
-    const root  = document.documentElement
-    Object.entries(theme.cssVars).forEach(([k, v]) => root.style.setProperty(k, v))
+    // Setzt die CSS-Variablen der Übersicht — eigene blaue Paletten passend
+    // zur Website (HOME_UI), nicht die Board-Themes; beim Öffnen eines Boards
+    // übernimmt dessen eigenes Theme wieder.
+    const root = document.documentElement
+    Object.entries(HOME_UI[uiMode]).forEach(([k, v]) => root.style.setProperty(k, v))
   }, [uiMode])
 
   // Speicher-Statistik — zeigt wie Einstellungen → Daten (DatenPanel.tsx)
@@ -842,6 +934,7 @@ export default function HomePage() {
   const showFolders = !q && folderNames.length > 0
   const ungrouped   = showFolders ? sorted.filter(b => !b.folder) : sorted
   const inFolder    = (f: string) => sorted.filter(b => b.folder === f)
+  const lastBoard   = boards.find(b => b.id === lastBoardId) ?? null
 
   const widgetCount = boards.reduce((n, b) => n + Object.keys(b.widgets).length, 0)
   // Häufigkeit je Widget-Typ über alle Boards hinweg — fürs Hover-Popover am
@@ -907,22 +1000,22 @@ export default function HomePage() {
                   sichtbar z. B. in Ordner-Kacheln). Die Ecken-Abrundung fürs Vorschaubild
                   übernimmt der innere Container mit eigenem overflow:hidden. */}
               <motion.div
-                whileHover={{ y: -4, scale: 1.02 }}
+                whileHover={{ y: -3, scale: 1.02 }}
                 transition={{ duration: 0.15 }}
                 style={{
-                  borderRadius: 18,
+                  borderRadius: 8,
                   boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
                   cursor: 'pointer',
                 }}
               >
-                <div style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
                   {/* Vorschau: echte Mini-Map auf dem echten Board-Hintergrund */}
-                  <div style={{ height: 140, position: 'relative', ...bgPreview(board) }}>
+                  <div style={{ height: 96, position: 'relative', ...bgPreview(board) }}>
                     <BoardMiniMap board={board} />
                     {board.pinned && (
                       <div style={{
                         position: 'absolute', top: 10, left: 10,
-                        width: 22, height: 22, borderRadius: 7,
+                        width: 22, height: 22, borderRadius: 5,
                         background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
                         border: '1px solid rgba(255,255,255,0.15)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -943,8 +1036,8 @@ export default function HomePage() {
                         onKeyDown={e => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingId(null) }}
                         onClick={e => e.preventDefault()}
                         style={{
-                          flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text1)',
-                          background: 'var(--surface2)', borderRadius: 6, padding: '2px 6px',
+                          flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--text1)',
+                          background: 'var(--surface2)', borderRadius: 4, padding: '2px 6px',
                         }}
                       />
                     ) : (
@@ -955,7 +1048,7 @@ export default function HomePage() {
                         {board.name}
                       </span>
                     )}
-                    <span style={{ fontSize: 11, color: 'var(--text3)', flexShrink: 0 }} suppressHydrationWarning>
+                    <span style={{ fontSize: 10, color: 'var(--text3)', flexShrink: 0 }} suppressHydrationWarning>
                       {timeAgo(board.lastEdited, t)}
                     </span>
                   </div>
@@ -994,7 +1087,7 @@ export default function HomePage() {
       <div style={{ display: 'flex', alignItems: 'center', padding: '20px 36px 0' }}>
         <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mosaiclogo.png" alt="mosaic" width={32} height={32} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <img src="/mosaiclogo-blue.png" alt="mosaic" width={32} height={32} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         </div>
         <span style={{ fontSize: 28, fontWeight: 400, color: 'var(--text1)', marginLeft: 10, fontFamily: 'Guavine, sans-serif', lineHeight: 1 }}>mosaic</span>
 
@@ -1004,7 +1097,7 @@ export default function HomePage() {
             title={`${t('Settings')} [${homeShortcuts.settings}]`}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: 34, height: 34, borderRadius: '50%',
+              width: 34, height: 34, borderRadius: 8,
               border: `1px solid ${settingsOpen ? 'var(--accent)' : 'var(--border)'}`,
               background: settingsOpen ? 'color-mix(in srgb, var(--accent) 12%, var(--surface))' : 'var(--surface)',
               color: settingsOpen ? 'var(--accent)' : 'var(--text2)',
@@ -1036,7 +1129,7 @@ export default function HomePage() {
                 background: 'var(--popover-bg)',
                 backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
                 border: '1px solid var(--border)',
-                borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
+                borderRadius: 8, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
               }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.07em', textTransform: 'uppercase', padding: '0 12px 6px' }}>
                   {t('All boards')}
@@ -1069,7 +1162,7 @@ export default function HomePage() {
                 background: 'var(--popover-bg)',
                 backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
                 border: '1px solid var(--border)',
-                borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
+                borderRadius: 8, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
               }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.07em', textTransform: 'uppercase', padding: '0 12px 6px' }}>
                   {t('Widget types')}
@@ -1102,7 +1195,7 @@ export default function HomePage() {
                   background: 'var(--popover-bg)',
                   backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
                   border: '1px solid var(--border)',
-                  borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
+                  borderRadius: 8, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
                 }}>
                   <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.07em', textTransform: 'uppercase', padding: '0 12px 6px' }}>
                     {t('Largest boards')}
@@ -1143,7 +1236,7 @@ export default function HomePage() {
           {/* Suche */}
           <div id="tour-search-input" style={{
             display: 'flex', alignItems: 'center', gap: 7, width: 220,
-            padding: '6px 12px', borderRadius: 20,
+            padding: '6px 12px', borderRadius: 10,
             background: 'var(--surface)', border: '1px solid var(--border)',
           }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -1173,7 +1266,7 @@ export default function HomePage() {
               title={t('Sort')}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 13px', borderRadius: 20, cursor: 'pointer',
+                padding: '6px 13px', borderRadius: 10, cursor: 'pointer',
                 border: `1px solid ${sortOpen ? 'var(--accent)' : 'var(--border)'}`,
                 background: sortOpen ? 'color-mix(in srgb, var(--accent) 10%, var(--surface))' : 'var(--surface)',
                 color: sortOpen ? 'var(--accent)' : 'var(--text2)',
@@ -1197,7 +1290,7 @@ export default function HomePage() {
                 background: 'var(--popover-bg)',
                 backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
                 border: '1px solid var(--border)',
-                borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
+                borderRadius: 8, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
               }}>
                 {SORT_OPTIONS.map((o, i) => {
                   const active = sortBy === o.id
@@ -1268,7 +1361,7 @@ export default function HomePage() {
                     background: 'var(--popover-bg)',
                     backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
                     border: '1px solid var(--border)',
-                    borderRadius: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+                    borderRadius: 10, boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
                     display: 'flex', flexDirection: 'column', gap: 14,
                   }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)' }}>{t('New folder')}</div>
@@ -1280,18 +1373,18 @@ export default function HomePage() {
                     placeholder={t('Name…')}
                     maxLength={30}
                     style={{
-                      fontSize: 14, padding: '10px 13px', borderRadius: 10,
+                      fontSize: 14, padding: '10px 13px', borderRadius: 7,
                       border: '1px solid var(--border)', background: 'var(--surface2)',
                       color: 'var(--text1)', outline: 'none',
                     }}
                   />
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                     <button onClick={() => setCreatingFolder(false)}
-                      style={{ padding: '9px 16px', fontSize: 13, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
+                      style={{ padding: '9px 16px', fontSize: 13, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
                     >{t('Cancel')}</button>
                     <button onClick={createFolder} disabled={!newFolderName.trim()}
                       style={{
-                        padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 999, border: 'none',
+                        padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 8, border: 'none',
                         background: 'var(--accent)', color: 'var(--on-accent, white)',
                         cursor: newFolderName.trim() ? 'pointer' : 'default', opacity: newFolderName.trim() ? 1 : 0.4,
                       }}
@@ -1304,43 +1397,29 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* ── Ordner-Sektionen: farbige Kacheln, zugeklappt eine schlanke Leiste ── */}
-      {hydrated && showFolders && folderNames.map(f => {
-        const list = inFolder(f)
-        return (
-          <FolderSection
-            key={f}
-            folder={f}
-            list={list}
-            color={folderColors[f] ?? '#7c6fe8'}
-            collapsed={collapsedFolders.includes(f)}
-            animations={animations}
-            menuOpen={folderMenuFor === f}
-            onToggleFolder={() => toggleFolder(f)}
-            onToggleMenu={() => setFolderMenuFor(m => m === f ? null : f)}
-            onSetColor={c => setFolderColor(f, c)}
-            onDuplicate={() => duplicateFolder(f)}
-            onRequestDelete={() => { setFolderMenuFor(null); setDeleteBoardsToo(false); setConfirmFolderDelete(f) }}
-            onRequestRename={() => { setFolderMenuFor(null); setRenameFolderValue(f); setRenamingFolder(f) }}
-            renderBoardCard={renderBoardCard}
-          />
-        )
-      })}
       {/* ── Board-Raster (zugleich Drop-Zone „aus Ordner entfernen") ── */}
+      {/* ── Zuletzt geöffnetes Board — immer oben als breite Leiste ── */}
+      {hydrated && !q && lastBoard && (
+        <LastBoardBar board={lastBoard} animations={animations} onOpen={() => router.push(`/board/${lastBoard.id}`)} />
+      )}
+
+      {/* ── Zweigeteilt: links Boards (Neues Board immer zuerst), rechts Ordner ── */}
+      <div className="home-split" style={{ display: 'flex', alignItems: 'stretch', padding: '18px 36px 60px' }}>
       <div ref={setUngroupedRef} style={{
-        padding: '18px 36px 60px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20,
-        borderRadius: ungroupedIsOver && showFolders ? 18 : 0,
+        flex: '1 1 0', minWidth: 0, alignContent: 'start',
+        display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_MIN}px, 1fr))`, gap: CARD_GAP,
+        borderRadius: ungroupedIsOver && showFolders ? 8 : 0,
         boxShadow: ungroupedIsOver && showFolders ? 'inset 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent)' : 'none',
         transition: 'box-shadow 0.2s',
       }}>
-        {hydrated && ungrouped.map(renderBoardCard)}
 
         {/* ── Neues Board ── */}
         {hydrated && !q && (
         <motion.div
           initial={animations ? { opacity: 0, y: 16 } : false}
           animate={{ opacity: 1, y: 0 }}
-          transition={animations ? { delay: Math.min(sorted.length * 0.04, 0.3), duration: 0.22 } : { duration: 0 }}
+          transition={animations ? { duration: 0.22 } : { duration: 0 }}
+          style={creating ? { gridColumn: 'span 2', gridRow: 'span 3' } : undefined}
         >
           <AnimatePresence mode="wait">
             {creating ? (
@@ -1351,7 +1430,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
                 style={{
-                  borderRadius: 18, border: '2px solid var(--accent)',
+                  borderRadius: 8, border: '2px solid var(--accent)',
                   background: 'var(--surface)', padding: 18,
                   display: 'flex', flexDirection: 'column', gap: 12,
                 }}
@@ -1366,7 +1445,7 @@ export default function HomePage() {
                   onKeyDown={e => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') { setCreating(false); setNewName('') } }}
                   placeholder={t('Board name…')}
                   style={{
-                    fontSize: 14, padding: '8px 12px', borderRadius: 10,
+                    fontSize: 14, padding: '8px 12px', borderRadius: 7,
                     border: '1px solid var(--border)', background: 'var(--surface2)',
                     color: 'var(--text1)',
                   }}
@@ -1413,13 +1492,13 @@ export default function HomePage() {
                     onClick={handleCreate}
                     style={{
                       flex: 1, padding: '8px', fontSize: 13, fontWeight: 600,
-                      borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
+                      borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
                     }}
                   >{t('Create')}</button>
                   <button
                     onClick={() => { setCreating(false); setNewName('') }}
                     style={{
-                      padding: '8px 14px', fontSize: 13, borderRadius: 999,
+                      padding: '8px 14px', fontSize: 13, borderRadius: 8,
                       border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer',
                     }}
                   >{t('Cancel')}</button>
@@ -1428,12 +1507,12 @@ export default function HomePage() {
             ) : (
               <motion.button
                 key="plus"
-                whileHover={{ y: -4, scale: 1.02 }}
+                whileHover={{ y: -3, scale: 1.02 }}
                 transition={{ duration: 0.15 }}
                 onClick={() => setCreating(true)}
                 title={`${t('New board')} [${homeShortcuts.newBoard}]`}
                 style={{
-                  width: '100%', height: 200, borderRadius: 18, position: 'relative',
+                  width: '100%', height: 134, borderRadius: 8, position: 'relative',
                   border: '2px dashed rgba(255,255,255,0.12)',
                   background: 'rgba(255,255,255,0.02)',
                   color: 'var(--text3)', fontSize: 14, fontWeight: 600,
@@ -1458,6 +1537,8 @@ export default function HomePage() {
         </motion.div>
         )}
 
+        {hydrated && ungrouped.map(renderBoardCard)}
+
         {/* Kein Suchtreffer */}
         {hydrated && q && sorted.length === 0 && (
           <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 0', color: 'var(--text3)', fontSize: 13 }}>
@@ -1465,6 +1546,53 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {hydrated && !q && (<>
+        <div className="home-divider" style={{ width: 1, flexShrink: 0, alignSelf: 'stretch', background: 'var(--border)', margin: '0 28px' }} />
+        <div className="home-folders" style={{ flex: '0 0 40%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+            {t('Folders')}
+          </div>
+          {folderNames.length === 0 ? (
+            <div style={{
+              padding: '22px 14px', textAlign: 'center', borderRadius: 6, fontSize: 12, color: 'var(--text3)',
+              border: '1.5px dashed var(--border)',
+            }}>
+              {t('No folders yet — create one with the folder button above, then drag boards into it.')}
+            </div>
+          ) : (<>
+      {folderNames.map(f => {
+        const list = inFolder(f)
+        return (
+          <FolderSection
+            key={f}
+            folder={f}
+            list={list}
+            color={folderColors[f] ?? '#5b8fff'}
+            collapsed={collapsedFolders.includes(f)}
+            animations={animations}
+            menuOpen={folderMenuFor === f}
+            onToggleFolder={() => toggleFolder(f)}
+            onToggleMenu={() => setFolderMenuFor(m => m === f ? null : f)}
+            onSetColor={c => setFolderColor(f, c)}
+            onDuplicate={() => duplicateFolder(f)}
+            onRequestDelete={() => { setFolderMenuFor(null); setDeleteBoardsToo(false); setConfirmFolderDelete(f) }}
+            onRequestRename={() => { setFolderMenuFor(null); setRenameFolderValue(f); setRenamingFolder(f) }}
+            renderBoardCard={renderBoardCard}
+          />
+        )
+      })}
+          </>)}
+        </div>
+      </>)}
+      </div>
+      <style>{`
+        @media (max-width: 900px) {
+          .home-split { flex-direction: column; }
+          .home-divider { width: auto !important; height: 1px; margin: 26px 0 !important; }
+          .home-folders { flex: 1 1 auto !important; }
+        }
+      `}</style>
 
       {/* ── Papierkorb — schwebender Button unten rechts. Immer sichtbar,
           auch leer — Klick öffnet dasselbe Fenster, nur mit dem
@@ -1476,7 +1604,7 @@ export default function HomePage() {
           aria-label={trash.length > 0 ? `${t('Trash')} (${trash.length})` : t('Trash')}
           style={{
             position: 'fixed', bottom: 24, right: 24, zIndex: 1200,
-            width: 46, height: 46, borderRadius: '50%',
+            width: 46, height: 46, borderRadius: 10,
             border: '1px solid var(--border)',
             background: 'color-mix(in srgb, var(--surface) 92%, transparent)',
             backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
@@ -1524,7 +1652,7 @@ export default function HomePage() {
                 display: 'flex', flexDirection: 'column',
                 background: 'var(--popover-bg)',
                 backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
-                border: '1px solid var(--border)', borderRadius: 18,
+                border: '1px solid var(--border)', borderRadius: 10,
                 boxShadow: '0 24px 70px rgba(0,0,0,0.55)', overflow: 'hidden',
               }}
             >
@@ -1540,7 +1668,7 @@ export default function HomePage() {
                   <button
                     onClick={() => setConfirmEmptyTrash(true)}
                     style={{
-                      fontSize: 11, fontWeight: 600, padding: '6px 12px', borderRadius: 999,
+                      fontSize: 11, fontWeight: 600, padding: '6px 12px', borderRadius: 8,
                       border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.1)',
                       color: 'var(--danger)', cursor: 'pointer', flexShrink: 0,
                     }}
@@ -1557,11 +1685,11 @@ export default function HomePage() {
                   </span>
                   <button
                     onClick={() => { emptyTrash(); setConfirmEmptyTrash(false); setTrashOpen(false) }}
-                    style={{ fontSize: 11, fontWeight: 700, padding: '6px 12px', borderRadius: 999, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer', flexShrink: 0 }}
+                    style={{ fontSize: 11, fontWeight: 700, padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer', flexShrink: 0 }}
                   >{t('Yes, empty it')}</button>
                   <button
                     onClick={() => setConfirmEmptyTrash(false)}
-                    style={{ fontSize: 11, padding: '6px 10px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', flexShrink: 0 }}
+                    style={{ fontSize: 11, padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', flexShrink: 0 }}
                   >{t('Cancel')}</button>
                 </div>
               )}
@@ -1579,7 +1707,7 @@ export default function HomePage() {
                   return (
                     <div key={entry.board.id} style={{
                       display: 'flex', alignItems: 'center', gap: 10,
-                      padding: '9px 13px', borderRadius: 11,
+                      padding: '9px 13px', borderRadius: 7,
                       background: 'var(--surface)', border: '1px solid var(--border)',
                     }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -1594,7 +1722,7 @@ export default function HomePage() {
                       <button
                         onClick={() => restoreBoard(entry.board.id)}
                         style={{
-                          flexShrink: 0, fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 999,
+                          flexShrink: 0, fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 8,
                           border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
                         }}
                       >{t('Restore')}</button>
@@ -1638,7 +1766,7 @@ export default function HomePage() {
               onClick={e => e.stopPropagation()}
               style={{
                 background: 'var(--surface)', border: '1px solid var(--border)',
-                borderRadius: 18, padding: 28,
+                borderRadius: 10, padding: 28,
                 display: 'flex', flexDirection: 'column', gap: 12, width: 320,
                 boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
               }}
@@ -1652,14 +1780,14 @@ export default function HomePage() {
                   onClick={() => { deleteBoard(confirmDelete); setConfirmDelete(null) }}
                   style={{
                     flex: 1, padding: '9px', fontSize: 13, fontWeight: 600,
-                    borderRadius: 999, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer',
+                    borderRadius: 8, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer',
                   }}
                 >{t('Move to trash')}</button>
                 <button
                   onClick={() => setConfirmDelete(null)}
                   style={{
                     flex: 1, padding: '9px', fontSize: 13,
-                    borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer',
+                    borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer',
                   }}
                 >{t('Cancel')}</button>
               </div>
@@ -1685,7 +1813,7 @@ export default function HomePage() {
               onClick={e => e.stopPropagation()}
               style={{
                 background: 'var(--surface)', border: '1px solid var(--border)',
-                borderRadius: 18, padding: 28,
+                borderRadius: 10, padding: 28,
                 display: 'flex', flexDirection: 'column', gap: 12, width: 340,
                 boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
               }}
@@ -1703,7 +1831,7 @@ export default function HomePage() {
               </div>
               <label style={{
                 display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer',
-                padding: '9px 11px', borderRadius: 10, fontSize: 12.5, color: 'var(--text1)',
+                padding: '9px 11px', borderRadius: 7, fontSize: 12.5, color: 'var(--text1)',
                 border: `1px solid ${deleteBoardsToo ? 'color-mix(in srgb, var(--danger) 45%, transparent)' : 'var(--border)'}`,
                 background: deleteBoardsToo ? 'color-mix(in srgb, var(--danger) 8%, transparent)' : 'var(--surface2)',
                 transition: 'background 0.15s, border-color 0.15s',
@@ -1721,14 +1849,14 @@ export default function HomePage() {
                   onClick={() => deleteFolder(confirmFolderDelete, deleteBoardsToo)}
                   style={{
                     flex: 1, padding: '9px', fontSize: 13, fontWeight: 600,
-                    borderRadius: 999, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer',
+                    borderRadius: 8, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer',
                   }}
                 >{deleteBoardsToo ? t('Delete folder & boards') : t('Delete folder')}</button>
                 <button
                   onClick={() => setConfirmFolderDelete(null)}
                   style={{
                     flex: 1, padding: '9px', fontSize: 13,
-                    borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer',
+                    borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer',
                   }}
                 >{t('Cancel')}</button>
               </div>
@@ -1757,7 +1885,7 @@ export default function HomePage() {
                 background: 'var(--popover-bg)',
                 backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
                 border: '1px solid var(--border)',
-                borderRadius: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+                borderRadius: 10, boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
                 display: 'flex', flexDirection: 'column', gap: 14,
               }}
             >
@@ -1770,7 +1898,7 @@ export default function HomePage() {
                 placeholder={t('Name…')}
                 maxLength={30}
                 style={{
-                  fontSize: 14, padding: '10px 13px', borderRadius: 10,
+                  fontSize: 14, padding: '10px 13px', borderRadius: 7,
                   border: '1px solid var(--border)', background: 'var(--surface2)',
                   color: 'var(--text1)', outline: 'none',
                 }}
@@ -1780,13 +1908,13 @@ export default function HomePage() {
               )}
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button onClick={() => setRenamingFolder(null)}
-                  style={{ padding: '9px 16px', fontSize: 13, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
+                  style={{ padding: '9px 16px', fontSize: 13, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
                 >{t('Cancel')}</button>
                 <button
                   onClick={() => renameFolder(renamingFolder, renameFolderValue)}
                   disabled={!renameFolderValue.trim() || (renameFolderValue.trim() !== renamingFolder && folderNames.includes(renameFolderValue.trim().slice(0, 30)))}
                   style={{
-                    padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 999, border: 'none',
+                    padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 8, border: 'none',
                     background: 'var(--accent)', color: 'var(--on-accent, white)',
                     cursor: renameFolderValue.trim() ? 'pointer' : 'default',
                     opacity: (!renameFolderValue.trim() || (renameFolderValue.trim() !== renamingFolder && folderNames.includes(renameFolderValue.trim().slice(0, 30)))) ? 0.4 : 1,
@@ -1834,7 +1962,7 @@ export default function HomePage() {
 
 function StatChip({ label, warn, onClick, title }: { label: string; warn?: boolean; onClick?: () => void; title?: string }) {
   const style: React.CSSProperties = {
-    fontSize: 11, fontWeight: 600, padding: '4px 11px', borderRadius: 20,
+    fontSize: 11, fontWeight: 600, padding: '4px 11px', borderRadius: 10,
     background: warn ? 'rgba(245,158,11,0.1)' : 'var(--surface)',
     border: `1px solid ${warn ? 'rgba(245,158,11,0.35)' : 'var(--border)'}`,
     color: warn ? '#f59e0b' : 'var(--text2)',

@@ -10,7 +10,7 @@ import { motion } from 'framer-motion'
 // slotW gesetzt → feste Slotbreite, Pille gleitet in Pixeln.
 // slotW weggelassen → Slots teilen die Breite (flex: 1), Pille gleitet in %.
 export default function SlidingTabs<T extends string>({
-  options, value, onChange, slotW, slotH, radius = 999, fontSize = 10, soft = false,
+  options, value, onChange, slotW, slotH, radius = 7, fontSize = 10, soft = false,
 }: {
   options: { value: T; label?: React.ReactNode; icon?: React.ReactNode; title?: string }[]
   value: T

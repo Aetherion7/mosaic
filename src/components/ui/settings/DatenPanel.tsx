@@ -29,7 +29,7 @@ function StorageInfo() {
   const usedMB = (usage / 1024 / 1024).toFixed(1)
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: 12, background: 'var(--surface2)', border: '1px solid var(--border)', marginBottom: 4 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border)', marginBottom: 4 }}>
       <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text1)' }}>{t(isDesktop ? 'Local storage' : 'Browser storage')}</span>
       <span style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'monospace' }}>{usedMB} MB</span>
     </div>
@@ -176,7 +176,7 @@ export default function DatenPanel() {
 
   const btnStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 10,
-    padding: '11px 16px', borderRadius: 10,
+    padding: '11px 16px', borderRadius: 7,
     border: '1px solid var(--border)', background: 'var(--surface2)',
     color: 'var(--text1)', cursor: 'pointer', fontSize: 13, fontWeight: 500,
     textAlign: 'left', width: '100%', transition: 'background 0.12s',
@@ -192,7 +192,7 @@ export default function DatenPanel() {
           { label: t('Last backup'), value: backup ? backup.text : '—', accent: backup?.urgent },
         ].map(stat => (
           <div key={stat.label} style={{
-            padding: '12px 14px', borderRadius: 12, background: 'var(--surface2)',
+            padding: '12px 14px', borderRadius: 8, background: 'var(--surface2)',
             border: `1px solid ${stat.accent ? '#f59e0b44' : 'var(--border)'}`,
           }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: stat.accent ? '#f59e0b' : 'var(--text1)', lineHeight: 1.2 }}>
@@ -249,7 +249,7 @@ export default function DatenPanel() {
       {importOk   && <div style={{ fontSize: 12, color: 'var(--accent)', padding: '8px 12px', borderRadius: 8, background: 'color-mix(in srgb, var(--accent) 10%, var(--surface2))', marginTop: 8 }}>✓ {importOk}</div>}
       {importError && <div style={{ fontSize: 12, color: '#ef4444', padding: '8px 12px', borderRadius: 8, background: '#ef444410', marginTop: 8 }}>✗ {importError}</div>}
       {pendingImport && (
-        <div style={{ padding: 14, borderRadius: 10, border: '1px solid #f59e0b55', background: '#f59e0b10', marginTop: 8 }}>
+        <div style={{ padding: 14, borderRadius: 7, border: '1px solid #f59e0b55', background: '#f59e0b10', marginTop: 8 }}>
           <div style={{ fontSize: 12.5, fontWeight: 700, color: '#f59e0b', marginBottom: 6 }}>
             {pendingImport.collisions.length} {pendingImport.collisions.length !== 1 ? t('existing boards would be overwritten') : t('existing board would be overwritten')}
           </div>
@@ -260,11 +260,11 @@ export default function DatenPanel() {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => applyBoardsImport(pendingImport.boards, pendingImport.settings)}
-              style={{ padding: '7px 14px', borderRadius: 999, border: 'none', background: '#f59e0b', color: '#1a1200', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+              style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#f59e0b', color: '#1a1200', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
               {t('Overwrite & import')}
             </button>
             <button onClick={() => setPendingImport(null)}
-              style={{ padding: '7px 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', fontSize: 12 }}>
+              style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', fontSize: 12 }}>
               {t('Cancel')}
             </button>
           </div>
@@ -273,25 +273,25 @@ export default function DatenPanel() {
 
       <SectionTitle>{t('Danger zone')}</SectionTitle>
       {clearConfirm ? (
-        <div style={{ padding: 14, borderRadius: 10, border: '1px solid #ef444455', background: '#ef444410' }}>
+        <div style={{ padding: 14, borderRadius: 7, border: '1px solid #ef444455', background: '#ef444410' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#ef4444', marginBottom: 6 }}>{t('Really delete all data?')}</div>
           <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 12, lineHeight: 1.5 }}>
             {t('This action is')} <strong>{t('irreversible')}</strong>. {t('All boards, widgets and settings will be deleted.')}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={doClearAll} style={{ padding: '8px 16px', borderRadius: 999, border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+            <button onClick={doClearAll} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
               {t('Yes, delete everything')}
             </button>
-            <button onClick={() => setClearConfirm(false)} style={{ padding: '8px 16px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', fontSize: 12 }}>
+            <button onClick={() => setClearConfirm(false)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', fontSize: 12 }}>
               {t('Cancel')}
             </button>
           </div>
         </div>
       ) : (
-        <div style={{ padding: 14, borderRadius: 10, border: '1px solid #ef444455', background: '#ef444408' }}>
+        <div style={{ padding: 14, borderRadius: 7, border: '1px solid #ef444455', background: '#ef444408' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#ef4444', marginBottom: 4 }}>{t('Delete all data')}</div>
           <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 10, lineHeight: 1.5 }}>{t(isDesktop ? 'Irreversibly deletes all boards, widgets and settings from this device.' : 'Irreversibly deletes all boards, widgets and settings from the browser.')}</div>
-          <button onClick={() => setClearConfirm(true)} style={{ padding: '8px 14px', borderRadius: 999, border: '1px solid #ef4444', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+          <button onClick={() => setClearConfirm(true)} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #ef4444', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
             {t('Delete all data')}
           </button>
         </div>

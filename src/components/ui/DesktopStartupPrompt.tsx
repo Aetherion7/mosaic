@@ -48,7 +48,7 @@ export default function DesktopStartupPrompt() {
         position: 'relative', width: 440, maxWidth: 'calc(100vw - 24px)',
         background: 'var(--popover-bg)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid var(--border)', borderRadius: 18,
+        border: '1px solid var(--border)', borderRadius: 10,
         padding: '22px 26px 20px',
         boxShadow: '0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent)',
       }}>
@@ -81,7 +81,7 @@ export default function DesktopStartupPrompt() {
             {t('Maybe later')}
           </button>
           <button onClick={() => confirm(true)} style={{
-            fontSize: 13, fontWeight: 700, padding: '9px 22px', borderRadius: 999,
+            fontSize: 13, fontWeight: 700, padding: '9px 22px', borderRadius: 8,
             border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
             boxShadow: '0 4px 18px color-mix(in srgb, var(--accent) 45%, transparent)',
           }}>
