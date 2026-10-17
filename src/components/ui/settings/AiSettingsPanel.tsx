@@ -209,7 +209,7 @@ function ProviderSelect({ value, onChange }: { value: AiProvider; onChange: (p: 
           // Deckend auch bei transparentem --surface (Crystal-Glass-Theme)
           background: 'var(--popover-bg)',
           backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid var(--border)', borderRadius: 10,
+          border: '1px solid var(--border)', borderRadius: 7,
           boxShadow: '0 8px 24px rgba(0,0,0,0.35)', overflow: 'hidden',
         }}>
           {PROVIDERS.map(p => {

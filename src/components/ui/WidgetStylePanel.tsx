@@ -113,7 +113,7 @@ export default function WidgetStylePanel() {
     background: panelBg,
     backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
     border: '1px solid var(--border)',
-    borderRadius: 20, padding: 16,
+    borderRadius: 10, padding: 16,
     boxShadow: '0 24px 64px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,0.04)',
     maxHeight: 'calc(100vh - 80px)', overflowY: 'auto',
   }
@@ -142,7 +142,7 @@ export default function WidgetStylePanel() {
                 </div>
               )}
               {/* Solid / Gradient toggle — gleitende Pille (SlidingTabs) */}
-              <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 50, padding: 2, marginBottom: 10 }}>
+              <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: 2, marginBottom: 10 }}>
                 <SlidingTabs
                   options={[
                     { value: 'solid',    label: t('Solid') },
@@ -470,7 +470,7 @@ function CornerRadiusEditor({ s, set, t }: {
 
 
 const tabBtn = (active: boolean): React.CSSProperties => ({
-  padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 50,
+  padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 8,
   border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
   background: active ? 'var(--accent)' : 'var(--surface2)',
   color: active ? 'var(--on-accent, white)' : 'var(--text2)',

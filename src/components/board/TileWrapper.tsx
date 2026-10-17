@@ -75,7 +75,7 @@ export function WidgetTypeBadge({ type }: { type: string }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
-      padding: '2px 9px 2px 7px', borderRadius: 20,
+      padding: '2px 9px 2px 7px', borderRadius: 10,
       background: 'var(--surface2)', border: '1px solid var(--border)',
       verticalAlign: 'middle',
     }}>
@@ -325,7 +325,7 @@ function TileWrapperInner({ widget, gridRef }: Props) {
         position: 'absolute', top: 34, right: 8, zIndex: 40, width: 228,
         background: 'var(--popover-bg)',
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-        border: '1px solid var(--border)', borderRadius: 12,
+        border: '1px solid var(--border)', borderRadius: 8,
         boxShadow: '0 12px 40px color-mix(in srgb, var(--shadow-color, #000) 45%, transparent)',
         padding: 8, display: 'flex', flexDirection: 'column', gap: 6,
       }}>
@@ -847,7 +847,7 @@ function TileWrapperInner({ widget, gridRef }: Props) {
         >
           <div style={{
             background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: 14, padding: '22px 26px', maxWidth: 340, width: '90%',
+            borderRadius: 9, padding: '22px 26px', maxWidth: 340, width: '90%',
             boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
           }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text1)', marginBottom: 10 }}>
@@ -856,11 +856,11 @@ function TileWrapperInner({ widget, gridRef }: Props) {
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
                 onClick={() => setConfirmMove(null)}
-                style={{ padding: '6px 14px', fontSize: 12, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
+                style={{ padding: '6px 14px', fontSize: 12, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
               >{t('Cancel')}</button>
               <button
                 onClick={() => performTransfer(confirmMove.targetId)}
-                style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, borderRadius: 999, border: 'none', background: '#e53e3e', color: 'white', cursor: 'pointer' }}
+                style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, borderRadius: 8, border: 'none', background: '#e53e3e', color: 'white', cursor: 'pointer' }}
               >{t('Move anyway')}</button>
             </div>
           </div>
@@ -965,7 +965,7 @@ function WidgetHeaderActions({
                   position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 40, minWidth: 176,
                   background: 'var(--popover-bg)',
                   backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-                  border: '1px solid var(--border)', borderRadius: 12,
+                  border: '1px solid var(--border)', borderRadius: 8,
                   boxShadow: '0 12px 40px color-mix(in srgb, var(--shadow-color, #000) 45%, transparent)',
                   padding: 6, display: 'flex', flexDirection: 'column', gap: 2,
                 }}

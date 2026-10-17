@@ -38,15 +38,15 @@ function MiniModeToggle() {
     </svg>,
   ]
   return (
-    <div style={{ display: 'flex', background: 'var(--surface)', borderRadius: 999, padding: 3, border: '1px solid var(--border)', position: 'relative', flexShrink: 0 }}>
+    <div style={{ display: 'flex', background: 'var(--surface)', borderRadius: 8, padding: 3, border: '1px solid var(--border)', position: 'relative', flexShrink: 0 }}>
       <motion.div
         animate={{ x: active * 28 }}
         transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-        style={{ position: 'absolute', top: 3, left: 3, width: 28, height: 28, borderRadius: 999, background: 'var(--accent)' }}
+        style={{ position: 'absolute', top: 3, left: 3, width: 28, height: 28, borderRadius: 8, background: 'var(--accent)' }}
       />
       {icons.map((icon, i) => (
         <div key={i} style={{
-          width: 28, height: 28, borderRadius: 999, position: 'relative',
+          width: 28, height: 28, borderRadius: 8, position: 'relative',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: active === i ? 'var(--on-accent, white)' : 'var(--text3)', transition: 'color 0.25s',
         }}>
@@ -197,7 +197,7 @@ function DonateCard({ href, icon, label, sub, glow }: { href: string; icon: Reac
       href={href} target="_blank" rel="noopener noreferrer"
       style={{
         flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-        gap: 6, padding: '16px 10px', borderRadius: 12,
+        gap: 6, padding: '16px 10px', borderRadius: 8,
         border: `1px solid color-mix(in srgb, ${glow} 35%, var(--border))`,
         background: `color-mix(in srgb, ${glow} 10%, var(--surface2))`,
         textDecoration: 'none', transition: 'background 0.15s, border-color 0.15s, transform 0.15s, box-shadow 0.15s',
@@ -245,7 +245,7 @@ function DonateOverlay({ onClose }: { onClose: () => void }) {
           position: 'relative', width: 640, maxWidth: 'calc(100vw - 24px)',
           background: 'var(--popover-bg)',
           backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-          border: '1px solid var(--border)', borderRadius: 20,
+          border: '1px solid var(--border)', borderRadius: 10,
           padding: '26px 30px 24px',
           boxShadow: '0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent)',
         }}
@@ -569,7 +569,7 @@ export default function TutorialTour() {
         <div style={{ flex: 1 }} />
         {idx > 0 && !interactive && (
           <button onClick={() => setIdx(i => i - 1)} style={{
-            fontSize: 13, fontWeight: 600, padding: '9px 18px', borderRadius: 999,
+            fontSize: 13, fontWeight: 600, padding: '9px 18px', borderRadius: 8,
             border: '1px solid var(--border)', background: 'var(--surface2)',
             color: 'var(--text2)', cursor: 'pointer',
           }}>
@@ -584,7 +584,7 @@ export default function TutorialTour() {
             fontSize: 12, fontWeight: 600, color: 'var(--accent)',
             background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
             border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)',
-            borderRadius: 999, padding: '8px 14px',
+            borderRadius: 8, padding: '8px 14px',
           }}>
             <motion.span
               animate={{ opacity: [1, 0.25, 1] }}
@@ -595,7 +595,7 @@ export default function TutorialTour() {
           </span>
         ) : (
           <button onClick={() => isLast ? setShowDonate(true) : setIdx(i => i + 1)} style={{
-            fontSize: 13, fontWeight: 700, padding: '9px 22px', borderRadius: 999,
+            fontSize: 13, fontWeight: 700, padding: '9px 22px', borderRadius: 8,
             border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
             boxShadow: '0 4px 18px color-mix(in srgb, var(--accent) 45%, transparent)',
           }}>
@@ -614,7 +614,7 @@ export default function TutorialTour() {
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
     border: '1px solid var(--border)',
-    borderRadius: 18,
+    borderRadius: 10,
     padding: '22px 26px 20px',
     boxShadow: '0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent)',
   }

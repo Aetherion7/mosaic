@@ -66,7 +66,7 @@ export default function UpdateAvailablePopup() {
         display: 'flex', flexDirection: 'column',
         background: 'var(--popover-bg)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid var(--border)', borderRadius: 18,
+        border: '1px solid var(--border)', borderRadius: 10,
         padding: '22px 26px 20px',
         boxShadow: '0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent)',
       }}>
@@ -93,13 +93,13 @@ export default function UpdateAvailablePopup() {
           </button>
           <div style={{ display: 'flex', gap: 8, minWidth: 0 }}>
             <a href={info.releaseUrl} target="_blank" rel="noopener noreferrer" style={{
-              fontSize: 11.5, fontWeight: 600, padding: '9px 14px', borderRadius: 999, whiteSpace: 'nowrap', flexShrink: 0,
+              fontSize: 11.5, fontWeight: 600, padding: '9px 14px', borderRadius: 8, whiteSpace: 'nowrap', flexShrink: 0,
               border: '1px solid var(--border)', color: 'var(--text2)', textDecoration: 'none',
             }}>
               {t('View on GitHub')}
             </a>
             <button onClick={installNow} style={{
-              fontSize: 11.5, fontWeight: 700, padding: '9px 18px', borderRadius: 999, whiteSpace: 'nowrap', flexShrink: 0,
+              fontSize: 11.5, fontWeight: 700, padding: '9px 18px', borderRadius: 8, whiteSpace: 'nowrap', flexShrink: 0,
               border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
               boxShadow: '0 4px 18px color-mix(in srgb, var(--accent) 45%, transparent)',
             }}>

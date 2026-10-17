@@ -29,10 +29,10 @@ export default function ErscheinungsbildPanel() {
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 8px', background: 'rgba(255,255,255,0.08)', borderBottom: '1px solid rgba(255,255,255,0.14)' }}>
               <div style={{ width: 20, height: 8, borderRadius: 3, background: '#8b74f0', marginRight: 'auto' }} />
               <div style={{ display: 'flex', gap: 4 }}>
-                <div style={{ width: 18, height: 8, borderRadius: 10, background: '#8b74f0' }} />
-                <div style={{ width: 18, height: 8, borderRadius: 10, background: 'rgba(255,255,255,0.25)' }} />
+                <div style={{ width: 18, height: 8, borderRadius: 7, background: '#8b74f0' }} />
+                <div style={{ width: 18, height: 8, borderRadius: 7, background: 'rgba(255,255,255,0.25)' }} />
               </div>
-              <div style={{ width: 18, height: 8, borderRadius: 10, background: 'rgba(255,255,255,0.25)', marginLeft: 'auto' }} />
+              <div style={{ width: 18, height: 8, borderRadius: 7, background: 'rgba(255,255,255,0.25)', marginLeft: 'auto' }} />
             </div>
           }
         />
@@ -43,15 +43,15 @@ export default function ErscheinungsbildPanel() {
           onClick={() => setSetting({ headerStyle: 'island' })}
           preview={
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.12)', borderRadius: 20, padding: '3px 8px', border: '1px solid rgba(255,255,255,0.2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '3px 8px', border: '1px solid rgba(255,255,255,0.2)' }}>
                 <div style={{ width: 16, height: 6, borderRadius: 3, background: '#8b74f0' }} />
               </div>
-              <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.12)', borderRadius: 20, padding: '3px 8px', border: '1px solid rgba(255,255,255,0.2)' }}>
-                <div style={{ width: 14, height: 6, borderRadius: 10, background: '#8b74f0' }} />
-                <div style={{ width: 14, height: 6, borderRadius: 10, background: 'rgba(255,255,255,0.3)' }} />
+              <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '3px 8px', border: '1px solid rgba(255,255,255,0.2)' }}>
+                <div style={{ width: 14, height: 6, borderRadius: 7, background: '#8b74f0' }} />
+                <div style={{ width: 14, height: 6, borderRadius: 7, background: 'rgba(255,255,255,0.3)' }} />
               </div>
-              <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.12)', borderRadius: 20, padding: '3px 8px', border: '1px solid rgba(255,255,255,0.2)' }}>
-                <div style={{ width: 14, height: 6, borderRadius: 10, background: 'rgba(255,255,255,0.3)' }} />
+              <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '3px 8px', border: '1px solid rgba(255,255,255,0.2)' }}>
+                <div style={{ width: 14, height: 6, borderRadius: 7, background: 'rgba(255,255,255,0.3)' }} />
               </div>
             </div>
           }
@@ -95,7 +95,7 @@ export default function ErscheinungsbildPanel() {
         }}
         style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          padding: '9px 14px', borderRadius: 999, border: '1px solid var(--border)',
+          padding: '9px 14px', borderRadius: 8, border: '1px solid var(--border)',
           background: 'var(--surface2)', color: 'var(--text2)',
           cursor: 'pointer', fontSize: 12, fontWeight: 500,
         }}
@@ -328,7 +328,7 @@ function FontSelect({ builtins, custom, value, onChange, onDeleteCustom, onAddCu
           minWidth: 200, maxHeight: 280, overflowY: 'auto',
           background: 'var(--popover-bg)',
           backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid var(--border)', borderRadius: 10,
+          border: '1px solid var(--border)', borderRadius: 7,
           boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
         }}>
           {onAddCustom && (

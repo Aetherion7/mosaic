@@ -42,7 +42,7 @@ export default function MultiSelectBar() {
           pointerEvents: 'auto', flexShrink: 0,
           background: 'color-mix(in srgb, var(--surface) 96%, transparent)',
           border: '1px solid rgba(239,68,68,0.6)',
-          borderRadius: 14,
+          borderRadius: 9,
           padding: '10px 14px',
           display: 'flex', alignItems: 'center', gap: 10,
           boxShadow: '0 8px 32px rgba(0,0,0,.5), 0 0 0 1px rgba(239,68,68,0.25), 0 0 24px rgba(239,68,68,0.2)',
@@ -72,7 +72,7 @@ export default function MultiSelectBar() {
               onClick={confirmDelete}
               style={{
                 padding: '5px 14px', fontSize: 12, fontWeight: 700,
-                borderRadius: 999, border: 'none',
+                borderRadius: 8, border: 'none',
                 background: 'var(--danger)', color: 'white', cursor: 'pointer',
                 flexShrink: 0,
               }}
@@ -81,7 +81,7 @@ export default function MultiSelectBar() {
               onClick={() => setPendingBulkDelete(false)}
               style={{
                 padding: '5px 12px', fontSize: 12,
-                borderRadius: 999, border: '1px solid var(--border)',
+                borderRadius: 8, border: '1px solid var(--border)',
                 background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer',
                 flexShrink: 0,
               }}
@@ -93,7 +93,7 @@ export default function MultiSelectBar() {
               onClick={handleDeleteClick}
               style={{
                 padding: '5px 14px', fontSize: 12, fontWeight: 700,
-                borderRadius: 999, border: 'none',
+                borderRadius: 8, border: 'none',
                 background: '#ef4444',
                 color: 'white', cursor: 'pointer', flexShrink: 0,
                 display: 'flex', alignItems: 'center', gap: 6,

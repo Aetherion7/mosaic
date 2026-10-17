@@ -1126,6 +1126,14 @@ export const de: Record<string, string> = {
   'View/edit code': 'Code ansehen/bearbeiten',
   'Code': 'Code',
   'Paste HTML': 'HTML einfügen',
+  // ── Board-Übersicht: zuletzt geöffnet + Ordner-Spalte ──
+  'Last opened': 'Zuletzt geöffnet',
+  'Layout': 'Layout',
+  'Infinite canvas': 'Unendliche Fläche',
+  'Folder': 'Ordner',
+  'Edited': 'Bearbeitet',
+  'Folders': 'Ordner',
+  'No folders yet — create one with the folder button above, then drag boards into it.': 'Noch keine Ordner — lege oben mit dem Ordner-Button einen an und zieh Boards hinein.',
 
 }
 

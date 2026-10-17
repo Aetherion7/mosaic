@@ -64,7 +64,7 @@ export function Dropdown({
           display: 'flex', flexDirection: 'column', gap: 1, padding: 4, maxHeight: 280, overflowY: 'auto',
           background: 'var(--popover-bg)',
           backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid var(--border)', borderRadius: 10,
+          border: '1px solid var(--border)', borderRadius: 7,
           boxShadow: '0 8px 28px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)',
         }}>
           {options.map(o => {

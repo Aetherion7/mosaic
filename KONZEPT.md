@@ -247,9 +247,12 @@ Die App ist dunkel-first und token-basiert. Themes setzen CSS-Variablen
 - **Karten:** `background: var(--surface2)`, `border: 1px solid var(--border)`, `borderRadius: 7–10`
 - **Labels:** 8–9 px, `fontWeight: 700`, `textTransform: uppercase`, `letterSpacing: 0.06em`, `--text3`
 - **Akzent-Pills:** `color-mix(in srgb, var(--accent) 12–15%, transparent)` als Fläche,
-  28 %-Mix als Rand, `borderRadius: 20`
+  28 %-Mix als Rand, `borderRadius: 10`
 - **Icon-Buttons:** 22 × 22 px, Radius 5–7, Rand `--border`, Fläche `--surface2`
-- **Aktions-Pills:** `borderRadius: 50` (z. B. Reset-Buttons)
+- **Aktions-Buttons:** `borderRadius: 8` (z. B. Reset-Buttons)
+- **Ecken:** GUI-Chrome ist bewusst eckig — Buttons, Umschalter und TopBar (auch im
+  Island-Modus) 8 px, Panels/Modale 10 px, keine Vollpillen (`999`/`50`) mehr.
+  Runde Formen nur für Logo, Punkte und Farbkreise.
 - **Wochencharts:** SVG mit `viewBox` ~260 breit, Y-Ticks 6 px, Navigation
   „← Diese Woche →" zentriert (Muster in Wasser/Schlaf/Aufgabe)
 - **Schreibweise:** Inline-Styles (keine CSS-Frameworks), Icons als eigene
@@ -327,8 +330,12 @@ Unter 768 px wechselt das Board in ein eigenes **2-Spalten-Layout**:
 
 ## 11. Startseite & Landing
 
-- **`/`** — Board-Übersicht: Karten mit Hintergrund-Vorschau, Umbenennen, Duplizieren,
-  Löschen (mit Bestätigung), „Neues Board", Backup-Hinweis.
+- **`/`** — Board-Übersicht: oben eine breite Leiste mit dem zuletzt geöffneten Board
+  (`currentBoardId`; Vorschau, „Weiter", Kennzahlen: Widgets, Theme, Layout, Ordner,
+  bearbeitet, erstellt). Darunter zweigeteilt: links die Boards ohne Ordner als kleine
+  Kacheln (min. 180 px), „Neues Board" immer als erste Kachel oben links; Trennstrich;
+  rechts die Ordner-Spalte. Unter 900 px untereinander. Umbenennen, Duplizieren,
+  Löschen (mit Bestätigung), Backup-Hinweis.
 - **`/board/[id]`** — das Board selbst; Titel im Dokument-Tab, Theme-Anwendung,
   Speicher-Warnung.
 - **Papierkorb** — gelöschte Boards sind 30 Tage wiederherstellbar (Sektion unten auf

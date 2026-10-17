@@ -146,7 +146,7 @@ export default function SettingsModal({ onClose, categories, initialCat }: { onC
             background: 'var(--popover-bg)',
             backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
             border: '1px solid var(--border)',
-            borderRadius: 18, overflow: 'hidden', display: 'flex',
+            borderRadius: 10, overflow: 'hidden', display: 'flex',
             boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
           }}
         >
