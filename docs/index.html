@@ -362,7 +362,7 @@ header.open .menu-btn .mi-close { opacity: 1; transform: none; }
   font-size: 12px; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wtag span { font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--violet);
   padding: 3px 8px; border-radius: 6px; background: rgba(47,107,255,.14); }
-.wprev .oc { max-height: calc(100% - 30px); }
+.wprev .oc { width: 100%; height: calc(100% - 30px); max-height: none; }
 .wprev .wclose { top: 0; right: 0; width: 28px; height: 28px; }
 .wclose {
   position: absolute; top: 4px; right: 4px; z-index: 3; width: 34px; height: 34px; border: 0; border-radius: 8px; cursor: pointer;
@@ -1692,20 +1692,25 @@ document.querySelectorAll('.shot img').forEach(function (img) {
     var name = chip.textContent.trim(), make = W[name];
     if (!make) return;
     var spec = make(), n = cols();
-    var span = n >= 6 ? (spec.w > 470 ? 4 : 2) : n;
-    if (n >= 6 && spec.w > 330 && span === 2) span = 4;
-    var rows = Math.ceil((spec.h + 30 + GAP) / (CELL + GAP));
-    var idx = chips.indexOf(chip), row = Math.floor(idx / n) + 1;
-    var col = n >= 6 ? (span === 4 ? 2 : (idx % n) < 3 ? (idx % n) + 2 : (idx % n) - 1) : 1;
-    if (n >= 6 && span === 2) col = Math.min(Math.max(col, 2), 4);
+    // Snap the preview to whole grid cells so the surrounding tiles sit
+    // flush against it, and stretch the widget to fill exactly that area.
+    var lw = list.getBoundingClientRect().width, colW = (lw - GAP * (n - 1)) / n, rowH = parseFloat(getComputedStyle(list).gridAutoRows) || CELL;
+    var span = Math.min(n, Math.max(2, Math.round((spec.w + GAP) / (colW + GAP))));
+    if (n - span === 1) span = n >= 6 ? n - 2 : n;
+    var rows = Math.max(2, Math.round((spec.h + 30 + GAP) / (rowH + GAP)));
+    var idx = chips.indexOf(chip), row = Math.floor(idx / n) + 1, c0 = idx % n;
+    var col = Math.round(c0 + 1 - (span - 1) / 2);
+    var totalRows = Math.ceil((chips.length + span * rows) / n);
+    row = Math.max(1, Math.min(row, totalRows - rows + 1));
+    var lo = span <= n - 2 ? 2 : 1, hi = n - span + (span <= n - 2 ? 0 : 1);
+    col = Math.min(Math.max(col, lo), hi);
     panel = document.createElement('li');
     panel.className = 'wprev';
     panel.style.gridColumn = col + ' / span ' + span;
     panel.style.gridRow = row + ' / span ' + rows;
     panel.innerHTML = '<div class="wtag"><span>Preview</span> · ' + esc(name) + ' widget, Deep Ocean theme</div>' + shell(chip, spec) +
-      '<button class="wclose" aria-label="Close preview"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>';
+      '';
     flip(function () { list.appendChild(panel); });
-    panel.querySelector('.wclose').onclick = function () { close(); };
     if (spec.init) spec.init(panel.querySelector('.oc'));
     current = chip; chip.classList.add('active');
     requestAnimationFrame(function () { requestAnimationFrame(function () { if (panel) panel.classList.add('open'); }); });
