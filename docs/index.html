@@ -297,11 +297,11 @@ footer a:hover { color: var(--text); }
 
 /* ── Motion ───────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
-  .reveal { opacity: 0; transform: translateY(34px); filter: blur(6px); transition: opacity 1.6s var(--ease), transform 1.6s var(--ease), filter 1.6s var(--ease); }
+  .reveal { opacity: 0; transform: translateY(16px); filter: blur(3px); transition: opacity .55s var(--ease), transform .55s var(--ease), filter .55s var(--ease); }
   .reveal.in { opacity: 1; transform: none; filter: none; }
-  .feats .reveal:nth-child(3n+2), .details .reveal:nth-child(3n+2), .dls .reveal:nth-child(2), .priv .reveal:nth-child(2) { transition-delay: .15s; }
-  .feats .reveal:nth-child(3n), .details .reveal:nth-child(3n), .dls .reveal:nth-child(3) { transition-delay: .3s; }
-  .chips .reveal:nth-child(odd) { transition-delay: .1s; } .chips .reveal:nth-child(3n) { transition-delay: .2s; }
+  .feats .reveal:nth-child(3n+2), .details .reveal:nth-child(3n+2), .dls .reveal:nth-child(2), .priv .reveal:nth-child(2) { transition-delay: .06s; }
+  .feats .reveal:nth-child(3n), .details .reveal:nth-child(3n), .dls .reveal:nth-child(3) { transition-delay: .12s; }
+  .chips .reveal:nth-child(odd) { transition-delay: .04s; } .chips .reveal:nth-child(3n) { transition-delay: .08s; }
   .hero-anim { opacity: 0; animation: rise 1.4s var(--ease) forwards; }
   .hero-anim:nth-child(2) { animation-delay: .12s; }
   .hero-anim:nth-child(3) { animation-delay: .24s; }
@@ -324,6 +324,132 @@ footer a:hover { color: var(--text); }
   header { top: 10px; padding: 0 10px; }
   .install-body { padding-left: 0; }
 }
+
+/* ── Mobile menu ──────────────────────────────────────────────────────── */
+.menu-btn {
+  display: none; margin-left: auto; width: 40px; height: 40px; border: 0; border-radius: 8px; cursor: pointer; position: relative;
+  background: var(--glass-2); color: var(--text); align-items: center; justify-content: center;
+}
+.menu-btn svg { transition: transform .3s var(--ease), opacity .2s; }
+.menu-btn .mi-close { position: absolute; opacity: 0; transform: rotate(-90deg); }
+header.open .menu-btn .mi-open { opacity: 0; transform: rotate(90deg); }
+header.open .menu-btn .mi-close { opacity: 1; transform: none; }
+@media (max-width: 900px) {
+  .menu-btn { display: inline-flex; }
+  header .bar { position: relative; }
+  header nav {
+    position: absolute; top: calc(100% + 8px); left: 0; right: 0; margin: 0;
+    flex-direction: column; align-items: stretch; gap: 4px; padding: 10px;
+    background: #060b19; border-radius: 10px;
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    box-shadow: inset 0 1px 0 var(--edge), 0 24px 60px -20px rgba(0,0,0,.8);
+    opacity: 0; transform: translateY(-8px); pointer-events: none; visibility: hidden;
+    transition: opacity .3s var(--ease), transform .3s var(--ease), visibility 0s .3s;
+  }
+  header.open nav { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition: opacity .3s var(--ease), transform .3s var(--ease); }
+  header nav a:not(.btn), header nav a.btn[href*="github.com"] { display: flex !important; }
+  header nav a:not(.btn) { padding: 13px 14px; border-radius: 8px; font-size: 15px; color: var(--text); }
+  header nav a:not(.btn):hover { background: var(--glass); }
+  header nav .btn, header nav a.btn[href="#support"] { justify-content: center; padding: 13px 14px !important; font-size: 14.5px !important; gap: 9px !important; margin: 0 !important; }
+}
+
+/* ── Widget preview (Deep Ocean theme, 1:1 with the app) ──────────────── */
+.chip { cursor: pointer; }
+.chip.active { background: rgba(47,107,255,.16); box-shadow: inset 0 0 0 1px rgba(77,141,255,.45); }
+.wprev { flex: 0 0 100%; display: grid; grid-template-rows: 0fr; transition: grid-template-rows .5s var(--ease), margin .5s var(--ease); margin: -6px 0; }
+.wprev.open { grid-template-rows: 1fr; margin: 6px 0; }
+.wprev > div { overflow: hidden; min-height: 0; }
+.wprev .stagewrap { position: relative; display: flex; justify-content: center; padding: 18px 0 8px; opacity: 0; transform: translateY(-10px) scale(.98); transition: opacity .4s var(--ease), transform .5s var(--ease); }
+.wprev.open .stagewrap { opacity: 1; transform: none; transition-delay: .12s; }
+.wclose {
+  position: absolute; top: 4px; right: 4px; z-index: 3; width: 34px; height: 34px; border: 0; border-radius: 8px; cursor: pointer;
+  background: var(--glass-2); color: var(--text); display: flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 1px 0 var(--edge); transition: background .2s;
+}
+.wclose:hover { background: rgba(255,255,255,.14); }
+
+.oc {
+  --bg: #02050e; --surface: #040c1e; --surface2: #07132e; --surface3: #0a1a3e; --border: #0e2452;
+  --accent: #2196f3; --accent2: #00e5ff; --text1: #dff0ff; --text2: #4a96cc; --text3: #2e6090;
+  --danger: #f87171; --success: #00e5a0; --amber: #fbbf24;
+  font-family: Inter, system-ui, sans-serif; color: var(--text1); font-size: 11px; line-height: 1.4;
+  width: min(100%, var(--w, 420px)); height: var(--h, 320px); display: flex; flex-direction: column; text-align: left;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4), 0 30px 80px -30px rgba(33,150,243,.35);
+  overflow: hidden; position: relative;
+}
+.oc * { box-sizing: border-box; }
+.oc button { font: inherit; color: inherit; }
+.oc-h { display: flex; align-items: center; gap: 6px; padding: 7px 12px 5px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.oc-h svg { width: 11px; height: 11px; color: var(--text2); opacity: .55; }
+.oc-h b { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; }
+.oc-h i { font-style: normal; font-size: 10px; font-weight: 600; color: var(--text2); }
+.oc-b { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 600; padding: 4px 9px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text2); }
+.mono2 { font-variant-numeric: tabular-nums; }
+
+/* task */
+.hb { display: flex; flex-direction: column; gap: 4px; padding: 5px 7px; border-radius: 7px; background: var(--surface2); border: 1px solid var(--border); }
+.hb .nr { display: flex; align-items: center; gap: 6px; }
+.hb .dot { width: 7px; height: 7px; border-radius: 50%; }
+.hb .nm { flex: 1; font-weight: 600; }
+.hb .ct { font-size: 9px; font-weight: 700; }
+.hb .days { display: flex; justify-content: space-between; gap: 2px; }
+.hb .d { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; color: var(--text3); font-size: 8px; font-weight: 700; cursor: pointer; padding: 0; transition: all .1s; }
+.hb .d.past { border-color: transparent; opacity: .28; }
+.hb .d.on { opacity: 1; }
+
+/* ── Mobile ───────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  body { font-size: 15px; }
+  section { padding: 64px 0; }
+  .head { margin-bottom: 32px; }
+  h2 { font-size: 32px; }
+  header .bar { height: 52px; padding: 0 6px 0 14px; }
+  .logo small { display: none; }
+  .logo span { font-size: 21px; }
+  header nav { gap: 6px; }
+  header nav .btn + .btn { margin-left: 0; }
+  header .btn { padding: 9px 12px; font-size: 13px; }
+  header nav a.btn[href="#support"] { font-size: 0; gap: 0; padding: 9px 10px; }
+  .hero { padding: 116px 0 40px; }
+  .hero h1 { font-size: 46px; }
+  .hero .lead { font-size: 16px; }
+  .hero .ctas { flex-direction: column; align-items: stretch; max-width: 300px; margin: 32px auto 0; }
+  .hero .ctas .btn { justify-content: center; }
+  .shot { margin-top: 48px; }
+  .feats, .details { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .feat { padding: 18px 16px; }
+  .feat .big { font-size: 32px; }
+  .feat h3 { font-size: 17px; margin: 10px 0 4px; }
+  .feat p, .detail p { font-size: 12.5px; line-height: 1.5; }
+  .tic { padding: 7px; } .tic .i { width: 17px; height: 17px; }
+  .detail { padding: 16px; }
+  .detail .tic { margin-bottom: 10px; }
+  .detail h3 { font-size: 17px; margin-bottom: 4px; }
+  .chips { gap: 8px; }
+  .chip { flex-basis: calc((100% - 2 * 8px) / 3) !important; min-height: 78px; padding: 12px 6px; gap: 8px; font-size: 12px; }
+  .chip svg { width: 18px; height: 18px; }
+  .tabs { gap: 2px; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; }
+  .tabs button { padding: 9px 12px; font-size: 13px; white-space: nowrap; }
+  .dls { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .dl { padding: 18px 6px; }
+  .dl .ico { height: 24px; margin-bottom: 10px; }
+  .dl .ico svg, .dl .ico img { width: 20px; height: auto; }
+  .dl h3 { font-size: 17px; }
+  .dl .meta { font-size: 11px; }
+  .notes { padding: 4px 16px; margin-top: 16px; }
+  .notes summary { font-size: 13.5px; padding: 15px 0; }
+  .priv { gap: 10px; }
+  .priv > div { padding: 22px; }
+  .priv h3 { font-size: 20px; }
+  .privnote { font-size: 14px; text-align: left; margin-top: 28px; }
+  .closing .glass { padding: 44px 18px; }
+  .closing .ctas { flex-direction: column; align-items: stretch; }
+  .scard { justify-content: flex-start; }
+  footer .wrap { flex-direction: column; text-align: center; }
+  footer nav { flex-wrap: wrap; justify-content: center; gap: 16px; }
+}
 </style>
 </head>
 <body>
@@ -334,6 +460,7 @@ footer a:hover { color: var(--text); }
 <header>
   <div class="bar">
     <a href="#" class="logo"><img src="mosaiclogo.png" alt=""><span>mosaic</span><small>by Aetherion7</small></a>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false"><svg class="mi-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><svg class="mi-close" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     <nav>
       <a href="#features">Features</a>
       <a href="#tour">Tour</a>
@@ -689,7 +816,7 @@ document.querySelectorAll('.shot img').forEach(function (img) {
       entries.forEach(function (entry) {
         entry.target.classList.toggle('in', entry.isIntersecting);
       });
-    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    }, { threshold: 0, rootMargin: '0px 0px -20px 0px' });
     els.forEach(function (el) { io.observe(el); });
   }
 
@@ -854,6 +981,354 @@ document.querySelectorAll('.shot img').forEach(function (img) {
     });
     if (tiles.length) raf = requestAnimationFrame(draw); else { raf = null; prev = 0; }
   }
+})();
+</script>
+
+<script>
+// Mobile menu: hamburger toggles the nav as a dropdown panel.
+(function () {
+  var header = document.querySelector('header');
+  var btn = document.getElementById('menuBtn');
+  if (!header || !btn) return;
+  function set(open) { header.classList.toggle('open', open); btn.setAttribute('aria-expanded', String(open)); }
+  btn.addEventListener('click', function (e) { e.stopPropagation(); set(!header.classList.contains('open')); });
+  header.querySelectorAll('nav a').forEach(function (a) { a.addEventListener('click', function () { set(false); }); });
+  document.addEventListener('click', function (e) { if (!header.contains(e.target)) set(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') set(false); });
+})();
+</script>
+
+<script>
+// Widget previews: clicking a widget tile opens a 1:1 reconstruction of that
+// widget in the app's "Deep Ocean" theme directly below its row; the other
+// tiles reflow around it. Built from the app's own tokens and widget markup
+// (TileWrapper header, per-widget layout, sizes and colors).
+(function () {
+  var list = document.querySelector('.chips');
+  if (!list) return;
+  var chips = Array.prototype.slice.call(list.querySelectorAll('.chip'));
+  var DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  var TODAY = 3; // Thursday — earlier days are "past" (dimmed), like in the app
+
+  function shell(chip, w, h, title, body, sub) {
+    var icon = chip.querySelector('svg').outerHTML;
+    return '<div class="oc" style="--w:' + w + 'px;--h:' + h + 'px">' +
+      '<div class="oc-h">' + icon + '<b>' + title + '</b>' + (sub ? '<i>· ' + sub + '</i>' : '') + '</div>' +
+      '<div class="oc-b">' + body + '</div></div>';
+  }
+
+  var W = {
+    'Task & habits': function () {
+      var habits = [
+        ['Workout', '#2196f3', [0, 2, 3]], ['Read 20 pages', '#00e5a0', [0, 1, 2, 3]],
+        ['Meditate', '#fbbf24', [1, 3]], ['No sugar', '#f87171', [0, 1]], ['Journal', '#a78bfa', [2]]
+      ];
+      var rows = habits.map(function (h) {
+        var days = DAYS.map(function (d, i) {
+          var on = h[2].indexOf(i) !== -1, past = i < TODAY && !on;
+          return '<button class="d' + (on ? ' on' : '') + (past ? ' past' : '') + '" data-c="' + h[1] + '"' +
+            (on ? ' style="border-color:' + h[1] + ';color:' + h[1] + ';background:color-mix(in srgb,' + h[1] + ' 18%,transparent)"' : '') + '>' + d + '</button>';
+        }).join('');
+        return '<div class="hb"><div class="nr"><span class="dot" style="background:' + h[1] + '"></span><span class="nm">' + h[0] +
+          '</span><span class="ct" style="color:' + h[1] + '">' + h[2].length + '/7</span></div><div class="days">' + days + '</div></div>';
+      }).join('');
+      return { w: 380, h: 470, title: 'Task', body:
+        '<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:6px 6px 0">' +
+        '<div></div><span style="font-size:10px;font-weight:700;color:var(--text2);padding:4px 9px;border-radius:8px;background:var(--surface2)">13.10. – 19.10.</span>' +
+        '<span class="pill" style="justify-self:end">Week <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div>' +
+        '<div style="display:flex;flex-direction:column;gap:4px;padding:8px 6px 4px">' + rows + '</div>',
+        init: function (el) {
+          el.querySelectorAll('.d:not(.past)').forEach(function (b) {
+            b.addEventListener('click', function () {
+              var c = b.closest('.hb').querySelector('.dot').style.background, on = !b.classList.contains('on');
+              b.classList.toggle('on', on);
+              b.style.cssText = on ? 'border-color:' + c + ';color:' + c + ';background:color-mix(in srgb,' + c + ' 18%,transparent)' : '';
+              var n = b.parentNode.querySelectorAll('.on').length;
+              b.closest('.hb').querySelector('.ct').textContent = n + '/7';
+            });
+          });
+        } };
+    },
+
+    'Calendar': function () {
+      var ev = { 3: [['Dentist', '#00e5a0']], 9: [['Team sync', '#2196f3']], 14: [['Exam', '#f87171'], ['Gym', '#00e5ff']], 16: [['Today', '#2196f3']], 21: [['Trip', '#fbbf24']], 22: [['Trip', '#fbbf24']], 27: [['Deadline', '#f87171']] };
+      var cells = '', start = 2; // Oct 2026 starts on Thursday → 3 leading days (Mon-based)
+      for (var i = 0; i < 35; i++) {
+        var day = i - start, inMonth = day >= 1 && day <= 31, today = day === 16;
+        var evs = (ev[day] || []).map(function (e) {
+          return '<div style="font-size:8px;font-weight:600;padding:1px 4px;border-radius:4px;margin-top:2px;background:color-mix(in srgb,' + e[1] + ' 22%,transparent);color:' + e[1] + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + e[0] + '</div>';
+        }).join('');
+        cells += '<div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:3px;min-height:0;opacity:' + (inMonth ? 1 : .35) + '">' +
+          '<span style="display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;border-radius:50%;font-size:9px;font-weight:700;' +
+          (today ? 'background:var(--accent);color:#fff' : 'color:var(--text2)') + '">' + (inMonth ? day : day < 1 ? 30 + day : day - 31) + '</span>' + evs + '</div>';
+      }
+      return { w: 560, h: 420, title: 'Calendar', body:
+        '<div style="display:flex;flex-direction:column;height:100%">' +
+        '<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:8px">' +
+        '<span class="pill" style="padding:4px 7px">‹</span><span class="pill" style="font-size:11px;font-weight:700;color:var(--text1)">October 2026</span><span class="pill" style="padding:4px 7px">›</span>' +
+        '<span class="pill" style="position:absolute;right:10px">Month <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div>' +
+        '<div style="display:grid;grid-template-columns:repeat(7,1fr);font-size:9px;font-weight:700;color:var(--text3);text-align:center;padding-bottom:4px">' + DAYS.map(function (d) { return '<span>' + d + '</span>'; }).join('') + '</div>' +
+        '<div style="flex:1;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(5,1fr);border-top:1px solid var(--border);border-left:1px solid var(--border)">' + cells + '</div></div>' };
+    },
+
+    'Notes': function () {
+      return { w: 400, h: 360, title: 'Note', sub: 'Weekend plans', body:
+        '<div style="padding:14px 16px;font-size:13px;line-height:1.6;color:var(--text1)">' +
+        '<div style="font-size:20px;font-weight:800;margin-bottom:8px">Weekend plans</div>' +
+        '<p style="color:var(--text1);opacity:.9">Saturday morning: farmers market, then <b>coffee</b> with Lena at the corner café.</p>' +
+        '<div style="font-size:14px;font-weight:700;margin:12px 0 4px;color:var(--accent2)">To bring</div>' +
+        '<ul style="padding-left:18px;margin:0"><li>Reusable bags</li><li>Book for the train</li><li>Charger</li></ul>' +
+        '<blockquote style="margin:12px 0 0;padding:6px 10px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:0 6px 6px 0;font-style:italic;color:var(--text2)">“The best way to predict the future is to create it.”</blockquote></div>' };
+    },
+
+    'Spreadsheet': function () {
+      var data = [['Item', 'Qty', 'Price', 'Total'], ['Coffee', '3', '4.50', '13.50'], ['Bagel', '2', '3.20', '6.40'], ['Juice', '1', '5.00', '5.00'], ['Muffin', '4', '2.80', '11.20'], ['', '', 'Sum', '36.10']];
+      var cols = ['', 'A', 'B', 'C', 'D'];
+      var th = cols.map(function (c) { return '<th style="background:var(--surface2);color:var(--text3);font-size:9px;font-weight:700;padding:4px;border:1px solid var(--border);width:' + (c ? 'auto' : '26px') + '">' + c + '</th>'; }).join('');
+      var rows = data.map(function (r, ri) {
+        return '<tr><td style="background:var(--surface2);color:var(--text3);font-size:9px;font-weight:700;text-align:center;border:1px solid var(--border)">' + (ri + 1) + '</td>' +
+          r.map(function (v, ci) {
+            var head = ri === 0, sum = ri === data.length - 1 && ci >= 2, sel = ri === 5 && ci === 3;
+            return '<td style="padding:5px 7px;border:1px solid var(--border);font-size:11px;' + (ci > 0 && !head ? 'text-align:right;' : '') +
+              (head ? 'font-weight:700;color:var(--text2);' : '') + (sum ? 'font-weight:700;color:var(--accent2);' : '') +
+              (sel ? 'outline:2px solid var(--accent);outline-offset:-2px;background:color-mix(in srgb,var(--accent) 10%,transparent);' : '') + '">' + v + '</td>';
+          }).join('') + '</tr>';
+      }).join('');
+      return { w: 440, h: 300, title: 'Table', body:
+        '<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--border)"><span style="font-size:9px;font-weight:700;color:var(--text3);background:var(--surface2);padding:3px 6px;border-radius:5px">D6</span>' +
+        '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--text1)">=SUM(D2:D5)</span></div>' +
+        '<table style="border-collapse:collapse;width:100%">' + '<tr>' + th + '</tr>' + rows + '</table>' };
+    },
+
+    'Drawboard': function () {
+      var tools = ['M3 21l3-1L19 7l-2-2L4 18z', 'M4 20h16', 'M5 12a7 7 0 1 0 14 0a7 7 0 1 0-14 0', 'M4 4h16v16H4z', 'M5 19L19 5'];
+      return { w: 460, h: 340, title: 'Drawboard', body:
+        '<div style="position:absolute;inset:0;background:#fff"></div>' +
+        '<svg viewBox="0 0 460 300" style="position:absolute;inset:0;width:100%;height:100%">' +
+        '<path d="M60 220 C 90 120, 160 110, 190 170 S 280 250, 320 140" fill="none" stroke="#2196f3" stroke-width="5" stroke-linecap="round"/>' +
+        '<rect x="250" y="60" width="120" height="70" rx="6" fill="none" stroke="#0e2452" stroke-width="3"/>' +
+        '<circle cx="110" cy="90" r="34" fill="none" stroke="#f87171" stroke-width="3"/>' +
+        '<path d="M330 200 l40 40 M370 200 l-40 40" stroke="#00b8d4" stroke-width="4" stroke-linecap="round"/></svg>' +
+        '<div style="position:absolute;left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:3px;padding:4px;border-radius:10px;background:var(--surface);border:1px solid var(--border);box-shadow:0 6px 18px rgba(0,0,0,.35)">' +
+        tools.map(function (p, i) { return '<span style="width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;' + (i === 0 ? 'background:var(--accent);color:#fff' : 'color:var(--text2)') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="' + p + '"/></svg></span>'; }).join('') +
+        ['#2196f3', '#f87171', '#00b8d4', '#0e2452'].map(function (c) { return '<span style="width:26px;height:26px;display:flex;align-items:center;justify-content:center"><span style="width:14px;height:14px;border-radius:50%;background:' + c + ';border:1.5px solid rgba(255,255,255,.3)"></span></span>'; }).join('') +
+        '</div>' };
+    },
+
+    'PDF/EPUB reader': function () {
+      var books = [['The Odyssey', '#1a4fb0', 64], ['Meditations', '#0b5f6e', 23], ['Dune', '#7a4a12', 100], ['Walden', '#2d5a2d', 8]];
+      return { w: 460, h: 320, title: 'Reader', body:
+        '<div style="padding:12px 14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:12px;font-weight:700">Library</span><span class="pill">+ Add book</span></div>' +
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">' + books.map(function (b) {
+          return '<div><div style="aspect-ratio:2/3;border-radius:4px 7px 7px 4px;background:linear-gradient(135deg,' + b[1] + ',color-mix(in srgb,' + b[1] + ' 55%,#000));box-shadow:inset 4px 0 0 rgba(0,0,0,.25),0 6px 14px rgba(0,0,0,.4);display:flex;align-items:flex-end;padding:8px;font-size:10px;font-weight:700;color:#fff;line-height:1.2">' + b[0] + '</div>' +
+            '<div style="margin-top:6px;height:3px;border-radius:2px;background:var(--surface3)"><div style="height:100%;width:' + b[2] + '%;border-radius:2px;background:var(--accent)"></div></div>' +
+            '<div style="font-size:9px;color:var(--text3);margin-top:3px">' + (b[2] === 100 ? 'Finished' : b[2] + '%') + '</div></div>';
+        }).join('') + '</div></div>' };
+    },
+
+    'Charts': function () {
+      var d = [[42, 30, 24], [68, 45, 36], [53, 70, 67], [89, 55, 45], [71, 80, 87], [95, 60, 55]], m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], c = ['#2196f3', '#00e5ff', '#fbbf24'];
+      var bars = '';
+      d.forEach(function (g, gi) {
+        g.forEach(function (v, si) {
+          var x = 48 + gi * 62 + si * 16, h = v * 1.8;
+          bars += '<rect x="' + x + '" y="' + (200 - h) + '" width="13" height="' + h + '" rx="3" fill="' + c[si] + '" opacity=".9"/><text x="' + (x + 6.5) + '" y="' + (196 - h) + '" font-size="7" fill="var(--text2)" text-anchor="middle">' + v + '</text>';
+        });
+      });
+      return { w: 460, h: 330, title: 'Chart', body:
+        '<div style="padding:10px 12px 0;font-size:11px;font-weight:700">Chart</div>' +
+        '<div style="display:flex;justify-content:center;gap:14px;font-size:9px;color:var(--text2);margin-top:4px">' + ['Series 1', 'Series 2', 'Series 3'].map(function (s, i) { return '<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:' + c[i] + '"></span>' + s + '</span>'; }).join('') + '</div>' +
+        '<svg viewBox="0 0 420 220" style="width:100%;height:calc(100% - 44px)">' +
+        [0, 48, 95].map(function (v) { var y = 200 - v * 1.8; return '<line x1="34" x2="410" y1="' + y + '" y2="' + y + '" stroke="var(--border)" stroke-width=".6"/><text x="28" y="' + (y + 3) + '" font-size="7" fill="var(--text3)" text-anchor="end">' + v + '</text>'; }).join('') +
+        bars + m.map(function (s, i) { return '<text x="' + (68 + i * 62) + '" y="214" font-size="8" fill="var(--text2)" text-anchor="middle">' + s + '</text>'; }).join('') + '</svg>' };
+    },
+
+    'Weather': function () {
+      var stat = function (ic, v, l) { return '<div style="flex:1;padding:6px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);text-align:center"><div style="font-size:9px;color:var(--text3)">' + ic + '</div><div style="font-size:11px;font-weight:700">' + v + '</div><div style="font-size:7px;font-weight:700;color:var(--text3);letter-spacing:.06em">' + l + '</div></div>'; };
+      return { w: 330, h: 270, title: 'Weather', body:
+        '<div style="padding:10px 12px;display:flex;flex-direction:column;height:100%">' +
+        '<div style="font-size:11px;font-weight:700;display:flex;align-items:center;gap:4px"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/></svg>Greater London</div>' +
+        '<div style="flex:1;display:flex;align-items:center;justify-content:space-between">' +
+        '<div><div style="font-size:52px;font-weight:300;line-height:1">17°<span style="font-size:16px;color:var(--text2)">C</span></div><span class="pill" style="margin-top:8px;border-radius:20px">Overcast</span></div>' +
+        '<svg width="86" height="62" viewBox="0 0 86 62"><path d="M22 54a16 16 0 0 1 0-32h1a22 22 0 0 1 42 6 13 13 0 0 1 0 26z" fill="#b8d6f0"/><path d="M30 54a13 13 0 0 1 0-26h1a18 18 0 0 1 34 5 11 11 0 0 1 0 21z" fill="#dff0ff"/></svg></div>' +
+        '<div style="display:flex;gap:5px">' + stat('🌡', '16°C', 'FEELS LIKE') + stat('💧', '80 %', 'HUMIDITY') + stat('≋', '18 km/h', 'WIND') + '</div></div>' };
+    },
+
+    'Map': function () {
+      var t = '';
+      for (var y = 0; y < 2; y++) for (var x = 0; x < 3; x++)
+        t += '<img src="https://tile.openstreetmap.org/15/' + (16374 + x) + '/' + (10896 + y) + '.png" alt="" onerror="this.remove()" style="position:absolute;left:' + (x * 256 - 120) + 'px;top:' + (y * 256 - 90) + 'px;width:256px;height:256px">';
+      return { w: 480, h: 340, title: 'Map', body:
+        '<div style="position:absolute;inset:0;background:#aad3df">' + t + '</div>' +
+        '<div style="position:absolute;top:8px;left:8px;right:8px;display:flex;gap:6px"><div style="flex:1;display:flex;align-items:center;gap:6px;padding:6px 9px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text3)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search location…</div><span class="pill" style="padding:6px 8px">☰</span></div>' +
+        '<div style="position:absolute;left:8px;top:48px;display:flex;flex-direction:column;border-radius:8px;overflow:hidden;border:1px solid var(--border)"><span style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--surface)">+</span><span style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--surface);border-top:1px solid var(--border)">−</span></div>' +
+        '<svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"><polyline points="120,250 180,190 260,200 330,130" fill="none" stroke="#2196f3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="120" cy="250" r="6" fill="#2196f3" stroke="#fff" stroke-width="2"/><circle cx="330" cy="130" r="6" fill="#f87171" stroke="#fff" stroke-width="2"/></svg>' +
+        '<span style="position:absolute;right:6px;bottom:4px;font-size:8px;background:rgba(255,255,255,.75);color:#333;padding:1px 4px;border-radius:3px">© OSM</span>' };
+    },
+
+    'Clock': function () {
+      var ticks = '';
+      for (var i = 0; i < 12; i++) { var a = i * 30 * Math.PI / 180; ticks += '<line x1="' + (100 + Math.sin(a) * 78) + '" y1="' + (100 - Math.cos(a) * 78) + '" x2="' + (100 + Math.sin(a) * 88) + '" y2="' + (100 - Math.cos(a) * 88) + '" stroke="var(--text1)" stroke-width="' + (i % 3 ? 2 : 3.5) + '" stroke-linecap="round"/>'; }
+      return { w: 300, h: 300, title: 'Clock', body:
+        '<div style="display:flex;align-items:center;justify-content:center;height:100%"><svg viewBox="0 0 200 200" width="220" height="220" class="clk">' +
+        '<circle cx="100" cy="100" r="95" fill="var(--surface2)" stroke="var(--border)" stroke-width="2"/>' + ticks +
+        ['12', '3', '6', '9'].map(function (n, i) { var a = i * 90 * Math.PI / 180; return '<text x="' + (100 + Math.sin(a) * 62) + '" y="' + (104 - Math.cos(a) * 62) + '" text-anchor="middle" font-size="13" font-weight="600" fill="var(--text1)">' + n + '</text>'; }).join('') +
+        '<line class="hh" x1="100" y1="100" x2="100" y2="58" stroke="var(--text1)" stroke-width="5" stroke-linecap="round"/>' +
+        '<line class="mh" x1="100" y1="100" x2="100" y2="34" stroke="var(--text1)" stroke-width="3.5" stroke-linecap="round"/>' +
+        '<line class="sh" x1="100" y1="112" x2="100" y2="26" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"/>' +
+        '<circle cx="100" cy="100" r="5" fill="var(--accent)"/></svg></div>',
+        init: function (el) {
+          function tick() {
+            if (!el.isConnected) return;
+            var d = new Date(), s = d.getSeconds(), m = d.getMinutes() + s / 60, h = d.getHours() % 12 + m / 60;
+            el.querySelector('.hh').setAttribute('transform', 'rotate(' + h * 30 + ' 100 100)');
+            el.querySelector('.mh').setAttribute('transform', 'rotate(' + m * 6 + ' 100 100)');
+            el.querySelector('.sh').setAttribute('transform', 'rotate(' + s * 6 + ' 100 100)');
+            setTimeout(tick, 1000 - d.getMilliseconds());
+          }
+          tick();
+        } };
+    },
+
+    'Timer': function () {
+      return { w: 300, h: 300, title: 'Timer', body:
+        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px">' +
+        '<div style="position:relative;width:150px;height:150px"><svg viewBox="0 0 100 100" width="150" height="150" style="transform:rotate(-90deg)"><circle cx="50" cy="50" r="44" fill="none" stroke="var(--surface3)" stroke-width="6"/><circle class="ring" cx="50" cy="50" r="44" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="0"/></svg>' +
+        '<div class="tv mono2" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;font-family:\'JetBrains Mono\',monospace">25:00</div></div>' +
+        '<div style="display:flex;gap:6px"><button class="tgo" style="border:0;cursor:pointer;padding:7px 18px;border-radius:20px;background:var(--accent);color:#fff;font-weight:700;font-size:11px">▶ Start</button><button class="trs" style="cursor:pointer;padding:7px 14px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-weight:600;font-size:11px">Reset</button></div></div>',
+        init: function (el) {
+          var total = 1500, left = total, iv = null;
+          function draw() {
+            el.querySelector('.tv').textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
+            el.querySelector('.ring').setAttribute('stroke-dashoffset', String(276.5 * (1 - left / total)));
+          }
+          el.querySelector('.tgo').onclick = function () {
+            if (iv) { clearInterval(iv); iv = null; this.textContent = '▶ Start'; return; }
+            this.textContent = '❚❚ Pause';
+            iv = setInterval(function () { if (!el.isConnected) return clearInterval(iv); left = Math.max(0, left - 1); draw(); }, 1000);
+          };
+          el.querySelector('.trs').onclick = function () { left = total; draw(); };
+        } };
+    },
+
+    'Water tracker': function () {
+      var sec = '';
+      for (var i = 0; i < 4; i++) sec += '<div class="ws" data-i="' + (3 - i) + '" style="flex:1;border-top:' + (i ? '1px dashed color-mix(in srgb,var(--accent2) 30%,transparent)' : 'none') + ';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;position:relative;z-index:1">' + ['2L', '1.5L', '1L', '500ml'][i] + '</div>';
+      return { w: 300, h: 380, title: 'Water', body:
+        '<div style="display:flex;flex-direction:column;align-items:center;height:100%;padding:12px 0 10px">' +
+        '<div style="width:22px;height:16px;border:1.5px solid var(--border);border-bottom:0;border-radius:4px 4px 0 0;background:var(--surface2)"></div>' +
+        '<div style="width:34px;height:22px;border:1.5px solid var(--border);border-bottom:0;border-radius:6px 6px 0 0;background:var(--surface2)"></div>' +
+        '<div class="bottle" style="position:relative;width:130px;flex:1;border:1.5px solid var(--border);border-radius:26px 26px 14px 14px;background:var(--surface2);overflow:hidden;display:flex;flex-direction:column">' +
+        '<div class="fill" style="position:absolute;left:0;right:0;bottom:0;height:50%;background:linear-gradient(180deg,color-mix(in srgb,var(--accent2) 70%,transparent),color-mix(in srgb,var(--accent) 80%,transparent));transition:height .5s cubic-bezier(.2,.7,.2,1)"></div>' + sec + '</div>' +
+        '<div class="wl" style="margin-top:10px;font-size:11px;font-weight:700;color:var(--text2)">1000 / 2000 ml</div></div>',
+        init: function (el) {
+          var filled = 2;
+          el.querySelectorAll('.ws').forEach(function (s) {
+            s.onclick = function () {
+              var i = +s.dataset.i; filled = (filled === i + 1) ? i : i + 1;
+              el.querySelector('.fill').style.height = filled * 25 + '%';
+              el.querySelector('.wl').textContent = filled * 500 + ' / 2000 ml';
+              el.querySelectorAll('.ws').forEach(function (x) { x.style.color = +x.dataset.i < filled ? '#fff' : 'var(--text2)'; });
+            };
+          });
+          el.querySelectorAll('.ws').forEach(function (x) { x.style.color = +x.dataset.i < filled ? '#fff' : 'var(--text2)'; });
+        } };
+    },
+
+    'Sleep tracker': function () {
+      var hrs = [7.2, 6.5, 8.1, 7.0, 0, 0, 0];
+      var bars = hrs.map(function (h, i) {
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="flex:1;width:100%;display:flex;align-items:flex-end"><div style="width:100%;height:' + (h / 9 * 100) + '%;border-radius:4px 4px 2px 2px;background:linear-gradient(180deg,#5b8cff,color-mix(in srgb,var(--accent) 60%,transparent))"></div></div><span style="font-size:8px;font-weight:' + (i === TODAY ? 700 : 500) + ';color:' + (i === TODAY ? 'var(--text1)' : 'var(--text3)') + '">' + DAYS[i] + '</span></div>';
+      }).join('');
+      var field = function (l, v) { return '<div style="flex:1;padding:6px 8px;border-radius:8px;background:var(--surface2);border:1px solid var(--border)"><div style="font-size:8px;font-weight:700;color:var(--text3);letter-spacing:.06em">' + l + '</div><div style="font-size:14px;font-weight:700;margin-top:2px">' + v + '</div></div>'; };
+      return { w: 360, h: 330, title: 'Sleep', body:
+        '<div style="padding:10px 12px;display:flex;flex-direction:column;height:100%;gap:10px">' +
+        '<div style="font-size:11px;color:var(--text2)"><b style="font-size:18px;color:var(--text1)">7h 00m</b> / 8 h goal</div>' +
+        '<div style="display:flex;gap:6px">' + field('🌙 BEDTIME', '23:30') + field('☀ WAKE UP', '06:30') + '</div>' +
+        '<div style="font-size:8px;font-weight:700;color:var(--text3);text-align:center;letter-spacing:.06em">⌃ STATS · THIS WEEK</div>' +
+        '<div style="flex:1;display:flex;gap:6px;position:relative;border-bottom:1px solid var(--border);padding-bottom:2px"><div style="position:absolute;left:0;right:0;top:' + (100 - 8 / 9 * 100) + '%;border-top:1px dashed var(--text3);opacity:.6"></div>' + bars + '</div></div>' };
+    },
+
+    'Agenda': function () {
+      var it = [['Today', [['09:00', 'Team sync', '#2196f3'], ['14:00', 'Exam: Statistics', '#f87171'], ['18:30', 'Gym', '#00e5ff']]], ['Tomorrow', [['10:00', 'Dentist', '#00e5a0']]], ['Wed, 21 Oct', [['All day', 'Trip to Hamburg', '#fbbf24']]]];
+      return { w: 340, h: 330, title: 'Agenda', body:
+        '<div style="padding:8px 10px;display:flex;flex-direction:column;gap:10px">' + it.map(function (g) {
+          return '<div><div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">' + g[0] + '</div>' +
+            g[1].map(function (e) { return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;margin-bottom:4px;border-radius:7px;background:var(--surface2);border:1px solid var(--border)"><span style="width:3px;align-self:stretch;border-radius:2px;background:' + e[2] + '"></span><span style="font-size:10px;font-weight:600;color:var(--text2);width:42px" class="mono2">' + e[0] + '</span><span style="font-weight:600">' + e[1] + '</span></div>'; }).join('') + '</div>';
+        }).join('') + '</div>' };
+    },
+
+    'Quicklinks': function () {
+      var l = [['GitHub', '#24292f', 'G'], ['YouTube', '#ff0033', '▶'], ['Wikipedia', '#eee', 'W'], ['Gmail', '#ea4335', 'M'], ['Spotify', '#1db954', '♫'], ['Notion', '#fff', 'N'], ['Reddit', '#ff4500', 'r'], ['Maps', '#34a853', '⌖']];
+      return { w: 360, h: 230, title: 'Quicklinks', body:
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px">' + l.map(function (q) {
+          var dark = q[1] === '#eee' || q[1] === '#fff';
+          return '<div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 4px;border-radius:9px;background:var(--surface2);border:1px solid var(--border)"><span style="width:26px;height:26px;border-radius:7px;background:' + q[1] + ';color:' + (dark ? '#111' : '#fff') + ';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px">' + q[2] + '</span><span style="font-size:9px;font-weight:600;color:var(--text2)">' + q[0] + '</span></div>';
+        }).join('') + '</div>' };
+    },
+
+    'Image': function () {
+      return { w: 420, h: 300, title: 'Image', body:
+        '<svg viewBox="0 0 420 270" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%">' +
+        '<defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1d4a"/><stop offset=".6" stop-color="#2a5ea8"/><stop offset="1" stop-color="#f3a76b"/></linearGradient></defs>' +
+        '<rect width="420" height="270" fill="url(#sk)"/><circle cx="300" cy="170" r="26" fill="#ffd9a0" opacity=".9"/>' +
+        '<path d="M0 200 L70 140 L120 180 L190 110 L260 190 L330 150 L420 200 V270 H0Z" fill="#0a1a3e"/>' +
+        '<path d="M0 230 L90 190 L170 225 L250 200 L340 235 L420 215 V270 H0Z" fill="#040c1e"/>' +
+        '<rect y="245" width="420" height="25" fill="#02050e" opacity=".6"/></svg>' };
+    },
+
+    'HTML': function () {
+      return { w: 420, h: 300, title: 'HTML', sub: 'pomodoro.html', body:
+        '<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid var(--border)"><span class="pill" style="background:var(--accent);color:#fff;border-color:var(--accent)">Preview</span><span class="pill">Code</span><span class="pill" style="margin-left:auto">↻</span></div>' +
+        '<div style="position:absolute;top:34px;left:0;right:0;bottom:0;background:linear-gradient(135deg,#ff7a59,#ff3d7f);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:system-ui">' +
+        '<div style="font-size:12px;letter-spacing:.2em;opacity:.85">FOCUS</div><div style="font-size:54px;font-weight:800">24:59</div><div style="margin-top:8px;padding:6px 16px;border-radius:20px;background:rgba(255,255,255,.25);font-size:12px;font-weight:700">Pause</div></div>' };
+    }
+  };
+
+  var panel = null, current = null;
+
+  function close(cb) {
+    if (!panel) { if (cb) cb(); return; }
+    var p = panel; panel = null;
+    if (current) current.classList.remove('active');
+    current = null;
+    p.classList.remove('open');
+    setTimeout(function () { p.remove(); if (cb) cb(); }, 420);
+  }
+
+  function open(chip) {
+    var name = chip.textContent.trim(), make = W[name];
+    if (!make) return;
+    var spec = make();
+    // insert after the last tile in the clicked tile's row
+    var top = chip.offsetTop, after = chip;
+    chips.forEach(function (c) { if (c.offsetTop === top) after = c; });
+    panel = document.createElement('li');
+    panel.className = 'wprev';
+    panel.innerHTML = '<div><div class="stagewrap">' + shell(chip, spec.w, spec.h, spec.title, spec.body, spec.sub) +
+      '<button class="wclose" aria-label="Close preview"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div></div>';
+    after.after(panel);
+    panel.querySelector('.wclose').onclick = function () { close(); };
+    if (spec.init) spec.init(panel.querySelector('.oc'));
+    current = chip; chip.classList.add('active');
+    requestAnimationFrame(function () { requestAnimationFrame(function () { if (panel) panel.classList.add('open'); }); });
+    setTimeout(function () {
+      var r = panel && panel.getBoundingClientRect();
+      if (r && (r.bottom > innerHeight || r.top < 80)) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 380);
+  }
+
+  chips.forEach(function (chip) {
+    chip.setAttribute('tabindex', '0');
+    chip.setAttribute('role', 'button');
+    function go() {
+      if (current === chip) return close();
+      if (panel) close(function () { open(chip); }); else open(chip);
+    }
+    chip.addEventListener('click', go);
+    chip.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && panel && !document.getElementById('lightbox').classList.contains('open')) close(); });
 })();
 </script>
 
