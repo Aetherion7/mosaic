@@ -226,8 +226,17 @@ header nav a:not(.btn) .i { width: 14px; height: 14px; opacity: .7; }
 .distro-label { display: block; font-size: 12px; font-weight: 600; color: var(--dim); margin: 16px 0 8px; }
 .codeblock {
   background: rgba(0,0,0,.35); border-radius: 8px; padding: 13px 15px;
-  font: 400 12px/1.6 'JetBrains Mono', monospace; color: #a9c8ff; overflow-x: auto; white-space: pre; margin-bottom: 10px;
+  font: 400 12px/1.6 'JetBrains Mono', monospace; color: #a9c8ff; margin-bottom: 10px;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-all; overflow: hidden;
+  position: relative; padding-right: 48px;
 }
+.copybtn {
+  position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border: 0; border-radius: 7px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; color: var(--soft);
+  background: rgba(255,255,255,.06); box-shadow: inset 0 1px 0 var(--edge); transition: background .2s, color .2s;
+}
+.copybtn:hover { background: rgba(255,255,255,.12); color: var(--text); }
+.copybtn.ok { color: #4ade80; }
 
 /* ── Privacy ──────────────────────────────────────────────────────────── */
 .priv { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 900px; margin: 0 auto; }
@@ -381,7 +390,8 @@ header.open .menu-btn .mi-close { opacity: 1; transform: none; }
   box-shadow: 0 4px 16px rgba(0,0,0,.4), 0 30px 80px -30px rgba(33,150,243,.35);
   overflow: hidden; position: relative;
 }
-.oc * { box-sizing: border-box; }
+.oc * { box-sizing: border-box; scrollbar-width: none; }
+.oc *::-webkit-scrollbar { display: none; }
 .oc button { font: inherit; color: inherit; }
 .oc-h { display: flex; align-items: center; gap: 6px; padding: 7px 12px 5px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .oc-h svg { width: 13px; height: 13px; color: var(--text2); opacity: .55; }
@@ -1105,29 +1115,51 @@ document.querySelectorAll('.shot img').forEach(function (img) {
       } };
     },
 
-    // ── CalendarWidget.tsx (month view, view mode) ───────────────────────
+    // ── CalendarWidget.tsx (week view, view mode) ────────────────────────
     'Calendar': function () {
-      var y = NOW.getFullYear(), m = NOW.getMonth(), td = NOW.getDate();
       var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-      var ev = {}; ev[td] = [['Team sync', '#2196f3'], ['Gym', '#00e5ff']]; ev[Math.min(28, td + 2)] = [['Dentist', '#00e5a0']]; ev[Math.max(1, td - 5)] = [['Exam', '#f87171']];
-      ev[Math.min(27, td + 6)] = [['Trip', '#fbbf24']]; ev[Math.min(28, td + 7)] = [['Trip', '#fbbf24']]; ev[Math.min(26, td + 10)] = [['Deadline', '#f87171'], ['Call mom', '#a78bfa']];
-      var first = (new Date(y, m, 1).getDay() + 6) % 7, days = new Date(y, m + 1, 0).getDate(), cells = '';
-      for (var i = 0; i < first; i++) cells += '<div></div>';
-      for (var d = 1; d <= days; d++) {
-        var isT = d === td, dots = (ev[d] || []).slice(0, 3).map(function (e) { return '<div style="width:4px;height:4px;border-radius:50%;background:' + (isT ? 'rgba(255,255,255,0.8)' : e[1]) + '"></div>'; }).join('');
-        cells += '<button style="display:flex;flex-direction:column;align-items:center;padding:3px 1px;border-radius:7px;border:none;background:' + (isT ? 'var(--accent)' : 'none') + ';min-height:28px;cursor:default">' +
-          '<span style="font-size:11px;font-weight:' + (isT ? 700 : 400) + ';color:' + (isT ? '#fff' : 'var(--text1)') + ';line-height:1">' + d + '</span>' +
-          (dots ? '<div style="display:flex;gap:2px;margin-top:2px;flex-wrap:wrap;justify-content:center">' + dots + '</div>' : '') + '</button>';
-      }
+      var HH = 44, mon = new Date(NOW); mon.setHours(0, 0, 0, 0); mon.setDate(NOW.getDate() - TODAY);
+      var days = []; for (var i = 0; i < 7; i++) { var d = new Date(mon); d.setDate(mon.getDate() + i); days.push(d); }
+      var end = days[6], sm = mon.getMonth(), em = end.getMonth();
+      var label = sm === em ? mon.getDate() + '. – ' + end.getDate() + '. ' + MONTHS[sm] + ' ' + mon.getFullYear() : mon.getDate() + '. ' + MONTHS[sm] + ' – ' + end.getDate() + '. ' + MONTHS[em] + ' ' + end.getFullYear();
+      // [day, start, end, title, color, location]
+      var evs = [[0, '09:00', '10:00', 'Team sync', '#2196f3', 'Room 2.14'], [0, '12:30', '13:30', 'Lunch', '#00b8d4'], [1, '10:00', '12:00', 'Statistics lecture', '#7c4dff', 'Hall B'],
+        [1, '17:00', '18:30', 'Gym', '#00e5a0'], [2, '08:30', '09:30', 'Dentist', '#26a69a', 'Dr. Weber'], [2, '14:00', '16:00', 'Exam prep', '#f87171'], [3, '11:00', '12:00', 'Call mom', '#a78bfa'],
+        [3, '18:00', '20:00', 'Football', '#fb8c00'], [4, '09:00', '11:30', 'Exam: Statistics', '#e53935', 'Room 0.01'], [4, '19:00', '22:00', 'Dinner with Lena', '#ec407a'], [5, '10:00', '13:00', 'Farmers market', '#00e5a0'],
+        [5, '15:00', '16:00', 'Reading', '#5c6bc0'], [6, '11:00', '12:30', 'Brunch', '#fbbf24']];
+      function m(t) { var p = t.split(':'); return +p[0] * 60 + +p[1]; }
+      var PIN = '<svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7.75 7-13a7 7 0 0 0-14 0c0 5.25 7 13 7 13z"/><circle cx="12" cy="9" r="2.5"/></svg>';
       var NAV = 'width:24px;height:24px;border-radius:7px;border:1px solid var(--border);background:none;color:var(--text2);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;';
-      return { w: 470, h: 380, title: 'Calendar', body:
-        '<div style="display:flex;flex-direction:column;height:100%;gap:6px;overflow:hidden">' +
+      var hdr = '<div style="display:flex;flex-shrink:0"><div style="width:34px;flex-shrink:0"></div>' + days.map(function (d, i) {
+        var t = i === TODAY;
+        return '<div style="flex:1;text-align:center;padding-bottom:4px;padding-top:2px"><div style="font-size:9px;color:var(--text3);font-weight:600">' + DAYS[i] + '</div><div style="font-size:12px;font-weight:700;color:' + (t ? '#fff' : 'var(--text1)') + ';background:' + (t ? 'var(--accent)' : 'transparent') + ';border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;margin:0 auto">' + d.getDate() + '</div></div>';
+      }).join('') + '</div>';
+      var times = '<div style="width:34px;flex-shrink:0">', cols = '';
+      for (var h = 0; h < 24; h++) times += '<div style="height:' + HH + 'px;font-size:9px;color:var(--text3);text-align:right;padding-right:5px;padding-top:3px;border-bottom:1px solid var(--border);line-height:1;box-sizing:border-box">' + pad(h) + ':00</div>';
+      times += '</div>';
+      days.forEach(function (d, i) {
+        var c = '<div style="flex:1;position:relative;border-left:1px solid var(--border);background:' + (i === TODAY ? 'rgba(139,116,240,0.04)' : 'transparent') + '">';
+        for (var h = 0; h < 24; h++) c += '<div style="height:' + HH + 'px;border-bottom:1px solid var(--border);box-sizing:border-box"></div>';
+        cols += c + '</div>';
+      });
+      var ov = evs.map(function (e) {
+        var top = m(e[1]) / 60 * HH, ht = Math.max(24, (m(e[2]) - m(e[1])) / 60 * HH - 2), dark = 'color-mix(in srgb, ' + e[4] + ' 60%, black)';
+        var left = 'calc(34px + ' + e[0] + ' * (100% - 34px) / 7 + 2px)', w = 'calc((100% - 34px) / 7 - 4px)';
+        var past = e[0] < TODAY;
+        return '<div style="position:absolute;left:' + left + ';width:' + w + ';top:' + top + 'px;height:' + ht + 'px;background:' + e[4] + ';border-radius:5px;padding:3px 4px;display:flex;flex-direction:column;gap:2px;z-index:4;box-shadow:0 1px 3px rgba(0,0,0,0.2);opacity:' + (past ? 0.35 : 1) + ';overflow:hidden">' +
+          '<div style="display:flex;align-items:center;gap:3px"><div style="background:' + dark + ';border-radius:3px;padding:1px 5px;font-size:8px;font-weight:700;color:white;white-space:nowrap;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">' + e[1] + ' – ' + e[2] + '</div></div>' +
+          '<div style="font-size:9px;font-weight:600;color:white;line-height:1.3;overflow:hidden;word-break:break-word">' + e[3] + '</div>' +
+          (e[5] ? '<div style="display:flex;align-items:center;gap:2px;min-width:0;color:rgba(255,255,255,0.8)"><span style="flex-shrink:0;display:flex">' + PIN + '</span><span style="font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + e[5] + '</span></div>' : '') + '</div>';
+      }).join('');
+      var nowTop = (NOW.getHours() * 60 + NOW.getMinutes()) / 60 * HH;
+      var line = '<div style="position:absolute;top:' + nowTop + 'px;left:calc(34px + ' + TODAY + ' * (100% - 34px) / 7);width:calc((100% - 34px) / 7);z-index:22;pointer-events:none"><div style="position:relative;height:2px;background:var(--danger)"><div style="position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--danger)"></div></div></div>';
+      return { w: 560, h: 440, title: 'Calendar', body:
+        '<div style="display:flex;flex-direction:column;height:100%;gap:6px;overflow:hidden;position:relative">' +
         '<div style="display:flex;align-items:center;gap:4px;min-width:0"><div style="flex:1"></div><button style="' + NAV + '">‹</button>' +
-        '<span style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:3px 10px;font-size:10px;font-weight:700;color:var(--text1);white-space:nowrap"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' + MONTHS[m] + ' ' + y + '</span>' +
-        '<button style="' + NAV + '">›</button><div style="flex:1;display:flex;justify-content:flex-end"><button style="display:flex;align-items:center;gap:5px;font-size:9px;font-weight:600;padding:4px 9px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2)">Month ' + CHEV + '</button></div></div>' +
-        '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px">' + DAYS.map(function (n) { return '<div style="font-size:9px;text-align:center;font-weight:700;color:var(--text3);padding-bottom:2px">' + n + '</div>'; }).join('') + '</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;flex:1;overflow-y:auto;align-content:start">' + cells + '</div>' +
-        '<div style="border-top:1px solid var(--border);padding-top:4px;max-height:48px;overflow-y:auto">' + ev[td].map(function (e) { return '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px"><div style="width:5px;height:5px;border-radius:50%;background:' + e[1] + '"></div><span style="font-size:10px;color:var(--text2)">' + e[0] + '</span></div>'; }).join('') + '</div></div>' };
+        '<span style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:3px 10px;font-size:10px;font-weight:700;color:var(--text1);white-space:nowrap"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' + label + '</span>' +
+        '<button style="' + NAV + '">›</button><div style="flex:1;display:flex;justify-content:flex-end"><button style="display:flex;align-items:center;gap:5px;font-size:9px;font-weight:600;padding:4px 9px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2)">Week ' + CHEV + '</button></div></div>' +
+        hdr + '<div class="cgrid" style="flex:1;overflow-y:auto;overflow-x:hidden;user-select:none"><div style="display:flex;position:relative">' + times + cols + ov + line + '</div></div></div>',
+        init: function (el) { var g = el.querySelector('.cgrid'); g.scrollTop = 8 * HH; } };
     },
 
     // ── NoteWidget.tsx (Tiptap content + .note-md-wrap CSS) ───────────────
@@ -1734,5 +1766,23 @@ document.querySelectorAll('.shot img').forEach(function (img) {
 })();
 </script>
 
+<script>
+// Copy button on every install code block.
+(function () {
+  var COPY = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+  var DONE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  document.querySelectorAll('pre.codeblock').forEach(function (pre) {
+    var text = pre.textContent;
+    var b = document.createElement('button');
+    b.className = 'copybtn'; b.type = 'button'; b.title = 'Copy'; b.setAttribute('aria-label', 'Copy command'); b.innerHTML = COPY;
+    b.onclick = function () {
+      function done() { b.innerHTML = DONE; b.classList.add('ok'); setTimeout(function () { b.innerHTML = COPY; b.classList.remove('ok'); }, 1600); }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+      function fallback() { var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch (e) {} t.remove(); }
+    };
+    pre.appendChild(b);
+  });
+})();
+</script>
 </body>
 </html>
