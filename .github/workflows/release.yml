@@ -30,6 +30,14 @@ on:
   push:
     tags:
       - 'v*'
+  # Manueller Start (Actions → "Release desktop apps" → Run workflow): baut
+  # den aktuellen Stand des gewählten Branches und legt das Release samt Tag
+  # selbst an — für Fälle, in denen kein Tag gepusht werden kann.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag to create, e.g. v1.12.19 (must match package.json)'
+        required: true
 
 permissions:
   contents: write
@@ -118,6 +126,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           draft: false
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           fail_on_unmatched_files: true
           # Auto-generated "What's Changed" body — electron-updater reads this
           # release's notes and the in-app update popup (electron/main.js,
