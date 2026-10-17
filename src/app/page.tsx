@@ -23,6 +23,26 @@ import { useT } from '@/hooks/useT'
 import type { Board, WidgetType } from '@/types'
 
 // Waehlbare Ordnerfarben (Kachel-Rahmen + Tint der Ordner-Kacheln)
+// Farbpaletten der Board-Übersicht (Hell/Dunkel) — bläulich, abgeleitet aus der
+// Website (docs/index.html): Nachtblau-Grund, Glas-Flächen, Akzent #2f6bff.
+// Gelten nur für die Übersicht; Boards behalten ihre eigenen Themes.
+const HOME_UI: Record<'dark' | 'light', Record<string, string>> = {
+  dark: {
+    '--bg': '#03060f', '--surface': '#0a1224', '--surface2': '#0f1a33', '--surface3': '#15223f',
+    '--border': '#1c2a4a', '--accent': '#3d7bff', '--accent2': '#6ea8ff',
+    '--text1': '#e8eefc', '--text2': '#9fb0cf', '--text3': '#66789a',
+    '--danger': '#f87171', '--success': '#4ade80', '--amber': '#fbbf24',
+    '--shadow-color': '#000000', '--popover-bg': 'rgba(10, 18, 36, 0.94)', '--on-accent': '#ffffff',
+  },
+  light: {
+    '--bg': '#eef3fc', '--surface': '#ffffff', '--surface2': '#f4f7fd', '--surface3': '#e7eefb',
+    '--border': '#d6e0f2', '--accent': '#2f6bff', '--accent2': '#0b8cff',
+    '--text1': '#0e1a33', '--text2': '#4a5b7d', '--text3': '#7d8cab',
+    '--danger': '#ef4444', '--success': '#16a34a', '--amber': '#d97706',
+    '--shadow-color': 'rgba(30, 60, 140, 0.18)', '--popover-bg': 'var(--surface)', '--on-accent': '#ffffff',
+  },
+}
+
 // Kachelmaße der Board-Übersicht — kleiner als früher (280 px), damit mehr
 // Boards nebeneinander passen; Haupt- und Ordnerraster nutzen dieselben Werte.
 const CARD_MIN = 180
@@ -740,11 +760,11 @@ export default function HomePage() {
     ? (systemPrefersDark ? 'dark' : 'light')
     : homeThemeMode
   useEffect(() => {
-    // Setzt die CSS-Variablen der Seite (Deep Space bzw. Light-Theme);
-    // beim Öffnen eines Boards übernimmt dessen eigenes Theme wieder.
-    const theme = getTheme(uiMode === 'light' ? 'light' : 'dark')
-    const root  = document.documentElement
-    Object.entries(theme.cssVars).forEach(([k, v]) => root.style.setProperty(k, v))
+    // Setzt die CSS-Variablen der Übersicht — eigene blaue Paletten passend
+    // zur Website (HOME_UI), nicht die Board-Themes; beim Öffnen eines Boards
+    // übernimmt dessen eigenes Theme wieder.
+    const root = document.documentElement
+    Object.entries(HOME_UI[uiMode]).forEach(([k, v]) => root.style.setProperty(k, v))
   }, [uiMode])
 
   // Speicher-Statistik — zeigt wie Einstellungen → Daten (DatenPanel.tsx)
@@ -1067,7 +1087,7 @@ export default function HomePage() {
       <div style={{ display: 'flex', alignItems: 'center', padding: '20px 36px 0' }}>
         <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mosaiclogo.png" alt="mosaic" width={32} height={32} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <img src="/mosaiclogo-blue.png" alt="mosaic" width={32} height={32} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         </div>
         <span style={{ fontSize: 28, fontWeight: 400, color: 'var(--text1)', marginLeft: 10, fontFamily: 'Guavine, sans-serif', lineHeight: 1 }}>mosaic</span>
 
@@ -1548,7 +1568,7 @@ export default function HomePage() {
             key={f}
             folder={f}
             list={list}
-            color={folderColors[f] ?? '#7c6fe8'}
+            color={folderColors[f] ?? '#5b8fff'}
             collapsed={collapsedFolders.includes(f)}
             animations={animations}
             menuOpen={folderMenuFor === f}
