@@ -381,7 +381,7 @@ header.open .menu-btn .mi-close { opacity: 1; transform: none; }
 .oc * { box-sizing: border-box; }
 .oc button { font: inherit; color: inherit; }
 .oc-h { display: flex; align-items: center; gap: 6px; padding: 7px 12px 5px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.oc-h svg { width: 11px; height: 11px; color: var(--text2); opacity: .55; }
+.oc-h svg { width: 13px; height: 13px; color: var(--text2); opacity: .55; }
 .oc-h b { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; }
 .oc-h i { font-style: normal; font-size: 10px; font-weight: 600; color: var(--text2); }
 .oc-b { flex: 1; min-height: 0; position: relative; overflow: hidden; }
@@ -1010,11 +1010,22 @@ document.querySelectorAll('.shot img').forEach(function (img) {
   var DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   var TODAY = 3; // Thursday — earlier days are "past" (dimmed), like in the app
 
-  function shell(chip, w, h, title, body, sub) {
-    var icon = chip.querySelector('svg').outerHTML;
+  var Ic = function (p) { return '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.85" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; };
+  var IC = {
+    water: Ic('<path d="M8 2 C8 2 3 8 3 10 a5 5 0 0 0 10 0 C13 8 8 2 8 2Z"/>'),
+    sleep: Ic('<path d="M13.5 9.8A6 6 0 0 1 6.2 2.5 6 6 0 1 0 13.5 9.8Z"/><line x1="10.5" y1="3" x2="13.5" y2="3"/><line x1="13.5" y1="3" x2="10.5" y2="6"/><line x1="10.5" y1="6" x2="13.5" y2="6"/>'),
+    draw: Ic('<rect x="1.5" y="1.5" width="13" height="13" rx="2"/><path d="M4 10 Q6 5.5 8.5 8 Q10.5 10 12.5 6"/>')
+  };
+  var STATS = '<div style="width:100%;display:flex;align-items:center;justify-content:center;gap:5px;padding:5px 6px;font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg)"><polyline points="6,9 12,15 18,9"/></svg>Stats</div>';
+  var NB = 'width:18px;height:18px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--text2);display:flex;align-items:center;justify-content:center;padding:0;';
+  var NAVL = '<button style="' + NB + '"><svg width="7" height="7" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7,1 3,5 7,9"/></svg></button>';
+  var NAVR = '<button style="' + NB + 'opacity:.25"><svg width="7" height="7" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,1 7,5 3,9"/></svg></button>';
+
+  function shell(chip, w, h, title, body, sub, icon, pad) {
+    icon = icon || chip.querySelector('svg').outerHTML;
     return '<div class="oc" style="--w:' + w + 'px;--h:' + h + 'px">' +
       '<div class="oc-h">' + icon + '<b>' + title + '</b>' + (sub ? '<i>· ' + sub + '</i>' : '') + '</div>' +
-      '<div class="oc-b">' + body + '</div></div>';
+      '<div class="oc-b"' + (pad ? ' style="padding:10px 12px"' : '') + '>' + (pad ? '<div style="height:100%">' + body + '</div>' : body) + '</div></div>';
   }
 
   var W = {
@@ -1098,21 +1109,6 @@ document.querySelectorAll('.shot img').forEach(function (img) {
         '<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--border)"><span style="font-size:9px;font-weight:700;color:var(--text3);background:var(--surface2);padding:3px 6px;border-radius:5px">D6</span>' +
         '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--text1)">=SUM(D2:D5)</span></div>' +
         '<table style="border-collapse:collapse;width:100%">' + '<tr>' + th + '</tr>' + rows + '</table>' };
-    },
-
-    'Drawboard': function () {
-      var tools = ['M3 21l3-1L19 7l-2-2L4 18z', 'M4 20h16', 'M5 12a7 7 0 1 0 14 0a7 7 0 1 0-14 0', 'M4 4h16v16H4z', 'M5 19L19 5'];
-      return { w: 460, h: 340, title: 'Drawboard', body:
-        '<div style="position:absolute;inset:0;background:#fff"></div>' +
-        '<svg viewBox="0 0 460 300" style="position:absolute;inset:0;width:100%;height:100%">' +
-        '<path d="M60 220 C 90 120, 160 110, 190 170 S 280 250, 320 140" fill="none" stroke="#2196f3" stroke-width="5" stroke-linecap="round"/>' +
-        '<rect x="250" y="60" width="120" height="70" rx="6" fill="none" stroke="#0e2452" stroke-width="3"/>' +
-        '<circle cx="110" cy="90" r="34" fill="none" stroke="#f87171" stroke-width="3"/>' +
-        '<path d="M330 200 l40 40 M370 200 l-40 40" stroke="#00b8d4" stroke-width="4" stroke-linecap="round"/></svg>' +
-        '<div style="position:absolute;left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:3px;padding:4px;border-radius:10px;background:var(--surface);border:1px solid var(--border);box-shadow:0 6px 18px rgba(0,0,0,.35)">' +
-        tools.map(function (p, i) { return '<span style="width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;' + (i === 0 ? 'background:var(--accent);color:#fff' : 'color:var(--text2)') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="' + p + '"/></svg></span>'; }).join('') +
-        ['#2196f3', '#f87171', '#00b8d4', '#0e2452'].map(function (c) { return '<span style="width:26px;height:26px;display:flex;align-items:center;justify-content:center"><span style="width:14px;height:14px;border-radius:50%;background:' + c + ';border:1.5px solid rgba(255,255,255,.3)"></span></span>'; }).join('') +
-        '</div>' };
     },
 
     'PDF/EPUB reader': function () {
@@ -1212,43 +1208,207 @@ document.querySelectorAll('.shot img').forEach(function (img) {
     },
 
     'Water tracker': function () {
-      var sec = '';
-      for (var i = 0; i < 4; i++) sec += '<div class="ws" data-i="' + (3 - i) + '" style="flex:1;border-top:' + (i ? '1px dashed color-mix(in srgb,var(--accent2) 30%,transparent)' : 'none') + ';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;position:relative;z-index:1">' + ['2L', '1.5L', '1L', '500ml'][i] + '</div>';
-      return { w: 300, h: 380, title: 'Water', body:
-        '<div style="display:flex;flex-direction:column;align-items:center;height:100%;padding:12px 0 10px">' +
-        '<div style="width:22px;height:16px;border:1.5px solid var(--border);border-bottom:0;border-radius:4px 4px 0 0;background:var(--surface2)"></div>' +
-        '<div style="width:34px;height:22px;border:1.5px solid var(--border);border-bottom:0;border-radius:6px 6px 0 0;background:var(--surface2)"></div>' +
-        '<div class="bottle" style="position:relative;width:130px;flex:1;border:1.5px solid var(--border);border-radius:26px 26px 14px 14px;background:var(--surface2);overflow:hidden;display:flex;flex-direction:column">' +
-        '<div class="fill" style="position:absolute;left:0;right:0;bottom:0;height:50%;background:linear-gradient(180deg,color-mix(in srgb,var(--accent2) 70%,transparent),color-mix(in srgb,var(--accent) 80%,transparent));transition:height .5s cubic-bezier(.2,.7,.2,1)"></div>' + sec + '</div>' +
-        '<div class="wl" style="margin-top:10px;font-size:11px;font-weight:700;color:var(--text2)">1000 / 2000 ml</div></div>',
+      // 1:1 port of WaterWidget.tsx (Bottle + WeekBottlesChart + StatsToggle)
+      var capL = 28, capR = 52, capT = 2, capB = 10, colL = 25, colR = 55, colT = capB, colB = 13;
+      var nkL = 27, nkR = 53, nkT = colB, nkB = 34, bL = 6, bR = 74, bT = 55, bB = 200, bW = bR - bL, bH = bB - bT, rx = 10;
+      var outline = ['M ' + capL + ',' + capT, 'L ' + capR + ',' + capT, 'L ' + capR + ',' + capB, 'L ' + colR + ',' + colT, 'L ' + colR + ',' + colB,
+        'L ' + nkR + ',' + nkT, 'L ' + nkR + ',' + nkB, 'C ' + (bR + 4) + ',' + (nkB + 6) + ' ' + bR + ',' + (bT - 6) + ' ' + bR + ',' + bT,
+        'L ' + bR + ',' + (bB - rx), 'Q ' + bR + ',' + bB + ' ' + (bR - rx) + ',' + bB, 'L ' + (bL + rx) + ',' + bB, 'Q ' + bL + ',' + bB + ' ' + bL + ',' + (bB - rx),
+        'L ' + bL + ',' + bT, 'C ' + bL + ',' + (bT - 6) + ' ' + (bL - 4) + ',' + (nkB + 6) + ' ' + nkL + ',' + nkB,
+        'L ' + nkL + ',' + nkT, 'L ' + colL + ',' + colB, 'L ' + colL + ',' + colT, 'L ' + capL + ',' + capB, 'Z'].join(' ');
+      var uid = 0;
+      function fmt(ml) { return ml >= 1000 ? (ml % 1000 === 0 ? ml / 1000 + 'L' : (ml / 1000).toFixed(2).replace(/\.?0+$/, '') + 'L') : ml + 'ml'; }
+      function defs(id) {
+        return '<defs><clipPath id="c' + id + '"><path d="' + outline + '"/></clipPath>' +
+          '<linearGradient id="b' + id + '" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(255,255,255,0.06)"/><stop offset="50%" stop-color="rgba(255,255,255,0.03)"/><stop offset="100%" stop-color="rgba(255,255,255,0.08)"/></linearGradient>' +
+          '<linearGradient id="g' + id + '" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="white" stop-opacity="0.18"/><stop offset="35%" stop-color="white" stop-opacity="0.06"/><stop offset="100%" stop-color="white" stop-opacity="0"/></linearGradient></defs>';
+      }
+      function capNeck() {
+        return '<rect x="' + capL + '" y="' + capT + '" width="' + (capR - capL) + '" height="' + (capB - capT) + '" rx="3" fill="var(--surface3)" stroke="var(--border)" stroke-width="1"/>' +
+          [0.33, 0.66].map(function (f) { var x = capL + (capR - capL) * f; return '<line x1="' + x + '" y1="' + (capT + 1) + '" x2="' + x + '" y2="' + (capB - 1) + '" stroke="var(--border)" stroke-width="0.8"/>'; }).join('') +
+          [0.3, 0.6].map(function (f) { var y = nkT + (nkB - nkT) * f; return '<line x1="' + nkL + '" y1="' + y + '" x2="' + nkR + '" y2="' + y + '" stroke="var(--border)" stroke-width="0.7"/>'; }).join('');
+      }
+      function bottle(filled, n, per, goal) {
+        var id = 'wb' + (uid++), secH = bH / n, fh = filled * secH, ft = bB - fh, s = '';
+        s += '<svg width="100%" height="100%" viewBox="0 0 95 220" style="overflow:visible">' + defs(id);
+        s += '<path d="' + outline + '" fill="url(#b' + id + ')" stroke="var(--border)" stroke-width="1.2"/><g clip-path="url(#c' + id + ')">';
+        if (filled > 0) s += '<rect x="' + bL + '" y="' + ft + '" width="' + bW + '" height="' + fh + '" fill="var(--accent)" opacity="0.82"/>';
+        for (var i = 0; i < n - 1; i++) { var y = bB - (i + 1) * secH; s += '<line x1="' + bL + '" y1="' + y + '" x2="' + bR + '" y2="' + y + '" stroke="var(--border)" stroke-width="1"' + (i + 1 < filled ? '' : ' stroke-dasharray="3 2"') + '/>'; }
+        if (filled > 0 && filled < n) s += '<rect x="' + bL + '" y="' + ft + '" width="' + bW + '" height="' + Math.min(6, secH * 0.4) + '" fill="rgba(255,255,255,0.18)" rx="1"/>';
+        s += '<rect x="' + bL + '" y="' + bT + '" width="' + bW * 0.28 + '" height="' + bH + '" fill="url(#g' + id + ')"/>';
+        for (i = 0; i < n; i++) { var cy = bB - i * secH - secH / 2; s += '<text x="' + (bL + bR) / 2 + '" y="' + (cy + 3.5) + '" text-anchor="middle" font-size="' + Math.min(8, secH * 0.45) + '" fill="' + (i < filled ? 'rgba(255,255,255,0.75)' : 'var(--text3)') + '" font-weight="' + (i < filled ? 600 : 400) + '">' + fmt(Math.min(goal, (i + 1) * per)) + '</text>'; }
+        s += '</g><path d="' + outline + '" fill="none" stroke="var(--border)" stroke-width="1.4"/>' + capNeck();
+        for (i = 0; i <= n; i++) { y = bB - i * secH; s += '<g><line x1="' + (bR + 1) + '" y1="' + y + '" x2="' + (bR + 5) + '" y2="' + y + '" stroke="var(--border)" stroke-width="0.8"/><text x="' + (bR + 8) + '" y="' + (y + 3.5) + '" font-size="6.5" fill="var(--text3)">' + fmt(Math.min(goal, i * per)) + '</text></g>'; }
+        for (i = 0; i < n; i++) s += '<rect class="sec" data-i="' + i + '" x="' + bL + '" y="' + (bB - (i + 1) * secH) + '" width="' + bW + '" height="' + secH + '" fill="transparent" style="cursor:pointer"/>';
+        if (filled >= n) s += '<polyline points="' + ((bL + bR) / 2 - 14) + ',' + (bT + bH / 2 + 2) + ' ' + ((bL + bR) / 2 - 2) + ',' + (bT + bH / 2 + 16) + ' ' + ((bL + bR) / 2 + 16) + ',' + (bT + bH / 2 - 10) + '" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>';
+        return s + '</svg>';
+      }
+      function mini(pct, faded, today) {
+        var id = 'wm' + (uid++), fh = pct * bH, ft = bB - fh, s = '<svg width="100%" viewBox="0 0 80 210" style="opacity:' + (faded ? 0.25 : 1) + ';overflow:visible">' + defs(id);
+        s += '<path d="' + outline + '" fill="url(#b' + id + ')" stroke="var(--border)" stroke-width="1.2"/><g clip-path="url(#c' + id + ')">';
+        if (fh > 0) s += '<rect x="' + bL + '" y="' + ft + '" width="' + bW + '" height="' + fh + '" fill="var(--accent2)" opacity="0.82"/>';
+        if (fh > 0 && fh < bH) s += '<rect x="' + bL + '" y="' + ft + '" width="' + bW + '" height="' + Math.min(5, fh * 0.3) + '" fill="rgba(255,255,255,0.18)" rx="1"/>';
+        s += '<rect x="' + bL + '" y="' + bT + '" width="' + bW * 0.28 + '" height="' + bH + '" fill="url(#g' + id + ')"/></g>';
+        s += '<path d="' + outline + '" fill="none" stroke="' + (today ? 'var(--accent2)' : 'var(--border)') + '" stroke-width="' + (today ? 1.8 : 1.4) + '" opacity="' + (today ? 0.7 : 1) + '"/>' + capNeck();
+        if (pct >= 1) s += '<polyline points="' + ((bL + bR) / 2 - 11) + ',' + (bT + bH / 2 + 2) + ' ' + ((bL + bR) / 2 - 2) + ',' + (bT + bH / 2 + 13) + ' ' + ((bL + bR) / 2 + 13) + ',' + (bT + bH / 2 - 8) + '" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>';
+        return s + '</svg>';
+      }
+      var GOAL = 2000, PER = 500, N = 4, week = [2000, 1500, 2000, 0, 0, 0, 0];
+      function body(filled) {
+        var logged = filled * PER, pct = Math.min(1, logged / GOAL);
+        week[TODAY] = logged;
+        return '<div class="wroot" style="display:flex;flex-direction:column;height:100%;gap:5px;align-items:center">' +
+          '<div style="display:flex;align-items:baseline;gap:4px;flex-shrink:0"><span style="font-size:20px;font-weight:800;color:var(--accent2);line-height:1">' + fmt(logged) + '</span><span style="font-size:11px;color:var(--text3)">/ ' + fmt(GOAL) + '</span><span style="font-size:10px;color:' + (pct >= 1 ? 'var(--accent2)' : 'var(--text3)') + ';margin-left:2px">' + Math.round(pct * 100) + '%</span></div>' +
+          '<div style="flex:1;min-height:120px;width:100%;display:flex;justify-content:center">' + bottle(filled, N, PER, GOAL) + '</div>' +
+          '<button class="wreset" style="flex-shrink:0;padding:3px 14px;font-size:10px;font-weight:600;border-radius:50px;border:1px solid var(--border);background:var(--surface2);color:var(--text3);cursor:pointer">Reset</button>' +
+          '<div style="flex-shrink:0;width:100%;border-top:1px solid var(--border)">' + STATS +
+          '<div style="display:flex;align-items:center;padding:0 6px 4px;gap:2px;justify-content:center">' + NAVL + '<span style="font-size:8px;font-weight:600;color:var(--text2);white-space:nowrap;text-align:center;min-width:68px">This week</span>' + NAVR + '</div>' +
+          '<div style="padding:0 6px 8px"><div style="display:flex;gap:3px;align-items:flex-end">' + DAYS.map(function (d, i) {
+            return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">' + mini(i > TODAY ? 0 : Math.min(1, week[i] / GOAL), i > TODAY, i === TODAY) +
+              '<span style="font-size:6.5px;font-weight:' + (i === TODAY ? 700 : 400) + ';color:' + (i === TODAY ? 'var(--text2)' : 'var(--text3)') + '">' + d + '</span></div>';
+          }).join('') + '</div></div></div></div>';
+      }
+      var state = 2;
+      return { w: 250, h: 470, title: 'Water', icon: IC.water, pad: true, body: body(state),
         init: function (el) {
-          var filled = 2;
-          el.querySelectorAll('.ws').forEach(function (s) {
-            s.onclick = function () {
-              var i = +s.dataset.i; filled = (filled === i + 1) ? i : i + 1;
-              el.querySelector('.fill').style.height = filled * 25 + '%';
-              el.querySelector('.wl').textContent = filled * 500 + ' / 2000 ml';
-              el.querySelectorAll('.ws').forEach(function (x) { x.style.color = +x.dataset.i < filled ? '#fff' : 'var(--text2)'; });
-            };
-          });
-          el.querySelectorAll('.ws').forEach(function (x) { x.style.color = +x.dataset.i < filled ? '#fff' : 'var(--text2)'; });
+          var host = el.querySelector('.oc-b > div');
+          function wire() {
+            host.querySelectorAll('.sec').forEach(function (r) {
+              r.onclick = function () { var i = +r.dataset.i; state = (i === state - 1) ? i : i + 1; host.innerHTML = body(state); wire(); };
+            });
+            host.querySelector('.wreset').onclick = function () { state = 0; host.innerHTML = body(state); wire(); };
+          }
+          wire();
         } };
     },
 
     'Sleep tracker': function () {
-      var hrs = [7.2, 6.5, 8.1, 7.0, 0, 0, 0];
-      var bars = hrs.map(function (h, i) {
-        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="flex:1;width:100%;display:flex;align-items:flex-end"><div style="width:100%;height:' + (h / 9 * 100) + '%;border-radius:4px 4px 2px 2px;background:linear-gradient(180deg,#5b8cff,color-mix(in srgb,var(--accent) 60%,transparent))"></div></div><span style="font-size:8px;font-weight:' + (i === TODAY ? 700 : 500) + ';color:' + (i === TODAY ? 'var(--text1)' : 'var(--text3)') + '">' + DAYS[i] + '</span></div>';
-      }).join('');
-      var field = function (l, v) { return '<div style="flex:1;padding:6px 8px;border-radius:8px;background:var(--surface2);border:1px solid var(--border)"><div style="font-size:8px;font-weight:700;color:var(--text3);letter-spacing:.06em">' + l + '</div><div style="font-size:14px;font-weight:700;margin-top:2px">' + v + '</div></div>'; };
-      return { w: 360, h: 330, title: 'Sleep', body:
-        '<div style="padding:10px 12px;display:flex;flex-direction:column;height:100%;gap:10px">' +
-        '<div style="font-size:11px;color:var(--text2)"><b style="font-size:18px;color:var(--text1)">7h 00m</b> / 8 h goal</div>' +
-        '<div style="display:flex;gap:6px">' + field('🌙 BEDTIME', '23:30') + field('☀ WAKE UP', '06:30') + '</div>' +
-        '<div style="font-size:8px;font-weight:700;color:var(--text3);text-align:center;letter-spacing:.06em">⌃ STATS · THIS WEEK</div>' +
-        '<div style="flex:1;display:flex;gap:6px;position:relative;border-bottom:1px solid var(--border);padding-bottom:2px"><div style="position:absolute;left:0;right:0;top:' + (100 - 8 / 9 * 100) + '%;border-top:1px dashed var(--text3);opacity:.6"></div>' + bars + '</div></div>' };
+      // 1:1 port of SleepWidget.tsx (SleepTimeField + SleepDial + SleepWeekChart)
+      var CX = 100, CY = 100, R = 74, TW = 14, CARD = { 0: 1, 6: 1, 12: 1, 18: 1 };
+      function polar(r, a) { var rad = a * Math.PI / 180; return { x: CX + r * Math.sin(rad), y: CY - r * Math.cos(rad) }; }
+      function mins(t) { var p = t.split(':'); return +p[0] * 60 + +p[1]; }
+      function toT(m) { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+      var MOON = '<svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 9.8A6 6 0 0 1 6.2 2.5 6 6 0 1 0 13.5 9.8Z"/></svg>';
+      var SUN = '<svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M3.4 12.6l1.3-1.3M11.3 4.7l1.3-1.3"/></svg>';
+      function dial(bed, wake) {
+        var ba = mins(bed) / 1440 * 360, wr = mins(wake) / 1440 * 360, wa = wr <= ba ? wr + 360 : wr;
+        var p1 = polar(R, ba), p2 = polar(R, wa % 360), mid = (ba + wa) / 2, s = '';
+        s += '<circle cx="100" cy="100" r="' + R + '" fill="none" stroke="var(--surface2)" stroke-width="' + TW + '"/>';
+        for (var h = 0; h < 24; h++) { var a = h / 24 * 360, mj = h % 6 === 0, o = polar(R + TW / 2 + 2, a), n = polar(R + TW / 2 - (mj ? 6 : 3), a); s += '<line x1="' + n.x + '" y1="' + n.y + '" x2="' + o.x + '" y2="' + o.y + '" stroke="var(--text3)" stroke-width="' + (mj ? 1.4 : 0.8) + '" opacity="' + (mj ? 0.55 : 0.28) + '"/>'; }
+        s += '<path d="M ' + p1.x + ' ' + p1.y + ' A ' + R + ' ' + R + ' 0 ' + (wa - ba > 180 ? 1 : 0) + ' 1 ' + p2.x + ' ' + p2.y + '" fill="none" stroke="var(--accent)" stroke-width="' + TW + '" stroke-linecap="round" opacity="0.85"/>';
+        [-6, 0, 6].forEach(function (off) { var p = polar(R, mid + off); s += '<circle cx="' + p.x + '" cy="' + p.y + '" r="1.6" fill="white" opacity="0.85"/>'; });
+        [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22].forEach(function (h) { var c = CARD[h], p = polar(R - TW / 2 - (c ? 11 : 9), h / 24 * 360); s += '<text x="' + p.x + '" y="' + p.y + '" text-anchor="middle" dominant-baseline="middle" font-size="' + (c ? 8 : 6.5) + '" font-weight="' + (c ? 700 : 500) + '" fill="var(--text3)" opacity="' + (c ? 1 : 0.7) + '">' + String(h).padStart(2, '0') + '</text>'; });
+        s += '<g class="hb" data-w="bed" style="cursor:grab"><circle cx="' + p1.x + '" cy="' + p1.y + '" r="11" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/><g transform="translate(' + (p1.x - 4) + ',' + (p1.y - 4) + ')" style="color:var(--accent)">' + MOON + '</g></g>';
+        s += '<g class="hb" data-w="wake" style="cursor:grab"><circle cx="' + p2.x + '" cy="' + p2.y + '" r="11" fill="var(--surface)" stroke="#f2b84b" stroke-width="2"/><g transform="translate(' + (p2.x - 4) + ',' + (p2.y - 4) + ')" style="color:#f2b84b">' + SUN + '</g></g>';
+        return s;
+      }
+      function dur(bed, wake) { var d = mins(wake) - mins(bed); if (d <= 0) d += 1440; return Math.floor(d / 60) + ' h ' + (d % 60) + ' min'; }
+      var vals = [7.25, 6.5, 8.25, 0, 0, 0, 0], goal = 8, yMax = Math.max(goal + 1, Math.ceil(Math.max.apply(null, vals)));
+      var Wc = 260, Hc = 78, P = { t: 6, r: 4, b: 14, l: 18 }, cW = Wc - P.l - P.r, cH = Hc - P.t - P.b, gW = cW / 7, bw = Math.min(gW * 0.6, 20);
+      function py(v) { return P.t + cH * (1 - v / yMax); }
+      var chart = '<svg width="100%" viewBox="0 0 ' + Wc + ' ' + Hc + '">' + [0, Math.round(yMax / 2), yMax].map(function (v) { return '<line x1="' + P.l + '" y1="' + py(v) + '" x2="' + (Wc - P.r) + '" y2="' + py(v) + '" stroke="color-mix(in srgb, var(--border) 55%, transparent)" stroke-width="0.5"/><text x="' + (P.l - 3) + '" y="' + (py(v) + 3) + '" text-anchor="end" font-size="6" fill="var(--text3)">' + v + 'h</text>'; }).join('') +
+        '<line x1="' + P.l + '" y1="' + py(goal) + '" x2="' + (Wc - P.r) + '" y2="' + py(goal) + '" stroke="var(--accent)" stroke-width="1" stroke-dasharray="4 3" opacity="0.55"/>' +
+        vals.map(function (v, i) { var x = P.l + i * gW + (gW - bw) / 2; return (v > 0 ? '<rect x="' + x + '" y="' + py(v) + '" width="' + bw + '" height="' + Math.max(1, cH - (py(v) - P.t)) + '" rx="3" fill="' + (v >= goal ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 55%, var(--surface3))') + '" opacity="' + (i === TODAY ? 1 : 0.8) + '"/>' : '') +
+          '<text x="' + (P.l + i * gW + gW / 2) + '" y="' + (Hc - P.b + 9) + '" text-anchor="middle" font-size="6.5" fill="' + (i === TODAY ? 'var(--text2)' : 'var(--text3)') + '" font-weight="' + (i === TODAY ? 700 : 400) + '" opacity="' + (i > TODAY ? 0.4 : 1) + '">' + DAYS[i] + '</text>'; }).join('') + '</svg>';
+      function field(icon, label, v, right) { return '<label style="display:flex;flex-direction:column;gap:1px;align-items:' + (right ? 'flex-end' : 'flex-start') + ';min-width:0"><span style="display:flex;align-items:center;gap:3px;font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">' + icon + label + '</span><span class="' + (right ? 'fw' : 'fb') + '" style="font-size:13px;font-weight:800;color:var(--text1);white-space:nowrap;font-variant-numeric:tabular-nums">' + v + '</span></label>'; }
+      var bed = '23:30', wake = '07:00';
+      return { w: 270, h: 500, title: 'Sleep', icon: IC.sleep, pad: true, body:
+        '<div style="display:flex;flex-direction:column;height:100%;gap:4px">' +
+        '<div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center"><div style="width:min(240px,100%)">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:-16px;position:relative;z-index:1">' + field(MOON, 'Bedtime', bed) + field(SUN, 'Woke up', wake, true) + '</div>' +
+        '<div style="aspect-ratio:1/1;width:100%"><svg class="dial" viewBox="0 0 200 200" width="100%" height="100%" style="max-width:240px;max-height:240px;touch-action:none;overflow:visible;user-select:none">' + dial(bed, wake) + '</svg></div></div></div>' +
+        '<div class="sd" style="text-align:center;flex-shrink:0;margin:2px 0 6px;font-size:13px;font-weight:700;color:var(--text1)">' + dur(bed, wake) + '</div>' +
+        '<button style="align-self:center;flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 22px;border-radius:8px;border:none;margin-bottom:10px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;cursor:pointer"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Log sleep</button>' +
+        '<div style="flex-shrink:0;margin-top:auto;width:100%;border-top:1px solid var(--border)">' + STATS +
+        '<div style="display:flex;align-items:center;padding:0 6px 4px;gap:2px;justify-content:center">' + NAVL + '<span style="font-size:8px;font-weight:600;color:var(--text2);white-space:nowrap;text-align:center;min-width:68px">This week</span>' + NAVR + '</div>' +
+        '<div style="padding:0 4px 4px">' + chart + '</div></div></div>',
+        init: function (el) {
+          var svg = el.querySelector('.dial');
+          function redraw() { svg.innerHTML = dial(bed, wake); el.querySelector('.fb').textContent = bed; el.querySelector('.fw').textContent = wake; el.querySelector('.sd').textContent = dur(bed, wake); }
+          svg.addEventListener('pointerdown', function (e) {
+            var r = svg.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 200, y = (e.clientY - r.top) / r.height * 200;
+            var p1 = polar(R, mins(bed) / 1440 * 360), p2 = polar(R, mins(wake) / 1440 * 360);
+            var d1 = Math.hypot(x - p1.x, y - p1.y), d2 = Math.hypot(x - p2.x, y - p2.y);
+            if (Math.min(d1, d2) > 16) return;
+            e.preventDefault();
+            var which = d1 <= d2 ? 'bed' : 'wake';
+            function mv(ev) {
+              var rr = svg.getBoundingClientRect(), xx = (ev.clientX - rr.left) / rr.width * 200 - CX, yy = (ev.clientY - rr.top) / rr.height * 200 - CY;
+              var a = Math.atan2(xx, -yy) * 180 / Math.PI; if (a < 0) a += 360;
+              var t = toT(Math.round(a / 360 * 1440 / 5) * 5);
+              if (which === 'bed') bed = t; else wake = t; redraw();
+            }
+            function up() { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); }
+            addEventListener('pointermove', mv); addEventListener('pointerup', up);
+          });
+        } };
     },
 
+    'Drawboard': function () {
+      // 1:1 port of DrawboardWidget.tsx toolbar (edit mode) + canvas + zoom HUD
+      var BTN = 'width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0;';
+      var ACT = 'background:var(--accent);color:#fff;';
+      function I(p, sw) { return '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="' + (sw || 1.6) + '" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
+      var SEP = '<div style="width:1px;height:20px;background:var(--border);margin:0 1px"></div>';
+      var CARET = '<svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><path d="M1 2l3 4 3-4z"/></svg>';
+      var grid = '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">' + [3.5, 8, 12.5].map(function (v) { return '<line x1="' + v + '" y1="1.5" x2="' + v + '" y2="14.5"/><line x1="1.5" y1="' + v + '" x2="14.5" y2="' + v + '"/>'; }).join('') + '</svg>';
+      var HUD = 'width:24px;height:24px;border-radius:6px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+      var bar = '<div style="display:flex;gap:3px;align-items:center;flex-shrink:0;flex-wrap:wrap;position:relative">' +
+        '<button class="dt" data-t="select" style="' + BTN + '"><svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l10 5.5-5 1-2.5 5.5z"/></svg></button>' +
+        '<div style="display:flex"><button class="dt" data-t="pen" style="' + BTN + ACT + 'border-radius:6px 0 0 6px;border-right:none">' + I('<path d="M11 2l3 3-8 8-3.5.5.5-3.5z"/><line x1="9.5" y1="3.5" x2="12.5" y2="6.5"/>') + '</button><button style="' + BTN + 'border-radius:0 6px 6px 0;width:14px">' + CARET + '</button></div>' +
+        '<button style="' + BTN + 'gap:3px;width:auto;padding:0 6px">' + I('<rect x="2" y="3" width="5" height="5" rx="0.5"/><ellipse cx="11.5" cy="5.5" rx="2.5" ry="2"/><line x1="2" y1="12" x2="7" y2="12"/><path d="M9 14l2.5-4 2.5 4z"/>', 1.4) + CARET + '</button>' +
+        '<button style="' + BTN + '">' + I('<line x1="2" y1="4" x2="14" y2="4"/><line x1="8" y1="4" x2="8" y2="14"/>', 1.8) + '</button>' +
+        '<button class="dt" data-t="eraser" style="' + BTN + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 8 8"/></svg></button>' +
+        '<button style="' + BTN + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11Z"/><path d="m5 2 5 5"/><path d="M2 13h15"/><path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z"/></svg></button>' +
+        SEP + '<button class="dcol" style="' + BTN + 'background:#3b82f6;border:2px solid rgba(0,0,0,0.4)"></button>' +
+        '<button style="' + BTN + 'gap:3px;width:auto;padding:0 5px;font-size:9px;font-weight:700">' + grid + '<span style="font-size:8px;letter-spacing:-0.2px">Whi</span></button>' +
+        '<div style="width:1px;height:20px;background:var(--border);margin:0 1px;margin-left:auto"></div>' +
+        '<button class="dundo" style="' + BTN + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>' +
+        '<button style="' + BTN + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>' +
+        '<button style="' + BTN + '">' + I('<line x1="8" y1="2" x2="8" y2="11"/><polyline points="5,8 8,11 11,8"/><polyline points="2,13 2,14 14,14 14,13"/>') + '</button>' +
+        '<button class="dclr" style="' + BTN + 'color:#ef4444">' + I('<polyline points="3,5 13,5"/><path d="M5 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><rect x="4" y="5" width="8" height="9" rx="1"/>') + '</button></div>';
+      var hud = '<div style="position:absolute;bottom:8px;right:8px;z-index:5;display:flex;align-items:center;gap:2px;background:color-mix(in srgb, var(--surface) 88%, transparent);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:9px;box-shadow:0 4px 14px rgba(0,0,0,0.22);padding:3px 4px">' +
+        '<button style="' + HUD + '">−</button><button style="' + HUD + 'width:auto;padding:0 6px;font-size:10.5px;font-weight:700">100%</button><button style="' + HUD + '">+</button>' +
+        '<div style="width:1px;height:16px;background:var(--border);margin:0 1px"></div><button style="' + HUD + '">' + I('<path d="M2 5V3a1 1 0 0 1 1-1h2"/><path d="M14 5V3a1 1 0 0 0-1-1h-2"/><path d="M2 11v2a1 1 0 0 0 1 1h2"/><path d="M14 11v2a1 1 0 0 1-1 1h-2"/><rect x="5" y="5" width="6" height="6" rx="0.5"/>', 1.5) + '</button></div>';
+      var COLORS = ['#111827', '#6b7280', '#e5e7eb', '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#ffffff'];
+      return { w: 560, h: 400, title: 'Drawboard', icon: IC.draw, pad: true, body:
+        '<div style="display:flex;flex-direction:column;height:100%;gap:4px;overflow:hidden">' + bar +
+        '<div class="dwrap" style="flex:1;position:relative;overflow:hidden;border-radius:6px;border:1px solid var(--border)"><canvas class="dc" style="display:block;cursor:crosshair;touch-action:none"></canvas>' + hud + '</div></div>',
+        init: function (el) {
+          var wrap = el.querySelector('.dwrap'), cv = el.querySelector('.dc'), ctx = cv.getContext('2d');
+          var strokes = [], cur = null, tool = 'pen', color = '#3b82f6', ci = 8;
+          // a few starting strokes so the board isn't empty
+          strokes.push({ c: '#111827', w: 3, p: [[60, 200], [90, 130], [140, 115], [180, 160], [210, 210], [260, 200], [300, 140]] });
+          strokes.push({ c: '#ef4444', w: 3, p: (function () { var a = []; for (var i = 0; i <= 40; i++) { var t = i / 40 * Math.PI * 2; a.push([400 + Math.cos(t) * 46, 110 + Math.sin(t) * 46]); } return a; })() });
+          strokes.push({ c: '#3b82f6', w: 4, p: [[340, 230], [380, 210], [420, 235], [460, 205], [500, 230]] });
+          function size() { var r = wrap.getBoundingClientRect(), d = devicePixelRatio || 1; cv.width = r.width * d; cv.height = r.height * d; cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px'; ctx.setTransform(d, 0, 0, d, 0, 0); render(); }
+          function render() {
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cv.width, cv.height);
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            strokes.forEach(function (s) { ctx.strokeStyle = s.c; ctx.lineWidth = s.w; ctx.beginPath(); s.p.forEach(function (q, i) { i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); ctx.stroke(); });
+          }
+          function pt(e) { var r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+          cv.addEventListener('pointerdown', function (e) {
+            cv.setPointerCapture(e.pointerId);
+            if (tool === 'eraser') { erase(pt(e)); cur = 'erase'; return; }
+            cur = { c: color, w: 3, p: [pt(e)] }; strokes.push(cur);
+          });
+          cv.addEventListener('pointermove', function (e) { if (!cur) return; if (cur === 'erase') return erase(pt(e)); cur.p.push(pt(e)); render(); });
+          cv.addEventListener('pointerup', function () { cur = null; });
+          function erase(p) { strokes = strokes.filter(function (s) { return !s.p.some(function (q) { return Math.hypot(q[0] - p[0], q[1] - p[1]) < 10; }); }); render(); }
+          el.querySelectorAll('.dt').forEach(function (b) {
+            b.onclick = function () {
+              tool = b.dataset.t;
+              el.querySelectorAll('.dt').forEach(function (x) { var on = x === b; x.style.background = on ? 'var(--accent)' : 'var(--surface2)'; x.style.color = on ? '#fff' : 'var(--text2)'; });
+            };
+          });
+          el.querySelector('.dcol').onclick = function () { ci = (ci + 1) % COLORS.length; color = COLORS[ci]; this.style.background = color; };
+          el.querySelector('.dundo').onclick = function () { strokes.pop(); render(); };
+          el.querySelector('.dclr').onclick = function () { strokes = []; render(); };
+          requestAnimationFrame(size);
+          setTimeout(size, 600);
+        } };
+    },
     'Agenda': function () {
       var it = [['Today', [['09:00', 'Team sync', '#2196f3'], ['14:00', 'Exam: Statistics', '#f87171'], ['18:30', 'Gym', '#00e5ff']]], ['Tomorrow', [['10:00', 'Dentist', '#00e5a0']]], ['Wed, 21 Oct', [['All day', 'Trip to Hamburg', '#fbbf24']]]];
       return { w: 340, h: 330, title: 'Agenda', body:
@@ -1305,7 +1465,7 @@ document.querySelectorAll('.shot img').forEach(function (img) {
     chips.forEach(function (c) { if (c.offsetTop === top) after = c; });
     panel = document.createElement('li');
     panel.className = 'wprev';
-    panel.innerHTML = '<div><div class="stagewrap">' + shell(chip, spec.w, spec.h, spec.title, spec.body, spec.sub) +
+    panel.innerHTML = '<div><div class="stagewrap">' + shell(chip, spec.w, spec.h, spec.title, spec.body, spec.sub, spec.icon, spec.pad) +
       '<button class="wclose" aria-label="Close preview"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div></div>';
     after.after(panel);
     panel.querySelector('.wclose').onclick = function () { close(); };
