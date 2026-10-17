@@ -19,7 +19,7 @@
 <link rel="icon" href="mosaiclogo-round.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap">
 <style>
 @font-face {
   font-family: 'Guavine';
@@ -157,9 +157,9 @@ header nav a:not(.btn) .i { width: 14px; height: 14px; opacity: .7; }
 .feat p { color: var(--soft); font-size: 14.5px; }
 
 /* ── Widgets ──────────────────────────────────────────────────────────── */
-.chips { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 1000px; margin: 0 auto; }
+.chips { list-style: none; display: grid; grid-template-columns: repeat(6, 1fr); grid-auto-rows: 104px; grid-auto-flow: row dense; gap: 12px; max-width: 1000px; margin: 0 auto; }
 .chip {
-  flex: 0 0 calc((100% - 5 * 12px) / 6); min-height: 104px;
+  min-height: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
   text-align: center; padding: 18px 10px; border-radius: 8px;
   background: var(--glass); box-shadow: inset 0 1px 0 var(--edge); font-size: 14px; font-weight: 500;
@@ -316,10 +316,9 @@ footer a:hover { color: var(--text); }
   section { padding: 90px 0; }
   .hero { padding: 150px 0 70px; }
 }
-@media (max-width: 900px) { .chip { flex-basis: calc((100% - 2 * 12px) / 3); } }
+@media (max-width: 900px) { .chips { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 600px) {
   header nav a.btn[href*="github.com"] { display: none; }
-  .chip { flex-basis: calc((100% - 12px) / 2); }
   .wrap { padding: 0 16px; }
   header { top: 10px; padding: 0 10px; }
   .install-body { padding-left: 0; }
@@ -356,11 +355,15 @@ header.open .menu-btn .mi-close { opacity: 1; transform: none; }
 /* ── Widget preview (Deep Ocean theme, 1:1 with the app) ──────────────── */
 .chip { cursor: pointer; }
 .chip.active { background: rgba(47,107,255,.16); box-shadow: inset 0 0 0 1px rgba(77,141,255,.45); }
-.wprev { flex: 0 0 100%; display: grid; grid-template-rows: 0fr; transition: grid-template-rows .5s var(--ease), margin .5s var(--ease); margin: -6px 0; }
-.wprev.open { grid-template-rows: 1fr; margin: 6px 0; }
-.wprev > div { overflow: hidden; min-height: 0; }
-.wprev .stagewrap { position: relative; display: flex; justify-content: center; padding: 18px 0 8px; opacity: 0; transform: translateY(-10px) scale(.98); transition: opacity .4s var(--ease), transform .5s var(--ease); }
-.wprev.open .stagewrap { opacity: 1; transform: none; transition-delay: .12s; }
+.wprev { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-width: 0;
+  opacity: 0; transform: scale(.96); transition: opacity .45s var(--ease), transform .55s var(--ease); }
+.wprev.open { opacity: 1; transform: none; }
+.wtag { align-self: stretch; display: flex; align-items: center; justify-content: center; gap: 6px; height: 22px; margin-bottom: 8px;
+  font-size: 12px; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wtag span { font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--violet);
+  padding: 3px 8px; border-radius: 6px; background: rgba(47,107,255,.14); }
+.wprev .oc { max-height: calc(100% - 30px); }
+.wprev .wclose { top: 0; right: 0; width: 28px; height: 28px; }
 .wclose {
   position: absolute; top: 4px; right: 4px; z-index: 3; width: 34px; height: 34px; border: 0; border-radius: 8px; cursor: pointer;
   background: var(--glass-2); color: var(--text); display: flex; align-items: center; justify-content: center;
@@ -383,7 +386,29 @@ header.open .menu-btn .mi-close { opacity: 1; transform: none; }
 .oc-h { display: flex; align-items: center; gap: 6px; padding: 7px 12px 5px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .oc-h svg { width: 13px; height: 13px; color: var(--text2); opacity: .55; }
 .oc-h b { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; }
-.oc-h i { font-style: normal; font-size: 10px; font-weight: 600; color: var(--text2); }
+.oc-h i { font-style: normal; font-size: 10px; font-weight: 600; color: var(--text2); text-transform: none; letter-spacing: 0; }
+.oc-h b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oc-h svg { stroke-width: .85; }
+.oc .oc-b > div { box-sizing: border-box; }
+/* NoteWidget.tsx → .note-md-wrap CSS, copied verbatim */
+.note-md-wrap .ProseMirror { outline: none; min-height: 100%; font-size: 13px; line-height: 1.7; color: var(--text2); padding: 2px 4px; word-break: break-word; }
+.note-md-wrap .ProseMirror h1 { font-size: 1.45em; font-weight: 800; color: var(--text1); margin: 2px 0 4px; line-height: 1.25; }
+.note-md-wrap .ProseMirror h2 { font-size: 1.2em; font-weight: 700; color: var(--text1); margin: 10px 0 3px; line-height: 1.3; }
+.note-md-wrap .ProseMirror p { margin: 0 0 3px; }
+.note-md-wrap .ProseMirror strong { font-weight: 700; color: var(--text1); }
+.note-md-wrap .ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 2px; margin: 2px 0 4px; }
+.note-md-wrap .ProseMirror ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 7px; margin: 2px 0; }
+.note-md-wrap .ProseMirror ul[data-type="taskList"] li > label { margin-top: 2.5px; flex-shrink: 0; cursor: pointer; display: flex; }
+.note-md-wrap .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] { appearance: none; -webkit-appearance: none; width: 14px; height: 14px; margin: 0; border: 1.5px solid var(--text3); border-radius: 4px; background: transparent; cursor: pointer; position: relative; display: block; transition: border-color .12s, background .12s; }
+.note-md-wrap .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"]:hover { border-color: var(--accent); }
+.note-md-wrap .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
+.note-md-wrap .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after { content: ''; position: absolute; left: 3.5px; top: .5px; width: 4px; height: 8px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.note-md-wrap .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div { text-decoration: line-through; color: var(--text3); }
+.note-md-wrap .ProseMirror ul[data-type="taskList"] li > div { flex: 1; }
+.note-md-wrap .ProseMirror ul[data-type="taskList"] li > div > p { margin: 0; }
+.note-md-wrap .ProseMirror blockquote { border-left: 3px solid var(--accent); margin: 4px 0; padding: 2px 0 2px 12px; color: var(--text3); font-style: italic; }
+.note-md-wrap .ProseMirror blockquote p { margin: 0; }
+.leaflet-container { font-family: Inter, system-ui, sans-serif; background: #aad3df; }
 .oc-b { flex: 1; min-height: 0; position: relative; overflow: hidden; }
 .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 600; padding: 4px 9px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text2); }
 .mono2 { font-variant-numeric: tabular-nums; }
@@ -428,7 +453,8 @@ header.open .menu-btn .mi-close { opacity: 1; transform: none; }
   .detail .tic { margin-bottom: 10px; }
   .detail h3 { font-size: 17px; margin-bottom: 4px; }
   .chips { gap: 8px; }
-  .chip { flex-basis: calc((100% - 2 * 8px) / 3) !important; min-height: 78px; padding: 12px 6px; gap: 8px; font-size: 12px; }
+  .chips { grid-auto-rows: 78px; }
+  .chip { padding: 12px 6px; gap: 8px; font-size: 12px; }
   .chip svg { width: 18px; height: 18px; }
   .tabs { gap: 2px; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; }
   .tabs button { padding: 9px 12px; font-size: 13px; white-space: nowrap; }
@@ -510,6 +536,7 @@ header.open .menu-btn .mi-close { opacity: 1; transform: none; }
       <div class="head">
         <div class="kicker reveal">Widgets</div>
         <h2 class="reveal">Mix and match.</h2>
+        <p class="lead reveal">Click any widget to open an interactive preview — rebuilt 1:1 from the app in its Deep Ocean theme.</p>
       </div>
       <ul class="chips">
         <li class="chip hov reveal"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><polyline points="5.5,8 7,9.5 10.5,6"/></svg>Task &amp; habits</li>
@@ -999,211 +1026,164 @@ document.querySelectorAll('.shot img').forEach(function (img) {
 </script>
 
 <script>
-// Widget previews: clicking a widget tile opens a 1:1 reconstruction of that
-// widget in the app's "Deep Ocean" theme directly below its row; the other
-// tiles reflow around it. Built from the app's own tokens and widget markup
-// (TileWrapper header, per-widget layout, sizes and colors).
+// Widget previews — clicking a widget tile opens an interactive 1:1 port of
+// that widget (markup, sizes and colors taken straight from
+// src/components/widgets/*.tsx and the TileWrapper chrome) in the app's
+// "Deep Ocean" theme. The preview is placed into the tile grid itself and
+// the other tiles flow around it (FLIP-animated).
 (function () {
   var list = document.querySelector('.chips');
   if (!list) return;
   var chips = Array.prototype.slice.call(list.querySelectorAll('.chip'));
   var DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  var TODAY = 3; // Thursday — earlier days are "past" (dimmed), like in the app
+  var NOW = new Date();
+  var TODAY = (NOW.getDay() + 6) % 7;   // Mon = 0, like the app
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
 
+  // ── shared bits of app chrome ──────────────────────────────────────────
+  var STATS_OPEN = '<div style="width:100%;display:flex;align-items:center;justify-content:center;gap:5px;padding:5px 6px;font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg)"><polyline points="6,9 12,15 18,9"/></svg>Stats</div>';
+  var STATS = STATS_OPEN;
+  var NB = 'width:18px;height:18px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--text2);display:flex;align-items:center;justify-content:center;padding:0;';
+  var NAVL = '<button style="' + NB + '"><svg width="7" height="7" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7,1 3,5 7,9"/></svg></button>';
+  var NAVR = '<button style="' + NB + 'opacity:.25"><svg width="7" height="7" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,1 7,5 3,9"/></svg></button>';
+  var CHEV = '<svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
   var Ic = function (p) { return '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="0.85" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; };
   var IC = {
     water: Ic('<path d="M8 2 C8 2 3 8 3 10 a5 5 0 0 0 10 0 C13 8 8 2 8 2Z"/>'),
     sleep: Ic('<path d="M13.5 9.8A6 6 0 0 1 6.2 2.5 6 6 0 1 0 13.5 9.8Z"/><line x1="10.5" y1="3" x2="13.5" y2="3"/><line x1="13.5" y1="3" x2="10.5" y2="6"/><line x1="10.5" y1="6" x2="13.5" y2="6"/>'),
     draw: Ic('<rect x="1.5" y="1.5" width="13" height="13" rx="2"/><path d="M4 10 Q6 5.5 8.5 8 Q10.5 10 12.5 6"/>')
   };
-  var STATS = '<div style="width:100%;display:flex;align-items:center;justify-content:center;gap:5px;padding:5px 6px;font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg)"><polyline points="6,9 12,15 18,9"/></svg>Stats</div>';
-  var NB = 'width:18px;height:18px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--text2);display:flex;align-items:center;justify-content:center;padding:0;';
-  var NAVL = '<button style="' + NB + '"><svg width="7" height="7" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7,1 3,5 7,9"/></svg></button>';
-  var NAVR = '<button style="' + NB + 'opacity:.25"><svg width="7" height="7" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,1 7,5 3,9"/></svg></button>';
 
-  function shell(chip, w, h, title, body, sub, icon, pad) {
-    icon = icon || chip.querySelector('svg').outerHTML;
-    return '<div class="oc" style="--w:' + w + 'px;--h:' + h + 'px">' +
-      '<div class="oc-h">' + icon + '<b>' + title + '</b>' + (sub ? '<i>· ' + sub + '</i>' : '') + '</div>' +
-      '<div class="oc-b"' + (pad ? ' style="padding:10px 12px"' : '') + '>' + (pad ? '<div style="height:100%">' + body + '</div>' : body) + '</div></div>';
+  // TileWrapper: header (type icon + uppercase label · custom name) and the
+  // content area with its default 10px 12px padding (0 for image/table/map).
+  function shell(chip, s) {
+    var icon = s.icon || chip.querySelector('svg').outerHTML;
+    return '<div class="oc" style="--w:' + s.w + 'px;--h:' + s.h + 'px">' +
+      '<div class="oc-h">' + icon + '<b>' + s.title + (s.sub ? '<i> · ' + s.sub + '</i>' : '') + '</b></div>' +
+      '<div class="oc-b" style="padding:' + (s.flush ? '0' : '10px 12px') + '"><div style="height:100%;position:relative">' + s.body + '</div></div></div>';
   }
 
   var W = {
+    // ── TaskWidget.tsx (weekly view, view mode) ──────────────────────────
     'Task & habits': function () {
-      var habits = [
-        ['Workout', '#2196f3', [0, 2, 3]], ['Read 20 pages', '#00e5a0', [0, 1, 2, 3]],
-        ['Meditate', '#fbbf24', [1, 3]], ['No sugar', '#f87171', [0, 1]], ['Journal', '#a78bfa', [2]]
-      ];
-      var rows = habits.map(function (h) {
-        var days = DAYS.map(function (d, i) {
-          var on = h[2].indexOf(i) !== -1, past = i < TODAY && !on;
-          return '<button class="d' + (on ? ' on' : '') + (past ? ' past' : '') + '" data-c="' + h[1] + '"' +
-            (on ? ' style="border-color:' + h[1] + ';color:' + h[1] + ';background:color-mix(in srgb,' + h[1] + ' 18%,transparent)"' : '') + '>' + d + '</button>';
-        }).join('');
-        return '<div class="hb"><div class="nr"><span class="dot" style="background:' + h[1] + '"></span><span class="nm">' + h[0] +
-          '</span><span class="ct" style="color:' + h[1] + '">' + h[2].length + '/7</span></div><div class="days">' + days + '</div></div>';
-      }).join('');
-      return { w: 380, h: 470, title: 'Task', body:
-        '<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:6px 6px 0">' +
-        '<div></div><span style="font-size:10px;font-weight:700;color:var(--text2);padding:4px 9px;border-radius:8px;background:var(--surface2)">13.10. – 19.10.</span>' +
-        '<span class="pill" style="justify-self:end">Week <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div>' +
-        '<div style="display:flex;flex-direction:column;gap:4px;padding:8px 6px 4px">' + rows + '</div>',
-        init: function (el) {
-          el.querySelectorAll('.d:not(.past)').forEach(function (b) {
-            b.addEventListener('click', function () {
-              var c = b.closest('.hb').querySelector('.dot').style.background, on = !b.classList.contains('on');
-              b.classList.toggle('on', on);
-              b.style.cssText = on ? 'border-color:' + c + ';color:' + c + ';background:color-mix(in srgb,' + c + ' 18%,transparent)' : '';
-              var n = b.parentNode.querySelectorAll('.on').length;
-              b.closest('.hb').querySelector('.ct').textContent = n + '/7';
+      var habits = [['Workout', '#2196f3', [0, 2]], ['Read 20 pages', '#00e5a0', [0, 1, 2]], ['Meditate', '#fbbf24', [1]], ['No sugar', '#f87171', [0, 1]], ['Journal', '#a78bfa', [2]]];
+      var mon = new Date(NOW); mon.setDate(NOW.getDate() - TODAY); var sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+      var label = mon.getDate() + '.' + (mon.getMonth() + 1) + '. – ' + sun.getDate() + '.' + (sun.getMonth() + 1) + '.';
+      function dayBtn(h, i) {
+        var on = h[2].indexOf(i) !== -1, past = i < TODAY;
+        return '<button class="d" data-i="' + i + '"' + (past ? ' disabled' : '') + ' style="width:30px;height:30px;border-radius:50%;flex-shrink:0;border:1.5px solid ' + (on ? h[1] : past ? 'transparent' : 'var(--border)') +
+          ';background:' + (on ? 'color-mix(in srgb, ' + h[1] + ' 18%, transparent)' : 'transparent') + ';color:' + (on ? h[1] : 'var(--text3)') + ';font-size:8px;font-weight:700;cursor:' + (past ? 'default' : 'pointer') +
+          ';opacity:' + (past && !on ? 0.28 : 1) + ';transition:all .1s;padding:0;display:flex;align-items:center;justify-content:center">' + DAYS[i] + '</button>';
+      }
+      function row(h, k) {
+        return '<div class="hrow" data-k="' + k + '" style="display:flex;flex-direction:column;gap:4px;padding:5px 7px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);flex-shrink:0">' +
+          '<div style="display:flex;align-items:center;gap:6px"><div style="width:7px;height:7px;border-radius:50%;background:' + h[1] + ';flex-shrink:0"></div>' +
+          '<span style="flex:1;min-width:0;font-size:11px;font-weight:600;color:var(--text1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + h[0] + '</span>' +
+          '<span class="ct" style="font-size:9px;font-weight:700;color:' + h[1] + ';flex-shrink:0">' + h[2].length + '/7</span></div>' +
+          '<div style="display:flex;justify-content:space-between;gap:2px">' + DAYS.map(function (_, i) { return dayBtn(h, i); }).join('') + '</div></div>';
+      }
+      function body() {
+        return '<div style="display:flex;flex-direction:column;height:100%;overflow:hidden;position:relative">' +
+          '<div style="position:absolute;top:0;left:0;right:0;z-index:5;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:6px 6px 0">' +
+          '<div></div><span style="font-size:10px;font-weight:700;color:var(--text2);text-align:center;letter-spacing:.2px;padding:4px 9px;border-radius:8px;background:var(--surface2);justify-self:center">' + label + '</span>' +
+          '<button style="justify-self:end;display:flex;align-items:center;gap:5px;font-size:9px;font-weight:600;padding:4px 9px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2)">Week ' + CHEV + '</button></div>' +
+          '<div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;padding:40px 6px 4px">' + habits.map(row).join('') + '</div>' +
+          '<div style="flex-shrink:0;border-top:1px solid var(--border)">' + STATS.replace('transform:rotate(180deg)', 'transform:none') + '</div></div>';
+      }
+      return { w: 330, h: 470, title: 'Task', body: body(), init: function (el) {
+        var host = el.querySelector('.oc-b > div');
+        function wire() {
+          host.querySelectorAll('.hrow').forEach(function (r) {
+            var h = habits[+r.dataset.k];
+            r.querySelectorAll('.d:not([disabled])').forEach(function (b) {
+              b.onclick = function () { var i = +b.dataset.i, at = h[2].indexOf(i); if (at === -1) h[2].push(i); else h[2].splice(at, 1); host.innerHTML = body(); wire(); };
             });
           });
-        } };
+        }
+        wire();
+      } };
     },
 
+    // ── CalendarWidget.tsx (month view, view mode) ───────────────────────
     'Calendar': function () {
-      var ev = { 3: [['Dentist', '#00e5a0']], 9: [['Team sync', '#2196f3']], 14: [['Exam', '#f87171'], ['Gym', '#00e5ff']], 16: [['Today', '#2196f3']], 21: [['Trip', '#fbbf24']], 22: [['Trip', '#fbbf24']], 27: [['Deadline', '#f87171']] };
-      var cells = '', start = 2; // Oct 2026 starts on Thursday → 3 leading days (Mon-based)
-      for (var i = 0; i < 35; i++) {
-        var day = i - start, inMonth = day >= 1 && day <= 31, today = day === 16;
-        var evs = (ev[day] || []).map(function (e) {
-          return '<div style="font-size:8px;font-weight:600;padding:1px 4px;border-radius:4px;margin-top:2px;background:color-mix(in srgb,' + e[1] + ' 22%,transparent);color:' + e[1] + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + e[0] + '</div>';
-        }).join('');
-        cells += '<div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:3px;min-height:0;opacity:' + (inMonth ? 1 : .35) + '">' +
-          '<span style="display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;border-radius:50%;font-size:9px;font-weight:700;' +
-          (today ? 'background:var(--accent);color:#fff' : 'color:var(--text2)') + '">' + (inMonth ? day : day < 1 ? 30 + day : day - 31) + '</span>' + evs + '</div>';
+      var y = NOW.getFullYear(), m = NOW.getMonth(), td = NOW.getDate();
+      var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      var ev = {}; ev[td] = [['Team sync', '#2196f3'], ['Gym', '#00e5ff']]; ev[Math.min(28, td + 2)] = [['Dentist', '#00e5a0']]; ev[Math.max(1, td - 5)] = [['Exam', '#f87171']];
+      ev[Math.min(27, td + 6)] = [['Trip', '#fbbf24']]; ev[Math.min(28, td + 7)] = [['Trip', '#fbbf24']]; ev[Math.min(26, td + 10)] = [['Deadline', '#f87171'], ['Call mom', '#a78bfa']];
+      var first = (new Date(y, m, 1).getDay() + 6) % 7, days = new Date(y, m + 1, 0).getDate(), cells = '';
+      for (var i = 0; i < first; i++) cells += '<div></div>';
+      for (var d = 1; d <= days; d++) {
+        var isT = d === td, dots = (ev[d] || []).slice(0, 3).map(function (e) { return '<div style="width:4px;height:4px;border-radius:50%;background:' + (isT ? 'rgba(255,255,255,0.8)' : e[1]) + '"></div>'; }).join('');
+        cells += '<button style="display:flex;flex-direction:column;align-items:center;padding:3px 1px;border-radius:7px;border:none;background:' + (isT ? 'var(--accent)' : 'none') + ';min-height:28px;cursor:default">' +
+          '<span style="font-size:11px;font-weight:' + (isT ? 700 : 400) + ';color:' + (isT ? '#fff' : 'var(--text1)') + ';line-height:1">' + d + '</span>' +
+          (dots ? '<div style="display:flex;gap:2px;margin-top:2px;flex-wrap:wrap;justify-content:center">' + dots + '</div>' : '') + '</button>';
       }
-      return { w: 560, h: 420, title: 'Calendar', body:
-        '<div style="display:flex;flex-direction:column;height:100%">' +
-        '<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:8px">' +
-        '<span class="pill" style="padding:4px 7px">‹</span><span class="pill" style="font-size:11px;font-weight:700;color:var(--text1)">October 2026</span><span class="pill" style="padding:4px 7px">›</span>' +
-        '<span class="pill" style="position:absolute;right:10px">Month <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div>' +
-        '<div style="display:grid;grid-template-columns:repeat(7,1fr);font-size:9px;font-weight:700;color:var(--text3);text-align:center;padding-bottom:4px">' + DAYS.map(function (d) { return '<span>' + d + '</span>'; }).join('') + '</div>' +
-        '<div style="flex:1;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(5,1fr);border-top:1px solid var(--border);border-left:1px solid var(--border)">' + cells + '</div></div>' };
+      var NAV = 'width:24px;height:24px;border-radius:7px;border:1px solid var(--border);background:none;color:var(--text2);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;';
+      return { w: 470, h: 380, title: 'Calendar', body:
+        '<div style="display:flex;flex-direction:column;height:100%;gap:6px;overflow:hidden">' +
+        '<div style="display:flex;align-items:center;gap:4px;min-width:0"><div style="flex:1"></div><button style="' + NAV + '">‹</button>' +
+        '<span style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:3px 10px;font-size:10px;font-weight:700;color:var(--text1);white-space:nowrap"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' + MONTHS[m] + ' ' + y + '</span>' +
+        '<button style="' + NAV + '">›</button><div style="flex:1;display:flex;justify-content:flex-end"><button style="display:flex;align-items:center;gap:5px;font-size:9px;font-weight:600;padding:4px 9px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2)">Month ' + CHEV + '</button></div></div>' +
+        '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px">' + DAYS.map(function (n) { return '<div style="font-size:9px;text-align:center;font-weight:700;color:var(--text3);padding-bottom:2px">' + n + '</div>'; }).join('') + '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;flex:1;overflow-y:auto;align-content:start">' + cells + '</div>' +
+        '<div style="border-top:1px solid var(--border);padding-top:4px;max-height:48px;overflow-y:auto">' + ev[td].map(function (e) { return '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px"><div style="width:5px;height:5px;border-radius:50%;background:' + e[1] + '"></div><span style="font-size:10px;color:var(--text2)">' + e[0] + '</span></div>'; }).join('') + '</div></div>' };
     },
 
+    // ── NoteWidget.tsx (Tiptap content + .note-md-wrap CSS) ───────────────
     'Notes': function () {
-      return { w: 400, h: 360, title: 'Note', sub: 'Weekend plans', body:
-        '<div style="padding:14px 16px;font-size:13px;line-height:1.6;color:var(--text1)">' +
-        '<div style="font-size:20px;font-weight:800;margin-bottom:8px">Weekend plans</div>' +
-        '<p style="color:var(--text1);opacity:.9">Saturday morning: farmers market, then <b>coffee</b> with Lena at the corner café.</p>' +
-        '<div style="font-size:14px;font-weight:700;margin:12px 0 4px;color:var(--accent2)">To bring</div>' +
-        '<ul style="padding-left:18px;margin:0"><li>Reusable bags</li><li>Book for the train</li><li>Charger</li></ul>' +
-        '<blockquote style="margin:12px 0 0;padding:6px 10px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:0 6px 6px 0;font-style:italic;color:var(--text2)">“The best way to predict the future is to create it.”</blockquote></div>' };
-    },
-
-    'Spreadsheet': function () {
-      var data = [['Item', 'Qty', 'Price', 'Total'], ['Coffee', '3', '4.50', '13.50'], ['Bagel', '2', '3.20', '6.40'], ['Juice', '1', '5.00', '5.00'], ['Muffin', '4', '2.80', '11.20'], ['', '', 'Sum', '36.10']];
-      var cols = ['', 'A', 'B', 'C', 'D'];
-      var th = cols.map(function (c) { return '<th style="background:var(--surface2);color:var(--text3);font-size:9px;font-weight:700;padding:4px;border:1px solid var(--border);width:' + (c ? 'auto' : '26px') + '">' + c + '</th>'; }).join('');
-      var rows = data.map(function (r, ri) {
-        return '<tr><td style="background:var(--surface2);color:var(--text3);font-size:9px;font-weight:700;text-align:center;border:1px solid var(--border)">' + (ri + 1) + '</td>' +
-          r.map(function (v, ci) {
-            var head = ri === 0, sum = ri === data.length - 1 && ci >= 2, sel = ri === 5 && ci === 3;
-            return '<td style="padding:5px 7px;border:1px solid var(--border);font-size:11px;' + (ci > 0 && !head ? 'text-align:right;' : '') +
-              (head ? 'font-weight:700;color:var(--text2);' : '') + (sum ? 'font-weight:700;color:var(--accent2);' : '') +
-              (sel ? 'outline:2px solid var(--accent);outline-offset:-2px;background:color-mix(in srgb,var(--accent) 10%,transparent);' : '') + '">' + v + '</td>';
-          }).join('') + '</tr>';
-      }).join('');
-      return { w: 440, h: 300, title: 'Table', body:
-        '<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--border)"><span style="font-size:9px;font-weight:700;color:var(--text3);background:var(--surface2);padding:3px 6px;border-radius:5px">D6</span>' +
-        '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--text1)">=SUM(D2:D5)</span></div>' +
-        '<table style="border-collapse:collapse;width:100%">' + '<tr>' + th + '</tr>' + rows + '</table>' };
-    },
-
-    'PDF/EPUB reader': function () {
-      var books = [['The Odyssey', '#1a4fb0', 64], ['Meditations', '#0b5f6e', 23], ['Dune', '#7a4a12', 100], ['Walden', '#2d5a2d', 8]];
-      return { w: 460, h: 320, title: 'Reader', body:
-        '<div style="padding:12px 14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:12px;font-weight:700">Library</span><span class="pill">+ Add book</span></div>' +
-        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">' + books.map(function (b) {
-          return '<div><div style="aspect-ratio:2/3;border-radius:4px 7px 7px 4px;background:linear-gradient(135deg,' + b[1] + ',color-mix(in srgb,' + b[1] + ' 55%,#000));box-shadow:inset 4px 0 0 rgba(0,0,0,.25),0 6px 14px rgba(0,0,0,.4);display:flex;align-items:flex-end;padding:8px;font-size:10px;font-weight:700;color:#fff;line-height:1.2">' + b[0] + '</div>' +
-            '<div style="margin-top:6px;height:3px;border-radius:2px;background:var(--surface3)"><div style="height:100%;width:' + b[2] + '%;border-radius:2px;background:var(--accent)"></div></div>' +
-            '<div style="font-size:9px;color:var(--text3);margin-top:3px">' + (b[2] === 100 ? 'Finished' : b[2] + '%') + '</div></div>';
-        }).join('') + '</div></div>' };
-    },
-
-    'Charts': function () {
-      var d = [[42, 30, 24], [68, 45, 36], [53, 70, 67], [89, 55, 45], [71, 80, 87], [95, 60, 55]], m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], c = ['#2196f3', '#00e5ff', '#fbbf24'];
-      var bars = '';
-      d.forEach(function (g, gi) {
-        g.forEach(function (v, si) {
-          var x = 48 + gi * 62 + si * 16, h = v * 1.8;
-          bars += '<rect x="' + x + '" y="' + (200 - h) + '" width="13" height="' + h + '" rx="3" fill="' + c[si] + '" opacity=".9"/><text x="' + (x + 6.5) + '" y="' + (196 - h) + '" font-size="7" fill="var(--text2)" text-anchor="middle">' + v + '</text>';
-        });
-      });
-      return { w: 460, h: 330, title: 'Chart', body:
-        '<div style="padding:10px 12px 0;font-size:11px;font-weight:700">Chart</div>' +
-        '<div style="display:flex;justify-content:center;gap:14px;font-size:9px;color:var(--text2);margin-top:4px">' + ['Series 1', 'Series 2', 'Series 3'].map(function (s, i) { return '<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:' + c[i] + '"></span>' + s + '</span>'; }).join('') + '</div>' +
-        '<svg viewBox="0 0 420 220" style="width:100%;height:calc(100% - 44px)">' +
-        [0, 48, 95].map(function (v) { var y = 200 - v * 1.8; return '<line x1="34" x2="410" y1="' + y + '" y2="' + y + '" stroke="var(--border)" stroke-width=".6"/><text x="28" y="' + (y + 3) + '" font-size="7" fill="var(--text3)" text-anchor="end">' + v + '</text>'; }).join('') +
-        bars + m.map(function (s, i) { return '<text x="' + (68 + i * 62) + '" y="214" font-size="8" fill="var(--text2)" text-anchor="middle">' + s + '</text>'; }).join('') + '</svg>' };
-    },
-
-    'Weather': function () {
-      var stat = function (ic, v, l) { return '<div style="flex:1;padding:6px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);text-align:center"><div style="font-size:9px;color:var(--text3)">' + ic + '</div><div style="font-size:11px;font-weight:700">' + v + '</div><div style="font-size:7px;font-weight:700;color:var(--text3);letter-spacing:.06em">' + l + '</div></div>'; };
-      return { w: 330, h: 270, title: 'Weather', body:
-        '<div style="padding:10px 12px;display:flex;flex-direction:column;height:100%">' +
-        '<div style="font-size:11px;font-weight:700;display:flex;align-items:center;gap:4px"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/></svg>Greater London</div>' +
-        '<div style="flex:1;display:flex;align-items:center;justify-content:space-between">' +
-        '<div><div style="font-size:52px;font-weight:300;line-height:1">17°<span style="font-size:16px;color:var(--text2)">C</span></div><span class="pill" style="margin-top:8px;border-radius:20px">Overcast</span></div>' +
-        '<svg width="86" height="62" viewBox="0 0 86 62"><path d="M22 54a16 16 0 0 1 0-32h1a22 22 0 0 1 42 6 13 13 0 0 1 0 26z" fill="#b8d6f0"/><path d="M30 54a13 13 0 0 1 0-26h1a18 18 0 0 1 34 5 11 11 0 0 1 0 21z" fill="#dff0ff"/></svg></div>' +
-        '<div style="display:flex;gap:5px">' + stat('🌡', '16°C', 'FEELS LIKE') + stat('💧', '80 %', 'HUMIDITY') + stat('≋', '18 km/h', 'WIND') + '</div></div>' };
-    },
-
-    'Map': function () {
-      var t = '';
-      for (var y = 0; y < 2; y++) for (var x = 0; x < 3; x++)
-        t += '<img src="https://tile.openstreetmap.org/15/' + (16374 + x) + '/' + (10896 + y) + '.png" alt="" onerror="this.remove()" style="position:absolute;left:' + (x * 256 - 120) + 'px;top:' + (y * 256 - 90) + 'px;width:256px;height:256px">';
-      return { w: 480, h: 340, title: 'Map', body:
-        '<div style="position:absolute;inset:0;background:#aad3df">' + t + '</div>' +
-        '<div style="position:absolute;top:8px;left:8px;right:8px;display:flex;gap:6px"><div style="flex:1;display:flex;align-items:center;gap:6px;padding:6px 9px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text3)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search location…</div><span class="pill" style="padding:6px 8px">☰</span></div>' +
-        '<div style="position:absolute;left:8px;top:48px;display:flex;flex-direction:column;border-radius:8px;overflow:hidden;border:1px solid var(--border)"><span style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--surface)">+</span><span style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--surface);border-top:1px solid var(--border)">−</span></div>' +
-        '<svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"><polyline points="120,250 180,190 260,200 330,130" fill="none" stroke="#2196f3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="120" cy="250" r="6" fill="#2196f3" stroke="#fff" stroke-width="2"/><circle cx="330" cy="130" r="6" fill="#f87171" stroke="#fff" stroke-width="2"/></svg>' +
-        '<span style="position:absolute;right:6px;bottom:4px;font-size:8px;background:rgba(255,255,255,.75);color:#333;padding:1px 4px;border-radius:3px">© OSM</span>' };
-    },
-
-    'Clock': function () {
-      var ticks = '';
-      for (var i = 0; i < 12; i++) { var a = i * 30 * Math.PI / 180; ticks += '<line x1="' + (100 + Math.sin(a) * 78) + '" y1="' + (100 - Math.cos(a) * 78) + '" x2="' + (100 + Math.sin(a) * 88) + '" y2="' + (100 - Math.cos(a) * 88) + '" stroke="var(--text1)" stroke-width="' + (i % 3 ? 2 : 3.5) + '" stroke-linecap="round"/>'; }
-      return { w: 300, h: 300, title: 'Clock', body:
-        '<div style="display:flex;align-items:center;justify-content:center;height:100%"><svg viewBox="0 0 200 200" width="220" height="220" class="clk">' +
-        '<circle cx="100" cy="100" r="95" fill="var(--surface2)" stroke="var(--border)" stroke-width="2"/>' + ticks +
-        ['12', '3', '6', '9'].map(function (n, i) { var a = i * 90 * Math.PI / 180; return '<text x="' + (100 + Math.sin(a) * 62) + '" y="' + (104 - Math.cos(a) * 62) + '" text-anchor="middle" font-size="13" font-weight="600" fill="var(--text1)">' + n + '</text>'; }).join('') +
-        '<line class="hh" x1="100" y1="100" x2="100" y2="58" stroke="var(--text1)" stroke-width="5" stroke-linecap="round"/>' +
-        '<line class="mh" x1="100" y1="100" x2="100" y2="34" stroke="var(--text1)" stroke-width="3.5" stroke-linecap="round"/>' +
-        '<line class="sh" x1="100" y1="112" x2="100" y2="26" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"/>' +
-        '<circle cx="100" cy="100" r="5" fill="var(--accent)"/></svg></div>',
+      return { w: 380, h: 340, title: 'Note', sub: 'Weekend plans', body:
+        '<div style="display:flex;flex-direction:column;height:100%;padding:4px"><div class="note-md-wrap" style="flex:1;overflow:auto;min-height:0"><div class="ProseMirror" contenteditable="true" spellcheck="false">' +
+        '<h1>Weekend plans</h1><p>Saturday morning: farmers market, then <strong>coffee</strong> with Lena at the corner café.</p>' +
+        '<h2>To bring</h2><ul data-type="taskList"><li data-checked="true"><label><input type="checkbox" checked></label><div><p>Reusable bags</p></div></li><li data-checked="false"><label><input type="checkbox"></label><div><p>Book for the train</p></div></li><li data-checked="false"><label><input type="checkbox"></label><div><p>Charger</p></div></li></ul>' +
+        '<blockquote><p>The best way to predict the future is to create it.</p></blockquote></div></div></div>',
         init: function (el) {
-          function tick() {
-            if (!el.isConnected) return;
-            var d = new Date(), s = d.getSeconds(), m = d.getMinutes() + s / 60, h = d.getHours() % 12 + m / 60;
-            el.querySelector('.hh').setAttribute('transform', 'rotate(' + h * 30 + ' 100 100)');
-            el.querySelector('.mh').setAttribute('transform', 'rotate(' + m * 6 + ' 100 100)');
-            el.querySelector('.sh').setAttribute('transform', 'rotate(' + s * 6 + ' 100 100)');
-            setTimeout(tick, 1000 - d.getMilliseconds());
-          }
-          tick();
+          el.querySelectorAll('input[type=checkbox]').forEach(function (c) { c.onchange = function () { c.closest('li').dataset.checked = String(c.checked); }; });
         } };
     },
 
-    'Timer': function () {
-      return { w: 300, h: 300, title: 'Timer', body:
-        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px">' +
-        '<div style="position:relative;width:150px;height:150px"><svg viewBox="0 0 100 100" width="150" height="150" style="transform:rotate(-90deg)"><circle cx="50" cy="50" r="44" fill="none" stroke="var(--surface3)" stroke-width="6"/><circle class="ring" cx="50" cy="50" r="44" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="0"/></svg>' +
-        '<div class="tv mono2" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;font-family:\'JetBrains Mono\',monospace">25:00</div></div>' +
-        '<div style="display:flex;gap:6px"><button class="tgo" style="border:0;cursor:pointer;padding:7px 18px;border-radius:20px;background:var(--accent);color:#fff;font-weight:700;font-size:11px">▶ Start</button><button class="trs" style="cursor:pointer;padding:7px 14px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-weight:600;font-size:11px">Reset</button></div></div>',
+    // ── TableWidget.tsx (view mode: title bar + grid) ─────────────────────
+    'Spreadsheet': function () {
+      var data = [['Item', 'Qty', 'Price', 'Total'], ['Coffee', 3, 4.5, '=B2*C2'], ['Bagel', 2, 3.2, '=B3*C3'], ['Juice', 1, 5, '=B4*C4'], ['Muffin', 4, 2.8, '=B5*C5'], ['', '', 'Sum', '=SUM(D2:D5)']];
+      var COLS = 6, ROWS = 9, CW = [90, 56, 64, 72, 70, 70];
+      function val(r, c) {
+        var v = (data[r] || [])[c]; if (v === undefined) return '';
+        if (typeof v === 'string' && v[0] === '=') {
+          var mm = v.match(/^=SUM\(D(\d)+:D(\d)\)$/);
+          if (/^=SUM/.test(v)) { var s = 0; for (var k = 1; k <= 4; k++) s += val(k, 3); return s; }
+          var p = v.match(/^=B(\d)\*C(\d)$/); return (data[+p[1] - 1][1]) * (data[+p[2] - 1][2]);
+        }
+        return v;
+      }
+      function show(r, c) { var v = val(r, c); return typeof v === 'number' ? (Number.isInteger(v) && c < 2 ? String(v) : v.toFixed(2)) : esc(v); }
+      var HDR = 'height:24px;background:var(--surface2);border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text3);text-align:center;padding:0;';
+      var GRID = 'border:1px solid color-mix(in srgb, var(--border) 70%, transparent);';
+      var t = '<table style="border-collapse:collapse;table-layout:fixed;min-width:100%"><colgroup><col style="width:36px">' + CW.map(function (w) { return '<col style="width:' + w + 'px">'; }).join('') + '</colgroup>' +
+        '<thead><tr><th style="' + HDR + '"></th>' + CW.map(function (_, c) { return '<th style="' + HDR + '">' + 'ABCDEF'[c] + '</th>'; }).join('') + '</tr></thead><tbody>';
+      for (var r = 0; r < ROWS; r++) {
+        t += '<tr style="height:26px"><td style="' + HDR + '">' + (r + 1) + '</td>';
+        for (var c = 0; c < COLS; c++) {
+          var num = typeof val(r, c) === 'number', bold = r === 0 || (r === 5 && c >= 2);
+          t += '<td class="tc" data-r="' + r + '" data-c="' + c + '" style="height:26px;padding:0;' + GRID + 'vertical-align:middle;cursor:cell"><div style="font-size:12px;line-height:1.3;font-weight:' + (bold ? 700 : 400) + ';color:var(--text1);text-align:' + (num ? 'right' : 'left') + ';white-space:nowrap;padding:0 4px;overflow:hidden">' + show(r, c) + '</div></td>';
+        }
+        t += '</tr>';
+      }
+      t += '</tbody></table>';
+      return { w: 520, h: 330, title: 'Table', flush: true, body:
+        '<div style="display:flex;flex-direction:column;height:100%;overflow:hidden">' +
+        '<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid var(--border);background:color-mix(in srgb, var(--accent) 10%, var(--surface2));flex-shrink:0;min-height:32px"><span style="flex:1;font-size:12px;font-weight:700;color:var(--text1)">Café expenses</span>' +
+        '<button style="display:flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text2)"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="2" x2="8" y2="11"/><polyline points="5,8 8,11 11,8"/><polyline points="2,13 2,14 14,14 14,13"/></svg>CSV</button></div>' +
+        '<div class="tgrid" style="flex:1;overflow:auto;position:relative">' + t + '<div class="tsel" style="position:absolute;pointer-events:none;z-index:6;border:2px solid var(--accent);box-sizing:border-box;display:none"></div></div></div>',
         init: function (el) {
-          var total = 1500, left = total, iv = null;
-          function draw() {
-            el.querySelector('.tv').textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
-            el.querySelector('.ring').setAttribute('stroke-dashoffset', String(276.5 * (1 - left / total)));
+          var sel = el.querySelector('.tsel'), grid = el.querySelector('.tgrid');
+          function pick(td) {
+            el.querySelectorAll('.tc').forEach(function (x) { x.style.boxShadow = ''; });
+            td.style.boxShadow = 'inset 0 0 0 100vmax color-mix(in srgb, var(--accent) 10%, transparent)';
+            var g = grid.getBoundingClientRect(), b = td.getBoundingClientRect();
+            sel.style.cssText += ';display:block;left:' + (b.left - g.left + grid.scrollLeft) + 'px;top:' + (b.top - g.top + grid.scrollTop) + 'px;width:' + b.width + 'px;height:' + b.height + 'px';
           }
-          el.querySelector('.tgo').onclick = function () {
-            if (iv) { clearInterval(iv); iv = null; this.textContent = '▶ Start'; return; }
-            this.textContent = '❚❚ Pause';
-            iv = setInterval(function () { if (!el.isConnected) return clearInterval(iv); left = Math.max(0, left - 1); draw(); }, 1000);
-          };
-          el.querySelector('.trs').onclick = function () { left = total; draw(); };
+          el.querySelectorAll('.tc').forEach(function (td) { td.onclick = function () { pick(td); }; });
+          setTimeout(function () { pick(el.querySelector('.tc[data-r="5"][data-c="3"]')); }, 50);
         } };
     },
 
@@ -1409,43 +1389,295 @@ document.querySelectorAll('.shot img').forEach(function (img) {
           setTimeout(size, 600);
         } };
     },
+    // ── ReaderWidget.tsx → ReaderShelf.tsx (library) ──────────────────────
+    'PDF/EPUB reader': function () {
+      var books = [['The Odyssey', 64, 'Classics', '2 hr ago', 'linear-gradient(160deg,#1c3f8f,#0a1a3e)'], ['Meditations', 23, 'Philosophy', '1 day ago', 'linear-gradient(160deg,#0d6a74,#04232e)'],
+        ['Dune', 100, 'Sci-Fi', '3 days ago', 'linear-gradient(160deg,#9a5a17,#2c1606)'], ['Walden', null, '', '', '']];
+      var BOOK = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+      function pill(a, s) { return '<button style="font-size:10.5px;font-weight:600;padding:4px 10px;border-radius:999px;border:1px solid ' + (a ? 'var(--accent)' : 'var(--border)') + ';background:' + (a ? 'var(--accent)' : 'var(--surface2)') + ';color:' + (a ? '#fff' : 'var(--text2)') + ';white-space:nowrap;flex-shrink:0">' + s + '</button>'; }
+      var cards = books.map(function (b) {
+        var cover = b[4] ? '<div style="position:absolute;inset:0;background:' + b[4] + '"></div><div style="position:relative;color:rgba(255,255,255,.92);font:italic 600 15px Georgia,serif;text-align:center;padding:0 10px">' + b[0] + '</div>'
+          : '<div style="color:rgba(255,255,255,0.85);text-align:center;padding:0 12px">' + BOOK + '<div style="font-size:10px;font-weight:700;margin-top:6px">' + b[0] + '.epub</div></div>';
+        return '<div class="bk" style="position:relative;border-radius:14px;background:var(--surface);border:1px solid var(--border);box-shadow:0 2px 10px rgba(0,0,0,0.18);cursor:pointer;transition:transform .25s cubic-bezier(.2,.7,.2,1)">' +
+          '<div style="height:130px;position:relative;overflow:hidden;border-radius:14px 14px 0 0;background:linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, var(--accent2)));display:flex;align-items:center;justify-content:center">' + cover +
+          (b[2] ? '<div style="position:absolute;bottom:6px;left:6px;right:6px;display:flex;gap:3px"><div style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:999px;background:rgba(0,0,0,0.55);color:#fff">' + b[2] + '</div></div>' : '') + '</div>' +
+          '<div style="padding:10px 12px"><div style="font-size:13px;font-weight:600;color:var(--text1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + b[0] + '</div>' +
+          '<div style="display:flex;align-items:center;gap:6px;margin-top:4px"><div style="flex:1;min-width:0">' + (b[1] === null ? '<span style="font-size:10px;color:var(--text3)">Not started</span>' :
+            '<div style="display:flex;align-items:center;gap:5px"><div style="flex:1;height:3px;border-radius:2px;background:var(--surface2);overflow:hidden"><div style="width:' + b[1] + '%;height:100%;background:var(--accent)"></div></div><span style="font-size:10px;color:var(--text3);flex-shrink:0">' + b[1] + '%</span></div>') + '</div></div>' +
+          (b[3] ? '<div style="font-size:9px;color:var(--text3);margin-top:3px">' + b[3] + '</div>' : '') + '</div></div>';
+      }).join('');
+      return { w: 600, h: 420, title: 'Reader', body:
+        '<div style="height:100%;display:flex;flex-direction:column;position:relative">' +
+        '<div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto">' + pill(true, 'All') + pill(false, 'Classics') + pill(false, 'Philosophy') + pill(false, 'Sci-Fi') +
+        '<button style="flex-shrink:0;width:24px;height:24px;border-radius:50%;border:1px dashed var(--border);background:none;color:var(--text3);display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
+        '<div style="flex:1"></div><button style="font-size:10px;font-weight:600;border-radius:6px;color:var(--text2);padding:4px 6px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;gap:4px">Recently opened ' + CHEV + '</button></div>' +
+        '<div style="flex:1;min-height:0;overflow-y:auto;padding:12px"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px">' + cards +
+        '<label style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:182px;cursor:pointer;border-radius:14px;border:1.5px dashed var(--border);color:var(--text3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span style="font-size:11px;font-weight:600">Add book</span></label></div></div></div>',
+        init: function (el) {
+          el.querySelectorAll('.bk').forEach(function (b) {
+            b.onmouseenter = function () { b.style.transform = 'translateY(-4px) scale(1.02)'; };
+            b.onmouseleave = function () { b.style.transform = ''; };
+          });
+        } };
+    },
+
+    // ── ChartWidget.tsx (ColumnChart, view mode) ──────────────────────────
+    'Charts': function () {
+      var d = { title: 'Monthly visitors', labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{ label: 'Series 1', values: [42, 68, 53, 89, 71, 95], color: '#2196f3' }, { label: 'Series 2', values: [30, 45, 70, 55, 80, 60], color: '#00e5ff' }] };
+      var Wd = 240, Hd = 150, P = { t: 14, r: 10, b: 28, l: 36 }, cW = Wd - P.l - P.r, cH = Hd - P.t - P.b;
+      var maxV = Math.max.apply(null, d.datasets.reduce(function (a, s) { return a.concat(s.values); }, [1]));
+      var ticks = [0, .25, .5, .75, 1].map(function (f) { return Math.round(maxV * f); });
+      var n = d.labels.length, nDS = d.datasets.length, gW = cW / n, bW = Math.max(4, Math.min(22, gW / (nDS + 0.5) * 0.85));
+      var s = '<svg width="100%" height="100%" viewBox="0 0 ' + Wd + ' ' + Hd + '">';
+      ticks.forEach(function (v) { var y = P.t + cH * (1 - v / maxV); s += '<line x1="' + P.l + '" y1="' + y + '" x2="' + (Wd - P.r) + '" y2="' + y + '" stroke="color-mix(in srgb, var(--border) 60%, transparent)" stroke-width="0.5"/><text x="' + (P.l - 4) + '" y="' + (y + 3.5) + '" text-anchor="end" font-size="6.5" fill="var(--text3)">' + v + '</text>'; });
+      s += '<line x1="' + P.l + '" y1="' + P.t + '" x2="' + P.l + '" y2="' + (P.t + cH) + '" stroke="var(--border)" stroke-width="0.8"/><line x1="' + P.l + '" y1="' + (P.t + cH) + '" x2="' + (Wd - P.r) + '" y2="' + (P.t + cH) + '" stroke="var(--border)" stroke-width="0.8"/>';
+      d.labels.forEach(function (lab, i) {
+        var gx = P.l + i * gW + gW / 2;
+        s += '<text x="' + gx + '" y="' + (Hd - P.b + 11) + '" text-anchor="middle" font-size="7" fill="var(--text2)">' + lab + '</text>';
+        d.datasets.forEach(function (ds, di) {
+          var v = ds.values[i], bh = v / maxV * cH, x = gx + (di - (nDS - 1) / 2) * (bW + 2) - bW / 2;
+          s += '<rect x="' + x + '" y="' + (P.t + cH - bh) + '" width="' + bW + '" height="' + bh + '" rx="3" fill="' + ds.color + '" opacity="0.88"/>';
+          if (bh > 14) s += '<text x="' + (x + bW / 2) + '" y="' + (P.t + cH - bh + 9) + '" text-anchor="middle" font-size="6" fill="white" opacity="0.85">' + v + '</text>';
+        });
+      });
+      d.datasets.forEach(function (ds, di) { s += '<g transform="translate(' + (P.l + di * 60) + ',' + (P.t - 6) + ')"><rect x="0" y="-5" width="7" height="7" rx="2" fill="' + ds.color + '" opacity="0.88"/><text x="10" y="1" font-size="6.5" fill="var(--text2)">' + ds.label + '</text></g>'; });
+      s += '</svg>';
+      return { w: 460, h: 320, title: 'Chart', body:
+        '<div style="display:flex;flex-direction:column;height:100%;gap:5px"><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="font-size:11px;font-weight:700;color:var(--text1);padding:1px 4px">' + d.title + '</span></div>' +
+        '<div style="flex:1;min-height:0">' + s + '</div></div>' };
+    },
+
+    // ── WeatherWidget.tsx (overcast, view mode) ───────────────────────────
+    'Weather': function () {
+      var CLOUD_HIGH = 'M6 27 C6 19 12 13 20 13 C22 8 28 6 35 8 C42 10 46 16 46 22 C46 28 42 31 37 31 L10 31 C7 31 6 29 6 27Z';
+      var CLOUD_FULL = 'M4 34 C4 25 11 18 20 18 C22 13 29 10 37 12 C44 14 47 21 47 27 C47 33 43 36 38 36 L10 36 C6 36 4 35 4 34Z';
+      var accent = '#94a3b8', unit = 'C';
+      var chip = 'height:22px;min-width:22px;padding-inline:5px;border-radius:5px;border:1px solid var(--border);background:color-mix(in srgb, var(--surface2) 85%, transparent);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:2px';
+      function T(c) { return unit === 'C' ? c + '°' : Math.round(c * 9 / 5 + 32) + '°'; }
+      function stat(icon, v, l) { return '<div style="padding:6px 4px 5px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:7px;min-width:0"><div style="display:flex;align-items:center;justify-content:center;color:var(--text3);margin-bottom:2px">' + icon + '</div><div style="font-size:11.5px;font-weight:700;color:var(--text1);white-space:nowrap">' + v + '</div><div style="font-size:8px;font-weight:700;color:var(--text3);margin-top:1px;letter-spacing:.06em;text-transform:uppercase">' + l + '</div></div>'; }
+      function body() {
+        return '<div style="display:flex;flex-direction:column;height:100%;position:relative;gap:6px">' +
+          '<div style="position:absolute;top:0;right:0;display:flex;gap:3px;z-index:1"><button style="' + chip + '"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>' +
+          '<button class="wu" style="' + chip + '"><span style="font-size:9px;font-weight:700">' + (unit === 'C' ? '°F' : '°C') + '</span></button></div>' +
+          '<div style="flex:1;display:flex;flex-direction:column;padding:4px 6px 0;min-height:0;overflow:hidden;gap:6px">' +
+          '<div style="display:flex;align-items:center;gap:5px;padding-right:60px"><svg width="10" height="13" viewBox="0 0 10 13" fill="none"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 8 5 8s5-4.25 5-8C10 2.24 7.76 0 5 0z" fill="var(--accent)"/><circle cx="5" cy="5" r="2" fill="white"/></svg><span style="font-size:11px;font-weight:600;color:var(--text1)">Greater London</span></div>' +
+          '<div style="display:flex;flex-direction:column;flex:1;min-height:0;justify-content:center"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+          '<div style="font-size:52px;font-weight:200;letter-spacing:-.04em;color:var(--text1);line-height:1;display:flex;align-items:baseline;gap:3px">' + T(17) + '<span style="font-size:.38em;font-weight:400;color:var(--text3);letter-spacing:0">' + unit + '</span></div>' +
+          '<div style="flex-shrink:0;position:relative;display:flex"><div style="position:absolute;inset:-12px;border-radius:50%;background:radial-gradient(circle, color-mix(in srgb, ' + accent + ' 18%, transparent), transparent 70%)"></div><svg width="88" height="88" viewBox="0 0 48 48" fill="none"><path d="' + CLOUD_HIGH + '" fill="#94a3b8"/><path d="' + CLOUD_FULL + '" fill="#cbd5e1"/></svg></div></div>' +
+          '<div style="display:flex;justify-content:center;margin-top:12px"><span style="font-size:9px;font-weight:700;color:var(--text2);background:color-mix(in srgb, ' + accent + ' 12%, transparent);border:1px solid color-mix(in srgb, ' + accent + ' 28%, transparent);border-radius:20px;padding:2px 9px;line-height:1.4;letter-spacing:.03em">Overcast</span></div></div></div>' +
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:0 6px 6px;flex-shrink:0">' +
+          stat('<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>', T(16) + unit, 'Feels like') +
+          stat('<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C12 2 5 10 5 15a7 7 0 0 0 14 0C19 10 12 2 12 2z" opacity="0.8"/></svg>', '80 %', 'Humidity') +
+          stat('<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2M12.59 19.41A2 2 0 1 0 14 16H2M17.73 7.73A2.5 2.5 0 1 1 19.5 12H2"/></svg>', '18 km/h', 'Wind') + '</div></div>';
+      }
+      return { w: 330, h: 300, title: 'Weather', body: body(), init: function (el) {
+        var host = el.querySelector('.oc-b > div');
+        function wire() { host.querySelector('.wu').onclick = function () { unit = unit === 'C' ? 'F' : 'C'; host.innerHTML = body(); wire(); }; }
+        wire();
+      } };
+    },
+
+    // ── MapWidget.tsx (real Leaflet + OSM tiles, same overlays) ───────────
+    'Map': function () {
+      var TB = 'height:28px;min-width:28px;padding:0 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);display:flex;align-items:center;justify-content:center;flex-shrink:0';
+      var ZB = 'width:28px;height:28px;border:none;background:transparent;color:var(--text2);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center';
+      return { w: 520, h: 360, title: 'Map', flush: true, body:
+        '<div style="position:relative;width:100%;height:100%;display:flex;flex-direction:column">' +
+        '<div style="flex-shrink:0;display:flex;align-items:center;gap:5px;padding:5px 7px;background:var(--surface);border-bottom:1px solid var(--border);z-index:10">' +
+        '<div style="flex:1;display:flex;align-items:center;background:var(--surface2);border-radius:7px;border:1px solid var(--border)"><svg style="margin:0 7px" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+        '<input placeholder="Search location…" style="flex:1;min-width:0;background:none;border:none;outline:none;color:var(--text1);font-size:11px;padding:5px 4px 5px 0"></div>' +
+        '<button style="' + TB + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="3" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="3" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg></button></div>' +
+        '<div class="lmap" style="flex:1;min-height:0;z-index:0;background:#aad3df"></div>' +
+        '<div style="position:absolute;bottom:8px;left:8px;z-index:1000;display:flex;flex-direction:column;background:color-mix(in srgb, var(--surface) 92%, transparent);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.25)">' +
+        '<button class="zi" style="' + ZB + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><div style="height:1px;background:var(--border)"></div>' +
+        '<button class="zo" style="' + ZB + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>',
+        init: function (el) {
+          function go() {
+            var L = window.L, box = el.querySelector('.lmap');
+            if (!box.isConnected) return;
+            var map = L.map(box, { zoomControl: false, attributionControl: true }).setView([51.505, -0.09], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OSM' }).addTo(map);
+            function pin(color, lat, lng) {
+              return L.marker([lat, lng], { icon: L.divIcon({ className: '', iconSize: [26, 34], iconAnchor: [13, 34],
+                html: '<div style="filter:drop-shadow(0 1px 3px rgba(0,0,0,0.35));width:26px;height:34px"><svg viewBox="0 0 26 34" fill="none"><path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21s13-11.25 13-21C26 5.82 20.18 0 13 0Z" fill="' + color + '"/><circle cx="13" cy="13" r="4" fill="white"/></svg></div>' }) }).addTo(map);
+            }
+            var route = [[51.5007, -0.1246], [51.5033, -0.1196], [51.5055, -0.1080], [51.5079, -0.0877], [51.5081, -0.0759]];
+            L.polyline(route, { color: '#3b82f6', weight: 4, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }).addTo(map);
+            route.forEach(function (p, i) { var e = i === 0 || i === route.length - 1, s = e ? 14 : 10; L.marker(p, { icon: L.divIcon({ className: '', iconSize: [s, s], iconAnchor: [s / 2, s / 2], html: '<div style="width:' + s + 'px;height:' + s + 'px;border-radius:50%;background:#3b82f6;border:2.5px solid rgba(255,255,255,0.9);box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>' }) }).addTo(map); });
+            pin('#ef4444', 51.5138, -0.0984); pin('#22c55e', 51.5194, -0.1270);
+            el.querySelector('.zi').onclick = function () { map.zoomIn(); };
+            el.querySelector('.zo').onclick = function () { map.zoomOut(); };
+            setTimeout(function () { map.invalidateSize(); }, 450);
+          }
+          if (window.L) return go();
+          var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(css);
+          var js = document.createElement('script'); js.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'; js.onload = go; document.head.appendChild(js);
+        } };
+    },
+
+    // ── ClockWidget.tsx (all four styles, edit-mode style picker) ─────────
+    'Clock': function () {
+      var style = 'analog', secs = true;
+      function analog(h, m, s) {
+        var cx = 50, cy = 50, r = 46;
+        function px(d, rr) { return cx + Math.cos((d - 90) * Math.PI / 180) * rr; } function py(d, rr) { return cy + Math.sin((d - 90) * Math.PI / 180) * rr; }
+        var o = '<svg viewBox="0 0 100 100" style="width:100%;height:100%;max-width:200px;max-height:200px"><circle cx="50" cy="50" r="46" fill="none" stroke="var(--border)" stroke-width="1"/><circle cx="50" cy="50" r="45" fill="color-mix(in srgb, var(--surface2) 60%, transparent)"/>';
+        for (var i = 0; i < 60; i++) { var hr = i % 5 === 0, r1 = hr ? r - 9 : r - 5; o += '<line x1="' + px(i * 6, r1) + '" y1="' + py(i * 6, r1) + '" x2="' + px(i * 6, r - 1) + '" y2="' + py(i * 6, r - 1) + '" stroke="' + (hr ? 'var(--text1)' : 'var(--border)') + '" stroke-width="' + (hr ? 2.2 : 0.9) + '" stroke-linecap="round"/>'; }
+        [12, 3, 6, 9].forEach(function (n, i) { o += '<text x="' + px(i * 90, r - 17) + '" y="' + (py(i * 90, r - 17) + 3.5) + '" text-anchor="middle" font-size="8" font-weight="600" fill="var(--text2)">' + n + '</text>'; });
+        var sd = s * 6, md = m * 6 + s * 0.1, hd = (h % 12) * 30 + m * 0.5;
+        o += '<line x1="50" y1="50" x2="' + px(hd, 24) + '" y2="' + py(hd, 24) + '" stroke="var(--text1)" stroke-width="4" stroke-linecap="round"/>';
+        o += '<line x1="50" y1="50" x2="' + px(md, 35) + '" y2="' + py(md, 35) + '" stroke="var(--text1)" stroke-width="2.5" stroke-linecap="round"/>';
+        o += '<line x1="' + px(sd + 180, 10) + '" y1="' + py(sd + 180, 10) + '" x2="' + px(sd, 40) + '" y2="' + py(sd, 40) + '" stroke="var(--accent)" stroke-width="1.2" stroke-linecap="round" style="filter:drop-shadow(0 0 3px var(--accent))"/>';
+        return o + '<circle cx="50" cy="50" r="4.5" fill="var(--accent)"/><circle cx="50" cy="50" r="2" fill="var(--surface)"/></svg>';
+      }
+      function digital(h, m, s) {
+        var bl = s % 2 === 0 ? 1 : 0.2;
+        return '<div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="font-family:\'Courier New\',Consolas,monospace;font-weight:700;letter-spacing:.06em;color:var(--accent);text-shadow:0 0 18px var(--accent),0 0 36px color-mix(in srgb, var(--accent) 40%, transparent);line-height:1;font-size:' + (secs ? 40 : 52) + 'px;display:flex;align-items:center">' +
+          pad(h % 12 || 12) + '<span style="opacity:' + bl + ';margin:0 2px">:</span>' + pad(m) + (secs ? '<span style="opacity:' + bl + ';margin:0 2px;font-size:.65em">:</span><span style="font-size:.65em;align-self:flex-end;padding-bottom:.1em">' + pad(s) + '</span>' : '') +
+          '</div><div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text3)">' + (h < 12 ? 'AM' : 'PM') + '</div></div>';
+      }
+      function minimal(h, m, s) {
+        return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="font-weight:200;letter-spacing:-.04em;color:var(--text1);line-height:1;font-size:' + (secs ? 56 : 76) + 'px">' + pad(h % 12 || 12) + ':' + pad(m) +
+          (secs ? '<span style="font-size:.55em;font-weight:300;opacity:.6;margin-left:.1em">' + pad(s) + '</span>' : '') + '</div><div style="display:flex;gap:8px;align-items:center"><span style="font-size:10px;font-weight:500;letter-spacing:.2em;color:var(--accent);text-transform:uppercase">' + (h < 12 ? 'AM' : 'PM') + '</span>' +
+          '<span style="font-size:10px;color:var(--text3);letter-spacing:.05em">' + new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' }) + '</span></div></div>';
+      }
+      function flip(h, m, s) {
+        function card(dg) { return '<div style="width:40px;height:60px;border-radius:5px;background:linear-gradient(160deg,#242424 0%,#111 100%);border:1px solid rgba(255,255,255,0.09);box-shadow:0 6px 16px rgba(0,0,0,0.55),inset 0 1px 0 rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;font-size:28px;font-weight:700;font-family:\'Courier New\',monospace;color:#f0f0e8;flex-shrink:0"><div style="position:absolute;left:0;right:0;top:50%;height:1.5px;background:rgba(0,0,0,0.55);z-index:3"></div><div style="position:absolute;top:0;left:0;right:0;height:50%;background:rgba(255,255,255,0.025)"></div><span>' + dg + '</span></div>'; }
+        var dot = '<div style="width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent)"></div>', colon = '<div style="display:flex;flex-direction:column;gap:10px;flex-shrink:0;padding-bottom:4px">' + dot + dot + '</div>';
+        var a = pad(h), b = pad(m), c = pad(s);
+        return '<div style="display:flex;align-items:center;gap:5px">' + card(a[0]) + card(a[1]) + colon + card(b[0]) + card(b[1]) + (secs ? colon + card(c[0]) + card(c[1]) : '') + '</div>';
+      }
+      var R = { analog: analog, digital: digital, minimal: minimal, flip: flip };
+      var ICONS = { digital: '<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="10" r="0.6" fill="currentColor"/><circle cx="12" cy="14" r="0.6" fill="currentColor"/><path d="M7 10v4"/><path d="M17 10v4"/>', analog: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>', minimal: '<path d="M8 7v10"/><path d="M16 7v10"/><circle cx="12" cy="10" r="0.5" fill="currentColor"/><circle cx="12" cy="14" r="0.5" fill="currentColor"/>', flip: '<rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="14" rx="1.5"/><line x1="3" y1="12" x2="11" y2="12"/><line x1="13" y1="12" x2="21" y2="12"/>' };
+      function ico(id) { return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + ICONS[id] + '</svg>'; }
+      function tog(a) { return 'font-size:9px;font-weight:700;padding:4px 9px;border-radius:20px;border:1px solid ' + (a ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'var(--border)') + ';background:' + (a ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'var(--surface2)') + ';color:' + (a ? 'var(--accent)' : 'var(--text3)') + ';cursor:pointer'; }
+      return { w: 380, h: 300, title: 'Clock', body:
+        '<div style="display:flex;flex-direction:column;height:100%">' +
+        '<div class="cface" style="flex:1;display:flex;align-items:center;justify-content:center;padding:4px;overflow:hidden;min-height:0"></div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding:4px 8px 8px;flex-shrink:0"><div style="position:relative">' +
+        '<button class="cst" style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:600;padding:4px 9px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer"></button>' +
+        '<div class="cmenu" style="display:none;position:absolute;bottom:calc(100% + 4px);left:0;z-index:50;flex-direction:column;gap:1px;padding:4px;min-width:118px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.4)"></div></div>' +
+        '<div style="display:flex;align-items:center;gap:6px"><button class="csec" style="' + tog(true) + '">:ss</button></div></div></div>',
+        init: function (el) {
+          var face = el.querySelector('.cface'), btn = el.querySelector('.cst'), menu = el.querySelector('.cmenu'), sb = el.querySelector('.csec');
+          function label() { btn.innerHTML = '<span style="color:var(--accent);display:flex">' + ico(style) + '</span>' + style[0].toUpperCase() + style.slice(1) + '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>';
+            menu.innerHTML = ['digital', 'analog', 'minimal', 'flip'].map(function (id) { var a = id === style; return '<button data-s="' + id + '" style="display:flex;align-items:center;gap:7px;font-size:10px;font-weight:' + (a ? 700 : 500) + ';padding:5px 8px;border-radius:7px;border:none;text-align:left;background:' + (a ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'transparent') + ';color:' + (a ? 'var(--accent)' : 'var(--text2)') + ';cursor:pointer">' + ico(id) + id[0].toUpperCase() + id.slice(1) + '</button>'; }).join('');
+            menu.querySelectorAll('button').forEach(function (b) { b.onclick = function () { style = b.dataset.s; menu.style.display = 'none'; label(); draw(); }; });
+          }
+          btn.onclick = function () { menu.style.display = menu.style.display === 'none' ? 'flex' : 'none'; };
+          sb.onclick = function () { secs = !secs; sb.style.cssText = tog(secs); draw(); };
+          function draw() { var d = new Date(); face.style.padding = style === 'analog' ? '4px' : '8px'; face.innerHTML = R[style](d.getHours(), d.getMinutes(), d.getSeconds()); }
+          label(); draw();
+          (function tick() { if (!el.isConnected) return; draw(); setTimeout(tick, 1000 - new Date().getMilliseconds()); })();
+        } };
+    },
+
+    // ── TimerWidget.tsx ───────────────────────────────────────────────────
+    'Timer': function () {
+      var dur = 25, elapsed = 0, running = false, started = 0, iv = null, r = 68, circ = 2 * Math.PI * r;
+      var PLAY = '<svg width="13" height="13" viewBox="0 0 14 14" fill="currentColor"><polygon points="3.5,1.5 12.5,7 3.5,12.5"/></svg>';
+      var PAUSE = '<svg width="13" height="13" viewBox="0 0 14 14" fill="currentColor"><rect x="2.5" y="2" width="3.5" height="10" rx="1"/><rect x="8" y="2" width="3.5" height="10" rx="1"/></svg>';
+      var RESET = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
+      function bs(bg, small) { return 'display:flex;align-items:center;gap:5px;padding:' + (small ? '5px 10px' : '6px 18px') + ';font-size:12px;font-weight:600;border-radius:50px;border:none;background:' + bg + ';color:white;letter-spacing:.03em;cursor:pointer'; }
+      return { w: 280, h: 320, title: 'Timer', body:
+        '<div style="display:flex;flex-direction:column;align-items:center;height:100%;gap:4px;padding:6px 8px;position:relative">' +
+        '<span style="font-size:12px;font-weight:600;color:var(--text2)">Focus</span>' +
+        '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px"><svg width="160" height="160" viewBox="0 0 160 160"><circle cx="80" cy="80" r="68" fill="none" stroke="var(--surface3)" stroke-width="9"/>' +
+        '<circle class="tr" cx="80" cy="80" r="68" fill="none" stroke="var(--accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="' + circ + '" stroke-dashoffset="' + circ + '" transform="rotate(-90 80 80)" style="transition:stroke-dashoffset .25s linear"/>' +
+        '<text class="tt" x="80" y="80" text-anchor="middle" dominant-baseline="middle" fill="var(--text1)" font-size="15" font-weight="500" font-family="monospace">25:00</text><text class="ts" x="80" y="94" text-anchor="middle" dominant-baseline="middle" fill="var(--text3)" font-size="10"></text></svg>' +
+        '<div class="tc" style="display:flex;gap:8px"></div></div></div>',
+        init: function (el) {
+          var total = dur * 60000;
+          function rem() { return Math.max(0, total - (running ? elapsed + Date.now() - started : elapsed)); }
+          function draw() {
+            var left = rem(), done = left === 0, s = Math.floor(left / 1000);
+            el.querySelector('.tt').textContent = pad(Math.floor(s / 60)) + ':' + pad(s % 60);
+            el.querySelector('.tt').setAttribute('y', done || running ? 76 : 80);
+            el.querySelector('.ts').textContent = done ? 'Done!' : running ? 'Running…' : '';
+            var ring = el.querySelector('.tr'); ring.setAttribute('stroke-dashoffset', circ - circ * (1 - left / total)); ring.setAttribute('stroke', done ? 'var(--success)' : 'var(--accent)');
+            var c = el.querySelector('.tc');
+            c.innerHTML = done ? '<button class="rs" style="' + bs('var(--accent)') + '">' + RESET + ' Reset</button>' : running ? '<button class="pa" style="' + bs('var(--surface3)') + '">' + PAUSE + ' Pause</button><button class="rs" style="' + bs('var(--danger)', true) + '">' + RESET + '</button>' : '<button class="st" style="' + bs('var(--accent)') + '">' + PLAY + ' Start</button>';
+            var b;
+            if ((b = c.querySelector('.st'))) b.onclick = function () { running = true; started = Date.now(); iv = setInterval(function () { if (!el.isConnected) return clearInterval(iv); draw(); }, 1000); draw(); };
+            if ((b = c.querySelector('.pa'))) b.onclick = function () { elapsed += Date.now() - started; running = false; clearInterval(iv); draw(); };
+            if ((b = c.querySelector('.rs'))) b.onclick = function () { running = false; elapsed = 0; clearInterval(iv); draw(); };
+          }
+          draw();
+        } };
+    },
+
+    // ── AgendaWidget.tsx ──────────────────────────────────────────────────
     'Agenda': function () {
-      var it = [['Today', [['09:00', 'Team sync', '#2196f3'], ['14:00', 'Exam: Statistics', '#f87171'], ['18:30', 'Gym', '#00e5ff']]], ['Tomorrow', [['10:00', 'Dentist', '#00e5a0']]], ['Wed, 21 Oct', [['All day', 'Trip to Hamburg', '#fbbf24']]]];
-      return { w: 340, h: 330, title: 'Agenda', body:
-        '<div style="padding:8px 10px;display:flex;flex-direction:column;gap:10px">' + it.map(function (g) {
-          return '<div><div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">' + g[0] + '</div>' +
-            g[1].map(function (e) { return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;margin-bottom:4px;border-radius:7px;background:var(--surface2);border:1px solid var(--border)"><span style="width:3px;align-self:stretch;border-radius:2px;background:' + e[2] + '"></span><span style="font-size:10px;font-weight:600;color:var(--text2);width:42px" class="mono2">' + e[0] + '</span><span style="font-weight:600">' + e[1] + '</span></div>'; }).join('') + '</div>';
-        }).join('') + '</div>' };
+      var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], DN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      function head(i) { if (i === 0) return 'Today'; if (i === 1) return 'Tomorrow'; var d = new Date(NOW); d.setDate(d.getDate() + i); return DN[d.getDay()] + ', ' + d.getDate() + '. ' + MON[d.getMonth()]; }
+      var days = [[0, [['09:00', 'Team sync', '#2196f3', 'Room 2.14', '10:00'], ['18:30', 'Gym', '#00e5ff', '', '20:00']]], [2, [['10:00', 'Dentist', '#00e5a0', 'Dr. Weber', '']]], [6, [[null, 'Trip to Hamburg', '#fbbf24', '', '']]]];
+      return { w: 300, h: 300, title: 'Agenda', body:
+        '<div style="display:flex;flex-direction:column;height:100%;gap:4px"><div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:7px">' + days.map(function (g) {
+          return '<div><div style="font-size:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:' + (g[0] === 0 ? 'var(--accent)' : 'var(--text3)') + ';margin-bottom:3px">' + head(g[0]) + '</div><div style="display:flex;flex-direction:column;gap:3px">' +
+            g[1].map(function (e) { return '<div style="display:flex;align-items:center;gap:6px;padding:4px 7px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid ' + e[2] + ';border-radius:7px;min-width:0"><span style="flex-shrink:0;font-size:9px;font-weight:700;color:var(--text3);font-variant-numeric:tabular-nums;min-width:30px">' + (e[0] || '—') + '</span>' +
+              '<div style="flex:1;min-width:0"><div style="font-size:10.5px;font-weight:600;color:var(--text1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + e[1] + '</div>' + (e[3] ? '<div style="font-size:8.5px;color:var(--text3)">' + e[3] + '</div>' : '') + '</div>' +
+              (e[4] ? '<span style="flex-shrink:0;font-size:8.5px;color:var(--text3);font-variant-numeric:tabular-nums">– ' + e[4] + '</span>' : '') + '</div>'; }).join('') + '</div></div>';
+        }).join('') + '</div></div>' };
     },
 
+    // ── QuicklinksWidget.tsx (favicons via DuckDuckGo, like the app) ──────
     'Quicklinks': function () {
-      var l = [['GitHub', '#24292f', 'G'], ['YouTube', '#ff0033', '▶'], ['Wikipedia', '#eee', 'W'], ['Gmail', '#ea4335', 'M'], ['Spotify', '#1db954', '♫'], ['Notion', '#fff', 'N'], ['Reddit', '#ff4500', 'r'], ['Maps', '#34a853', '⌖']];
-      return { w: 360, h: 230, title: 'Quicklinks', body:
-        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px">' + l.map(function (q) {
-          var dark = q[1] === '#eee' || q[1] === '#fff';
-          return '<div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 4px;border-radius:9px;background:var(--surface2);border:1px solid var(--border)"><span style="width:26px;height:26px;border-radius:7px;background:' + q[1] + ';color:' + (dark ? '#111' : '#fff') + ';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px">' + q[2] + '</span><span style="font-size:9px;font-weight:600;color:var(--text2)">' + q[0] + '</span></div>';
-        }).join('') + '</div>' };
+      var links = [['GitHub', 'github.com'], ['YouTube', 'youtube.com'], ['Wikipedia', 'wikipedia.org'], ['Gmail', 'mail.google.com'], ['Spotify', 'spotify.com'], ['Notion', 'notion.so'], ['Reddit', 'reddit.com'], ['DeepL', 'deepl.com']];
+      return { w: 340, h: 220, title: 'Quicklinks', body:
+        '<div style="display:flex;flex-direction:column;height:100%;gap:6px"><div style="flex:1;min-height:0;overflow-y:auto"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:5px">' + links.map(function (l) {
+          return '<a href="https://' + l[1] + '" target="_blank" rel="noopener noreferrer" class="ql" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 3px 6px;border-radius:8px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);transition:border-color .12s;text-decoration:none">' +
+            '<span style="width:26px;height:26px;border-radius:7px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--surface3);border:1px solid var(--border)"><img src="https://icons.duckduckgo.com/ip3/' + l[1] + '.ico" alt="" width="18" height="18" style="display:block" onerror="this.outerHTML=\'<span style=&quot;font-size:12px;font-weight:800;color:var(--accent)&quot;>' + l[0][0] + '</span>\'"></span>' +
+            '<span style="font-size:8.5px;font-weight:600;color:var(--text2);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + l[0] + '</span></a>';
+        }).join('') + '</div></div></div>',
+        init: function (el) { el.querySelectorAll('.ql').forEach(function (a) { a.onmouseenter = function () { a.style.borderColor = 'var(--accent)'; }; a.onmouseleave = function () { a.style.borderColor = 'var(--border)'; }; }); } };
     },
 
+    // ── ImageWidget.tsx (objectFit cover, no padding) ─────────────────────
     'Image': function () {
-      return { w: 420, h: 300, title: 'Image', body:
-        '<svg viewBox="0 0 420 270" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%">' +
-        '<defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1d4a"/><stop offset=".6" stop-color="#2a5ea8"/><stop offset="1" stop-color="#f3a76b"/></linearGradient></defs>' +
-        '<rect width="420" height="270" fill="url(#sk)"/><circle cx="300" cy="170" r="26" fill="#ffd9a0" opacity=".9"/>' +
-        '<path d="M0 200 L70 140 L120 180 L190 110 L260 190 L330 150 L420 200 V270 H0Z" fill="#0a1a3e"/>' +
-        '<path d="M0 230 L90 190 L170 225 L250 200 L340 235 L420 215 V270 H0Z" fill="#040c1e"/>' +
-        '<rect y="245" width="420" height="25" fill="#02050e" opacity=".6"/></svg>' };
+      return { w: 300, h: 400, title: 'Image', flush: true, body:
+        '<div style="position:relative;width:100%;height:100%"><img src="screenshots/sample-image.jpg" alt="Piccadilly Circus at night, oil painting" style="width:100%;height:100%;object-fit:cover;display:block"></div>' };
     },
 
+    // ── HtmlWidget.tsx (sandboxed iframe + Code/Reload pills) ─────────────
     'HTML': function () {
-      return { w: 420, h: 300, title: 'HTML', sub: 'pomodoro.html', body:
-        '<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid var(--border)"><span class="pill" style="background:var(--accent);color:#fff;border-color:var(--accent)">Preview</span><span class="pill">Code</span><span class="pill" style="margin-left:auto">↻</span></div>' +
-        '<div style="position:absolute;top:34px;left:0;right:0;bottom:0;background:linear-gradient(135deg,#ff7a59,#ff3d7f);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:system-ui">' +
-        '<div style="font-size:12px;letter-spacing:.2em;opacity:.85">FOCUS</div><div style="font-size:54px;font-weight:800">24:59</div><div style="margin-top:8px;padding:6px 16px;border-radius:20px;background:rgba(255,255,255,.25);font-size:12px;font-weight:700">Pause</div></div>' };
+      var src = '<!doctype html>\n<html>\n<head>\n<style>\n  body { margin:0; height:100vh; display:grid; place-items:center;\n         background:#0b1020; font-family:system-ui; color:#cfe3ff; }\n  .ring { width:120px; height:120px; border-radius:50%;\n          border:3px solid #4da3ff; box-shadow:0 0 40px #2a6bff88;\n          animation:breathe 8s ease-in-out infinite; }\n  p { margin:22px 0 0; letter-spacing:.2em; font-size:12px; text-align:center; }\n  @keyframes breathe { 0%,100% { transform:scale(.6); } 50% { transform:scale(1); } }\n</style>\n</head>\n<body>\n  <div>\n    <div class="ring"></div>\n    <p id="t">BREATHE IN</p>\n  </div>\n  <script>\n    let i = 0;\n    setInterval(() => { t.textContent = (++i % 2) ? "BREATHE OUT" : "BREATHE IN"; }, 4000);\n  <\/script>\n</body>\n</html>';
+      var pill = 'padding:3px 9px;font-size:11px;background:rgba(0,0,0,0.6);color:white;border-radius:20px;border:none;cursor:pointer';
+      return { w: 400, h: 320, title: 'HTML', sub: 'breathing.html', body:
+        '<div style="position:relative;width:100%;height:100%;overflow:hidden;border-radius:inherit">' +
+        '<iframe class="hf" title="HTML widget" sandbox="allow-scripts" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;display:block;border-radius:6px"></iframe>' +
+        '<textarea class="hc" readonly spellcheck="false" style="display:none;position:absolute;inset:0;width:100%;height:100%;resize:none;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text1);font-size:11px;font-family:monospace;line-height:1.5;padding:8px;outline:none"></textarea>' +
+        '<div style="position:absolute;top:6px;right:6px;display:flex;gap:4px;z-index:2"><button class="hr" style="' + pill + '">Reload</button><button class="hv" style="' + pill + '">Code</button></div></div>',
+        init: function (el) {
+          var f = el.querySelector('.hf'), c = el.querySelector('.hc'), v = el.querySelector('.hv'), r = el.querySelector('.hr');
+          f.srcdoc = src; c.value = src;
+          v.onclick = function () { var code = c.style.display === 'none'; c.style.display = code ? 'block' : 'none'; f.style.display = code ? 'none' : 'block'; r.style.display = code ? 'none' : ''; v.textContent = code ? 'Preview' : 'Code'; };
+          r.onclick = function () { f.srcdoc = src + ' '; };
+        } };
     }
   };
 
-  var panel = null, current = null;
+  // ── Layout: the preview becomes a grid item, tiles flow around it ───────
+  var panel = null, current = null, CELL = 104, GAP = 12;
+  function cols() { return getComputedStyle(list).gridTemplateColumns.split(' ').length; }
+
+  function flip(mutate) {
+    var before = new Map();
+    chips.forEach(function (c) { before.set(c, c.getBoundingClientRect()); });
+    mutate();
+    chips.forEach(function (c) {
+      var a = before.get(c), b = c.getBoundingClientRect();
+      var dx = a.left - b.left, dy = a.top - b.top;
+      if (!dx && !dy) return;
+      c.style.transition = 'none';
+      c.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+      requestAnimationFrame(function () { requestAnimationFrame(function () {
+        c.style.transition = 'transform .55s cubic-bezier(.2,.7,.2,1)';
+        c.style.transform = '';
+        setTimeout(function () { c.style.transition = ''; }, 600);
+      }); });
+    });
+  }
 
   function close(cb) {
     if (!panel) { if (cb) cb(); return; }
@@ -1453,21 +1685,26 @@ document.querySelectorAll('.shot img').forEach(function (img) {
     if (current) current.classList.remove('active');
     current = null;
     p.classList.remove('open');
-    setTimeout(function () { p.remove(); if (cb) cb(); }, 420);
+    setTimeout(function () { flip(function () { p.remove(); }); if (cb) setTimeout(cb, 60); }, 220);
   }
 
   function open(chip) {
     var name = chip.textContent.trim(), make = W[name];
     if (!make) return;
-    var spec = make();
-    // insert after the last tile in the clicked tile's row
-    var top = chip.offsetTop, after = chip;
-    chips.forEach(function (c) { if (c.offsetTop === top) after = c; });
+    var spec = make(), n = cols();
+    var span = n >= 6 ? (spec.w > 470 ? 4 : 2) : n;
+    if (n >= 6 && spec.w > 330 && span === 2) span = 4;
+    var rows = Math.ceil((spec.h + 30 + GAP) / (CELL + GAP));
+    var idx = chips.indexOf(chip), row = Math.floor(idx / n) + 1;
+    var col = n >= 6 ? (span === 4 ? 2 : (idx % n) < 3 ? (idx % n) + 2 : (idx % n) - 1) : 1;
+    if (n >= 6 && span === 2) col = Math.min(Math.max(col, 2), 4);
     panel = document.createElement('li');
     panel.className = 'wprev';
-    panel.innerHTML = '<div><div class="stagewrap">' + shell(chip, spec.w, spec.h, spec.title, spec.body, spec.sub, spec.icon, spec.pad) +
-      '<button class="wclose" aria-label="Close preview"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div></div>';
-    after.after(panel);
+    panel.style.gridColumn = col + ' / span ' + span;
+    panel.style.gridRow = row + ' / span ' + rows;
+    panel.innerHTML = '<div class="wtag"><span>Preview</span> · ' + esc(name) + ' widget, Deep Ocean theme</div>' + shell(chip, spec) +
+      '<button class="wclose" aria-label="Close preview"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>';
+    flip(function () { list.appendChild(panel); });
     panel.querySelector('.wclose').onclick = function () { close(); };
     if (spec.init) spec.init(panel.querySelector('.oc'));
     current = chip; chip.classList.add('active');
@@ -1475,7 +1712,7 @@ document.querySelectorAll('.shot img').forEach(function (img) {
     setTimeout(function () {
       var r = panel && panel.getBoundingClientRect();
       if (r && (r.bottom > innerHeight || r.top < 80)) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 380);
+    }, 450);
   }
 
   chips.forEach(function (chip) {
