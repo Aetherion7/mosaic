@@ -1126,6 +1126,10 @@ export const de: Record<string, string> = {
   'View/edit code': 'Code ansehen/bearbeiten',
   'Code': 'Code',
   'Paste HTML': 'HTML einfügen',
+  'Island rounding': 'Rundung der Island-Leiste',
+  'From square corners to fully round pills': 'Von eckig bis zu ganz runden Pillen',
+  'Round': 'Rund',
+  'Square': 'Eckig',
   // ── Board-Übersicht: zuletzt geöffnet + Ordner-Spalte ──
   'Last opened': 'Zuletzt geöffnet',
   'Layout': 'Layout',

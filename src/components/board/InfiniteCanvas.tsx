@@ -444,7 +444,7 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
           display: 'flex', alignItems: 'center', gap: 2,
           background: 'color-mix(in srgb, var(--surface) 88%, transparent)',
           backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-          border: '1px solid var(--border)', borderRadius: 7,
+          border: '1px solid var(--border)', borderRadius: 10,
           boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
           padding: '3px 4px',
         }}
@@ -506,7 +506,7 @@ const InfiniteCanvas = forwardRef<InfiniteCanvasHandle, Props>(function Infinite
             width: MM_W, height: MM_H,
             background: 'color-mix(in srgb, var(--surface) 88%, transparent)',
             backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-            border: '1px solid var(--border)', borderRadius: 7,
+            border: '1px solid var(--border)', borderRadius: 10,
             boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
             overflow: 'hidden', cursor: 'pointer',
           }}

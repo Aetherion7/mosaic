@@ -110,7 +110,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         <div style={{
           position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)',
           zIndex: 9999, background: 'color-mix(in srgb, #f59e0b 15%, var(--surface))',
-          border: '1px solid #f59e0b', borderRadius: 7, padding: '8px 16px',
+          border: '1px solid #f59e0b', borderRadius: 10, padding: '8px 16px',
           fontSize: 12, color: 'var(--text1)', display: 'flex', alignItems: 'center', gap: 8,
           boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
         }}>

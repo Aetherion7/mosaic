@@ -30,7 +30,7 @@ export default function StorageErrorBanner() {
         display: 'flex', alignItems: 'center', gap: 10,
         background: 'color-mix(in srgb, #ef4444 12%, var(--surface, #12131e))',
         border: '1px solid color-mix(in srgb, #ef4444 40%, transparent)',
-        borderRadius: 8, padding: '10px 14px',
+        borderRadius: 12, padding: '10px 14px',
         boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         fontSize: 12.5, color: 'var(--text1, #edeaf8)',
       }}

@@ -133,7 +133,7 @@ function InAppEyeDropper({ capture, onPick, onCancel }: {
       <div style={{
         position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 100001,
         fontSize: 11, color: 'white', background: 'rgba(20,20,20,0.85)', backdropFilter: 'blur(8px)',
-        border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '5px 12px',
+        border: '1px solid rgba(255,255,255,0.2)', borderRadius: 999, padding: '5px 12px',
       }}>
         {t('Click to pick a color — Esc to cancel')}
       </div>
@@ -331,7 +331,7 @@ export function ColorSwatch({
             background: 'var(--popover-bg)',
             backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
             border: '1px solid var(--border)',
-            borderRadius: 9, padding: 10,
+            borderRadius: 14, padding: 10,
             boxShadow: '0 20px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
             userSelect: 'none',
           }}

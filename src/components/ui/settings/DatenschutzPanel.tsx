@@ -27,7 +27,7 @@ export default function DatenschutzPanel() {
   const isDesktop = useIsDesktop()
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 8, background: 'color-mix(in srgb, var(--accent) 8%, var(--surface2))', border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)', marginBottom: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 12, background: 'color-mix(in srgb, var(--accent) 8%, var(--surface2))', border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)', marginBottom: 4 }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         </svg>
@@ -41,7 +41,7 @@ export default function DatenschutzPanel() {
       {/* Ehrlicher Hinweis: einige Widgets kontaktieren direkt Drittanbieter
           (Karte, Wetter, Favicons, optional KI) — ohne diesen Absatz wäre der
           Block oben irreführend ("kein Server" ≠ "kein Netzwerkverkehr"). */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 8, background: 'color-mix(in srgb, var(--amber, #f59e0b) 8%, var(--surface2))', border: '1px solid color-mix(in srgb, var(--amber, #f59e0b) 25%, transparent)', marginBottom: 4, marginTop: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', borderRadius: 12, background: 'color-mix(in srgb, var(--amber, #f59e0b) 8%, var(--surface2))', border: '1px solid color-mix(in srgb, var(--amber, #f59e0b) 25%, transparent)', marginBottom: 4, marginTop: 10 }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--amber, #f59e0b)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
           <path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
         </svg>

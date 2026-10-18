@@ -59,6 +59,7 @@ export interface AppSettings {
   animations:             boolean
   showMinimap:            boolean
   headerStyle:            'default' | 'island'
+  islandRoundness:        number   // Island-Leiste: 0 = eckig … 100 = ganz rund (Pillen)
   programFont:            string   // Schrift der gesamten Oberfläche (Startseite, Einstellungen, Boards ohne eigene Board-Schrift)
   disabledWidgetTypes:    string[]
   customThemes:           CustomTheme[]
@@ -120,7 +121,8 @@ export const useSettings = create<SettingsStore>()(
       keyboardShortcutsHome:  DEFAULT_HOME_SHORTCUTS,
       animations:             true,
       showMinimap:            true,
-      headerStyle:            'default',
+      headerStyle:            'island',
+      islandRoundness:        100,
       programFont:            'inter',
       disabledWidgetTypes:    [],
       customThemes:           [],

@@ -66,7 +66,7 @@ function TileCard({
         justifyContent: 'center',
         gap: compact ? 5 : 6,
         padding: compact ? '10px 6px' : '20px 10px',
-        borderRadius: 8,
+        borderRadius: 12,
         border: `1px solid ${hovered ? 'var(--accent)' : 'var(--border)'}`,
         background: hovered ? 'color-mix(in srgb, var(--accent) 8%, var(--surface2))' : 'var(--surface2)',
         cursor: 'pointer', transition: 'all 0.14s',
@@ -197,7 +197,7 @@ export default function TilePicker() {
                   background: 'var(--popover-bg)',
                   backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
                   border: '1px solid var(--border)',
-                  borderRadius: 10,
+                  borderRadius: 20,
                   // Without this, the scrollable grid's own native scrollbar
                   // (rendered flush against ITS box's right/bottom edge) isn't
                   // clipped to this container's rounded corners and visibly
@@ -261,7 +261,7 @@ function SearchBar({ search, setSearch, autoFocus }: { search: string; setSearch
         style={{
           width: '100%', padding: '9px 34px 9px 34px', fontSize: 13,
           background: 'var(--surface2)', border: '1px solid var(--border)',
-          borderRadius: 7, color: 'var(--text1)', outline: 'none', boxSizing: 'border-box',
+          borderRadius: 10, color: 'var(--text1)', outline: 'none', boxSizing: 'border-box',
         }}
       />
       {search && (

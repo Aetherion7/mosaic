@@ -158,7 +158,7 @@ export default function ThemeEditorModal({ initial, onClose }: { initial?: Custo
             width: 'min(1200px, 95vw)', height: 'min(780px, 90vh)',
             background: 'var(--popover-bg)',
             backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
-            border: '1px solid var(--border)', borderRadius: 10,
+            border: '1px solid var(--border)', borderRadius: 18,
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
             boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
           }}
@@ -264,7 +264,7 @@ export default function ThemeEditorModal({ initial, onClose }: { initial?: Custo
               <Divider />
 
               <FSection label={t('Widget style')}>
-                <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: 2, marginBottom: 4, maxWidth: 220 }}>
+                <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 50, padding: 2, marginBottom: 4, maxWidth: 220 }}>
                   <SlidingTabs
                     options={[{ value: 'solid', label: t('Solid') }, { value: 'gradient', label: t('Gradient') }]}
                     value={style.gradient ? 'gradient' : 'solid'}
@@ -337,10 +337,10 @@ export default function ThemeEditorModal({ initial, onClose }: { initial?: Custo
 
           {/* Footer */}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 20px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
-            <button onClick={onClose} style={{ fontSize: 12, padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
+            <button onClick={onClose} style={{ fontSize: 12, padding: '8px 16px', borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
               {t('Cancel')}
             </button>
-            <button onClick={save} disabled={!canSave} style={{ fontSize: 12, fontWeight: 700, padding: '8px 18px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: canSave ? 'pointer' : 'default', opacity: canSave ? 1 : 0.4 }}>
+            <button onClick={save} disabled={!canSave} style={{ fontSize: 12, fontWeight: 700, padding: '8px 18px', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: canSave ? 'pointer' : 'default', opacity: canSave ? 1 : 0.4 }}>
               {initial ? t('Save changes') : t('Create theme')}
             </button>
           </div>
@@ -529,7 +529,7 @@ function LivePreview({ cssVars, bg, style, hoverColorKey, onHoverColorKey }: {
       }}
       onMouseLeave={() => setCursorPos(null)}
       style={{
-        position: 'relative', width: '100%', height: '100%', minHeight: 320, borderRadius: 9, overflow: 'hidden',
+        position: 'relative', width: '100%', height: '100%', minHeight: 320, borderRadius: 14, overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
         ...scopedVars,
         ...containerBgStyle,
@@ -594,7 +594,7 @@ function LivePreview({ cssVars, bg, style, hoverColorKey, onHoverColorKey }: {
           onMouseEnter={() => onHoverColorKey('--danger')}
           onMouseLeave={() => onHoverColorKey(null)}
           style={{
-            padding: '4px 12px', borderRadius: 8, cursor: 'default',
+            padding: '4px 12px', borderRadius: 999, cursor: 'default',
             border: `1px solid color-mix(in srgb, ${v('--danger', '#f87171')} 40%, transparent)`,
             background: 'none', color: v('--danger', '#f87171'),
             fontSize: 11, fontWeight: 600, ...refRing(hoverColorKey === '--danger'),
@@ -624,7 +624,7 @@ function LivePreview({ cssVars, bg, style, hoverColorKey, onHoverColorKey }: {
         onMouseLeave={() => onHoverColorKey(null)}
         style={{
           flexShrink: 0, margin: '10px 14px 0', display: 'flex', alignItems: 'flex-start', gap: 8,
-          padding: '8px 10px', borderRadius: 7,
+          padding: '8px 10px', borderRadius: 10,
           background: `color-mix(in srgb, ${v('--amber', '#fbbf24')} 8%, ${v('--surface2', '#1e2236')})`,
           border: `1px solid color-mix(in srgb, ${v('--amber', '#fbbf24')} 25%, transparent)`,
           ...refRing(hoverColorKey === '--amber'),
@@ -819,7 +819,7 @@ function ImagePicker({ imageName, onUpload }: { imageName: string | null; onUplo
   return (
     <>
       <button onClick={() => fileRef.current?.click()} style={{
-        padding: '9px 12px', fontSize: 11, borderRadius: 7, border: '1.5px dashed var(--text3)',
+        padding: '9px 12px', fontSize: 11, borderRadius: 10, border: '1.5px dashed var(--text3)',
         background: 'var(--surface2)', color: imageName ? 'var(--text1)' : 'var(--text3)',
         cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, overflow: 'hidden',
       }}>
@@ -875,7 +875,7 @@ function PatternPicker({ value, onChange, color, onColorChange, opacity, onOpaci
 }
 
 const tabBtn = (active: boolean): React.CSSProperties => ({
-  padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 8,
+  padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 50,
   border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
   background: active ? 'var(--accent)' : 'var(--surface2)',
   color: active ? 'var(--on-accent, white)' : 'var(--text2)',
