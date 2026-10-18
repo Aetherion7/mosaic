@@ -136,7 +136,7 @@ export default function SearchModal({ onClose }: Props) {
           width: '100%', maxWidth: 560,
           background: 'var(--surface)',
           border: '1px solid var(--border)',
-          borderRadius: 10,
+          borderRadius: 16,
           boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
           overflow: 'hidden',
         }}

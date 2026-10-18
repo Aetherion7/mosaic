@@ -38,7 +38,7 @@ export default function ToastStack() {
               background: 'color-mix(in srgb, var(--surface) 95%, transparent)',
               backdropFilter: 'blur(16px)',
               border: '1px solid var(--border)',
-              borderRadius: 9,
+              borderRadius: 14,
               padding: '10px 14px',
               display: 'flex', alignItems: 'center', gap: 12,
               boxShadow: '0 8px 32px rgba(0,0,0,0.4)',

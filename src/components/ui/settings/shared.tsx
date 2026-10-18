@@ -9,7 +9,7 @@ export function Toggle({ value, onChange, label }: { value: boolean; onChange: (
     <button
       type="button" role="switch" aria-checked={value} aria-label={label}
       onClick={e => { e.stopPropagation(); onChange(!value) }}
-      style={{ width: 40, height: 22, borderRadius: 7, flexShrink: 0, border: 'none', padding: 0, background: value ? 'var(--accent)' : 'rgba(150,150,150,0.25)', position: 'relative', cursor: 'pointer', transition: 'background 0.2s' }}>
+      style={{ width: 40, height: 22, borderRadius: 11, flexShrink: 0, border: 'none', padding: 0, background: value ? 'var(--accent)' : 'rgba(150,150,150,0.25)', position: 'relative', cursor: 'pointer', transition: 'background 0.2s' }}>
       <span style={{ position: 'absolute', top: 3, left: value ? 21 : 3, width: 16, height: 16, borderRadius: '50%', background: 'white', transition: 'left 0.18s', display: 'block', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
     </button>
   )
@@ -65,7 +65,7 @@ export function SettingItem({ label, desc, control, last }: { label: string; des
 export function HeaderStyleCard({ active, label, desc, preview, onClick }: { active: boolean; label: string; desc: string; preview: React.ReactNode; onClick: () => void }) {
   return (
     <button onClick={onClick} style={{
-      flex: 1, padding: '12px 14px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+      flex: 1, padding: '12px 14px', borderRadius: 12, cursor: 'pointer', textAlign: 'left',
       border: `2px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
       background: active ? 'color-mix(in srgb, var(--accent) 8%, var(--surface2))' : 'var(--surface2)',
       transition: 'all 0.15s',
@@ -119,7 +119,7 @@ export function AddCardButton({ title, desc, icon, onClick }: { title: string; d
     <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{
         display: 'flex', alignItems: 'center', gap: 11, width: '100%', padding: '10px 12px',
-        borderRadius: 7, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
+        borderRadius: 11, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
         border: `1px solid ${hover ? 'color-mix(in srgb, var(--accent) 45%, var(--border))' : 'var(--border)'}`,
         background: hover ? 'color-mix(in srgb, var(--accent) 7%, var(--surface2))' : 'var(--surface2)',
       }}>
@@ -167,7 +167,7 @@ export function TemplateBox({ json, filename, onInsert }: { json: string; filena
           }}>{json}</pre>
           <div style={{ display: 'flex', gap: 8, padding: '8px 10px', borderTop: '1px solid var(--border)' }}>
             <button onClick={() => downloadJson(filename, json)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, fontWeight: 600, padding: '5px 11px', borderRadius: 8, border: '1px solid color-mix(in srgb, var(--accent) 35%, var(--border))', background: 'color-mix(in srgb, var(--accent) 10%, transparent)', color: 'var(--accent)', cursor: 'pointer' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, fontWeight: 600, padding: '5px 11px', borderRadius: 50, border: '1px solid color-mix(in srgb, var(--accent) 35%, var(--border))', background: 'color-mix(in srgb, var(--accent) 10%, transparent)', color: 'var(--accent)', cursor: 'pointer' }}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
@@ -175,7 +175,7 @@ export function TemplateBox({ json, filename, onInsert }: { json: string; filena
             </button>
             {onInsert && (
               <button onClick={onInsert}
-                style={{ fontSize: 10.5, fontWeight: 600, padding: '5px 11px', borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
+                style={{ fontSize: 10.5, fontWeight: 600, padding: '5px 11px', borderRadius: 50, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
                 {t('Insert into field')}
               </button>
             )}

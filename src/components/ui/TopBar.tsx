@@ -46,6 +46,10 @@ export default function TopBar() {
   const headerStyle   = useSettings(s => s.headerStyle)
   const aiEnabled     = useSettings(s => s.aiEnabled)
   const isIsland      = headerStyle === 'island'
+  const islandRoundness = useSettings(s => s.islandRoundness ?? 100)
+  // 0 → 4 px (eckig) … 99 → 24 px, 100 → volle Pille. Gilt für die Island-
+  // Pillen und alle Bedienelemente darin (Umschalter, runde Icon-Buttons).
+  const islandRadius = isIsland ? (islandRoundness >= 100 ? 999 : Math.round(4 + islandRoundness * 0.2)) : 999
 
   // Always-current refs — updated every render so the keydown handler never sees stale values
   const modeRef            = useRef(mode)
@@ -188,7 +192,7 @@ export default function TopBar() {
     backdropFilter: 'blur(16px)',
     WebkitBackdropFilter: 'blur(16px)',
     border: '1px solid var(--border)',
-    borderRadius: 8,
+    borderRadius: islandRadius,
     padding: '4px 8px',
     boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
     width: 'fit-content',
@@ -297,7 +301,7 @@ export default function TopBar() {
           ...(isIsland ? {
             background: 'var(--popover-bg)',
             backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid var(--border)', borderRadius: 8,
+            border: '1px solid var(--border)', borderRadius: islandRadius,
             padding: '4px 8px', boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
             transition: 'padding 0.3s ease',
           } : {}),
@@ -332,14 +336,14 @@ export default function TopBar() {
             display: 'flex', alignItems: 'center',
           }}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <IconCircleBtn accent active={panel === 'addWidget'} onClick={() => { setSettingsOpen(false); setSearchOpen(false); openPanel(panel === 'addWidget' ? null : 'addWidget') }} title={`${t("Add widget")} [${shortcuts.addWidget}]`} id="add-widget-btn">
+              <IconCircleBtn radius={islandRadius} accent active={panel === 'addWidget'} onClick={() => { setSettingsOpen(false); setSearchOpen(false); openPanel(panel === 'addWidget' ? null : 'addWidget') }} title={`${t("Add widget")} [${shortcuts.addWidget}]`} id="add-widget-btn">
                 <IconPlus />
               </IconCircleBtn>
               {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.addWidget}</span>}
             </div>
           </div>
 
-          <div id="tour-mode-toggle" style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--surface)', borderRadius: 8, padding: 3, border: '1px solid var(--border)' }}>
+          <div id="tour-mode-toggle" style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--surface)', borderRadius: islandRadius, padding: 3, border: '1px solid var(--border)' }}>
             <SlidingTabs
               options={[
                 { value: 'edit', icon: <IconPencil />, title: t('Edit mode') },
@@ -347,7 +351,7 @@ export default function TopBar() {
               ]}
               value={mode}
               onChange={m => useUIStore.getState().setMode(m)}
-              slotW={32} slotH={32}
+              slotW={32} slotH={32} radius={islandRadius >= 999 ? 999 : Math.max(2, islandRadius - 3)}
             />
             {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.toggleMode}</span>}
           </div>
@@ -360,14 +364,14 @@ export default function TopBar() {
             parallel zum umbelegbaren shortcuts.search (Einstellungen →
             Tastenkürzel) — wie die anderen 5 Single-Key-Shortcuts unten. */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <IconCircleBtn id="tour-search" active={searchOpen} onClick={() => { setSettingsOpen(false); openPanel(null); setSearchOpen(o => !o) }} title={`${t("Search")} [${shortcuts.search} / ${t("Ctrl+K")}]`}>
+          <IconCircleBtn radius={islandRadius} id="tour-search" active={searchOpen} onClick={() => { setSettingsOpen(false); openPanel(null); setSearchOpen(o => !o) }} title={`${t("Search")} [${shortcuts.search} / ${t("Ctrl+K")}]`}>
             <IconSearch />
           </IconCircleBtn>
           {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.search}</span>}
         </div>
 
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <IconCircleBtn id="tour-theme" active={panel === 'theme'} onClick={() => { setSettingsOpen(false); setSearchOpen(false); openPanel(panel === 'theme' ? null : 'theme') }} title={`${t("Theme")} [${shortcuts.theme}]`}>
+          <IconCircleBtn radius={islandRadius} id="tour-theme" active={panel === 'theme'} onClick={() => { setSettingsOpen(false); setSearchOpen(false); openPanel(panel === 'theme' ? null : 'theme') }} title={`${t("Theme")} [${shortcuts.theme}]`}>
             <IconSun />
           </IconCircleBtn>
           {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.theme}</span>}
@@ -375,7 +379,7 @@ export default function TopBar() {
 
         {aiEnabled && (
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <IconCircleBtn id="tour-ai" active={panel === 'ai'} onClick={() => { setSettingsOpen(false); setSearchOpen(false); openPanel(panel === 'ai' ? null : 'ai') }} title={`${t("AI assistant")} [${shortcuts.ai}]`}>
+            <IconCircleBtn radius={islandRadius} id="tour-ai" active={panel === 'ai'} onClick={() => { setSettingsOpen(false); setSearchOpen(false); openPanel(panel === 'ai' ? null : 'ai') }} title={`${t("AI assistant")} [${shortcuts.ai}]`}>
               <IconSparkleTopbar />
             </IconCircleBtn>
             {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.ai}</span>}
@@ -383,7 +387,7 @@ export default function TopBar() {
         )}
 
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <IconCircleBtn id="tour-settings" active={settingsOpen} onClick={() => { setSearchOpen(false); openPanel(null); setSettingsOpen(!settingsOpen) }} title={`${t("Settings")} [${shortcuts.settings}]`}>
+          <IconCircleBtn radius={islandRadius} id="tour-settings" active={settingsOpen} onClick={() => { setSearchOpen(false); openPanel(null); setSettingsOpen(!settingsOpen) }} title={`${t("Settings")} [${shortcuts.settings}]`}>
             <IconGear />
           </IconCircleBtn>
           {showKbdHints && <span style={kbdBadgeStyle}>{shortcuts.settings}</span>}
@@ -462,8 +466,8 @@ function IconPencil() {
 
 /* ── Shared button primitives ────────────────────────────────────────────── */
 
-function IconCircleBtn({ children, onClick, active, accent, title, id }: {
-  children: React.ReactNode; onClick: () => void; active?: boolean; accent?: boolean; title?: string; id?: string
+function IconCircleBtn({ children, onClick, active, accent, title, id, radius = 999 }: {
+  children: React.ReactNode; onClick: () => void; active?: boolean; accent?: boolean; title?: string; id?: string; radius?: number
 }) {
   return (
     <button
@@ -473,7 +477,7 @@ function IconCircleBtn({ children, onClick, active, accent, title, id }: {
       aria-label={title}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: 36, height: 36, borderRadius: 8,
+        width: 36, height: 36, borderRadius: radius >= 999 ? 50 : Math.max(2, radius - 2),
         border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
         background: active ? (accent ? 'var(--accent)' : 'var(--surface2)') : accent ? 'var(--accent)' : 'var(--surface)',
         color: accent ? 'var(--on-accent, white)' : active ? 'var(--accent)' : 'var(--text2)',

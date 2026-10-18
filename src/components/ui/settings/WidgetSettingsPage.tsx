@@ -86,7 +86,7 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '4px 0 18px' }}>
         <div style={{
-          width: 42, height: 42, borderRadius: 8, flexShrink: 0,
+          width: 42, height: 42, borderRadius: 12, flexShrink: 0,
           background: disabled ? 'var(--surface2)' : 'color-mix(in srgb, var(--accent) 12%, var(--surface2))',
           border: `1px solid ${disabled ? 'var(--border)' : 'color-mix(in srgb, var(--accent) 30%, transparent)'}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',

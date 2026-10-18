@@ -247,12 +247,11 @@ Die App ist dunkel-first und token-basiert. Themes setzen CSS-Variablen
 - **Karten:** `background: var(--surface2)`, `border: 1px solid var(--border)`, `borderRadius: 7–10`
 - **Labels:** 8–9 px, `fontWeight: 700`, `textTransform: uppercase`, `letterSpacing: 0.06em`, `--text3`
 - **Akzent-Pills:** `color-mix(in srgb, var(--accent) 12–15%, transparent)` als Fläche,
-  28 %-Mix als Rand, `borderRadius: 10`
+  28 %-Mix als Rand, `borderRadius: 20`
 - **Icon-Buttons:** 22 × 22 px, Radius 5–7, Rand `--border`, Fläche `--surface2`
-- **Aktions-Buttons:** `borderRadius: 8` (z. B. Reset-Buttons)
-- **Ecken:** GUI-Chrome ist bewusst eckig — Buttons, Umschalter und TopBar (auch im
-  Island-Modus) 8 px, Panels/Modale 10 px, keine Vollpillen (`999`/`50`) mehr.
-  Runde Formen nur für Logo, Punkte und Farbkreise.
+- **Aktions-Pills:** `borderRadius: 50` (z. B. Reset-Buttons)
+- **TopBar:** Standard ist der Island-Modus. Die Rundung der Inseln ist unter
+  Einstellungen → Erscheinungsbild einstellbar (`islandRoundness` 0 = eckig … 100 = Vollpille).
 - **Wochencharts:** SVG mit `viewBox` ~260 breit, Y-Ticks 6 px, Navigation
   „← Diese Woche →" zentriert (Muster in Wasser/Schlaf/Aufgabe)
 - **Schreibweise:** Inline-Styles (keine CSS-Frameworks), Icons als eigene

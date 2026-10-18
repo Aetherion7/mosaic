@@ -70,7 +70,7 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
     transform: counterScale !== 1 ? `scale(${counterScale})` : undefined,
     transformOrigin: side === 'right' ? 'top left' : 'top right',
     display: 'flex',
-    borderRadius: 10, padding: 3,
+    borderRadius: 16, padding: 3,
     boxShadow: '0 16px 56px rgba(0,0,0,0.45)',
   }
 
@@ -89,7 +89,7 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
       display: 'flex', flexDirection: 'column',
       background: 'var(--popover-bg)',
       backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-      borderRadius: 8,
+      borderRadius: 13,
       padding: 14,
     }}>
       {/* Kopfzeile */}
@@ -124,14 +124,14 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
         )}
         {items.map(item => {
           if (item.kind === 'action') return (
-            <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', alignSelf: 'flex-start', fontSize: 10, fontWeight: 600, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)', borderRadius: 8, padding: '2px 9px' }}>
+            <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', alignSelf: 'flex-start', fontSize: 10, fontWeight: 600, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)', borderRadius: 999, padding: '2px 9px' }}>
               {item.text === '🔍' ? <IconSearchGlass size={10} /> : item.text}
             </span>
           )
           if (item.kind === 'error') {
             const [first, ...rest] = (item.text === 'NO_KEY' ? t('No API key configured.') : item.text === 'NO_PROVIDER' ? t('No provider selected.') : item.text).split('\n')
             return (
-              <div key={item.id} style={{ fontSize: 11, color: '#e53e3e', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.25)', borderRadius: 7, padding: '7px 10px', lineHeight: 1.5, wordBreak: 'break-word' }}>
+              <div key={item.id} style={{ fontSize: 11, color: '#e53e3e', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.25)', borderRadius: 10, padding: '7px 10px', lineHeight: 1.5, wordBreak: 'break-word' }}>
                 {first}
                 {rest.length > 0 && <div style={{ fontSize: 9.5, opacity: 0.7, marginTop: 3 }}>{rest.join(' ')}</div>}
               </div>
@@ -182,7 +182,7 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
           rows={1}
           style={{
             flex: 1, resize: 'none', fontSize: 12, lineHeight: 1.5,
-            background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 7,
+            background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10,
             color: 'var(--text1)', padding: '8px 10px', outline: 'none', fontFamily: 'inherit',
             maxHeight: 96, overflowY: 'auto',
           }}
@@ -192,7 +192,7 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
           disabled={!running && !input.trim()}
           title={running ? t('Stop') : t('Send')} aria-label={running ? t('Stop') : t('Send')}
           style={{
-            width: 34, height: 34, borderRadius: 7, border: 'none', flexShrink: 0,
+            width: 34, height: 34, borderRadius: 10, border: 'none', flexShrink: 0,
             background: running || input.trim() ? 'var(--accent)' : 'var(--surface2)',
             color: running || input.trim() ? 'white' : 'var(--text3)',
             cursor: running || input.trim() ? 'pointer' : 'default',
