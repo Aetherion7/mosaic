@@ -186,6 +186,78 @@ const HEAD_LABELS: Record<DrawArrowHead, string> = { none: 'None', arrow: 'Arrow
 const FONT_LABELS: Record<FontFamily, string> = { sans: 'Sans-serif', serif: 'Serif', mono: 'Monospace', hand: 'Handwritten' }
 const FONT_SIZES = [10, 12, 14, 16, 20, 24, 32, 48, 64]
 
+// Line / fill / connector / appearance controls — shared by the format
+// panel's Style tab and the shape library popover.
+export function StyleSections({ t, style: s, setStyle, commitLive, kinds }: {
+  t: (s: string) => string
+  style: StyleState
+  setStyle: (patch: Partial<StyleState>, live?: boolean) => void
+  commitLive: () => void
+  kinds: Kinds
+}) {
+  const showStroke = kinds.shape || kinds.edge || kinds.free
+  return (<>
+    {showStroke && (
+      <Section title={t('Line')}>
+        <Row label={t('Color')}><Swatch value={s.color} onChange={v => setStyle({ color: v })} title={t('Line color')} /></Row>
+        <Slider label={t('Width')} value={s.strokePct} min={1} unit="%"
+          onChange={v => setStyle({ strokePct: v }, true)} onCommit={commitLive} />
+        <Row label={t('Pattern')}>
+          <Seg value={s.strokeDash} onChange={v => setStyle({ strokeDash: v })} options={[
+            { value: 'solid', icon: <IcoStrokeSolid />, title: t('Solid') },
+            { value: 'dashed', icon: <IcoStrokeDashed />, title: t('Dashed') },
+            { value: 'dotted', icon: <IcoStrokeDotted />, title: t('Dotted') },
+          ]} />
+        </Row>
+      </Section>
+    )}
+    {kinds.shape && (
+      <Section title={t('Fill')}>
+        <Row label={t('Filled')}><MiniToggle value={s.filled} onChange={v => setStyle({ filled: v })} label={t('Filled')} /></Row>
+        {s.filled && (<>
+          <Row label={t('Fill color')}><Swatch value={s.bgColor ?? s.color} onChange={v => setStyle({ bgColor: v })} title={t('Fill color')} /></Row>
+          <Row label={t('Fill style')}>
+            <Seg value={s.fillStyle} onChange={v => setStyle({ fillStyle: v })} options={[
+              { value: 'hachure', icon: <IcoFillHachure />, title: t('Hachure') },
+              { value: 'cross-hatch', icon: <IcoFillCrossHatch />, title: t('Cross-hatch') },
+              { value: 'solid', icon: <IcoFillSolid />, title: t('Solid') },
+            ]} />
+          </Row>
+        </>)}
+      </Section>
+    )}
+    {kinds.edge && (
+      <Section title={t('Connector')}>
+        <Row label={t('Waypoints')}>
+          <Seg value={s.edgeStyle} onChange={v => setStyle({ edgeStyle: v })} options={[
+            { value: 'straight', icon: <IcoEdgeStraight />, title: t('Straight') },
+            { value: 'orthogonal', icon: <IcoEdgeOrtho />, title: t('Orthogonal') },
+            { value: 'curved', icon: <IcoEdgeCurved />, title: t('Curved') },
+          ]} />
+        </Row>
+        {/* fontSize 0 hides the trigger's text label (the arrow preview
+            says it all); the option list keeps its names. */}
+        <Row label={t('Line start')}>
+          <Dropdown value={s.startArrow} onChange={v => setStyle({ startArrow: v as DrawArrowHead })} title={`${t('Line start')}: ${t(HEAD_LABELS[s.startArrow])}`} popoverWidth={150}
+            buttonStyle={{ padding: '3px 7px', fontSize: 0, gap: 6 }}
+            options={ARROW_HEADS.map(h => ({ value: h, label: t(HEAD_LABELS[h]), icon: <ArrowHeadPreview head={h} flip /> }))} />
+        </Row>
+        <Row label={t('Line end')}>
+          <Dropdown value={s.endArrow} onChange={v => setStyle({ endArrow: v as DrawArrowHead })} title={`${t('Line end')}: ${t(HEAD_LABELS[s.endArrow])}`} popoverWidth={150}
+            buttonStyle={{ padding: '3px 7px', fontSize: 0, gap: 6 }}
+            options={ARROW_HEADS.map(h => ({ value: h, label: t(HEAD_LABELS[h]), icon: <ArrowHeadPreview head={h} /> }))} />
+        </Row>
+      </Section>
+    )}
+    <Section title={t('Appearance')}>
+      <Slider label={t('Opacity')} value={s.opacityPct}
+        onChange={v => setStyle({ opacityPct: v }, true)} onCommit={commitLive} />
+      {kinds.rect && <Row label={t('Rounded')}><MiniToggle value={s.roundCorners} onChange={v => setStyle({ roundCorners: v })} label={t('Rounded')} /></Row>}
+      {(kinds.shape || kinds.edge || kinds.text) && <Row label={t('Shadow')}><MiniToggle value={s.shadow} onChange={v => setStyle({ shadow: v })} label={t('Shadow')} /></Row>}
+    </Section>
+  </>)
+}
+
 // ─── Panel ────────────────────────────────────────────────────────────────────
 
 type Tab = 'diagram' | 'style' | 'text' | 'arrange'
@@ -196,7 +268,6 @@ export function FormatPanel(p: FormatPanelProps) {
   const [tabPick, setTabPick] = useState<Tab>('style')
   const tab = tabs.includes(tabPick) ? tabPick : tabs[0]
   const TAB_LABELS: Record<Tab, string> = { diagram: 'Diagram', style: 'Style', text: 'Text', arrange: 'Arrange' }
-  const showStroke = kinds.shape || kinds.edge || kinds.free
   const showText = kinds.text || kinds.shape || kinds.edge
 
   return (
@@ -262,64 +333,7 @@ export function FormatPanel(p: FormatPanelProps) {
           {!p.hasSelection && (
             <div style={{ padding: '2px 10px 8px', fontSize: 10, color: 'var(--text3)', lineHeight: 1.4 }}>{t('Defaults for new elements')}</div>
           )}
-          {showStroke && (
-            <Section title={t('Line')}>
-              <Row label={t('Color')}><Swatch value={s.color} onChange={v => setStyle({ color: v })} title={t('Line color')} /></Row>
-              <Slider label={t('Width')} value={s.strokePct} min={1} unit="%"
-                onChange={v => setStyle({ strokePct: v }, true)} onCommit={p.commitLive} />
-              <Row label={t('Pattern')}>
-                <Seg value={s.strokeDash} onChange={v => setStyle({ strokeDash: v })} options={[
-                  { value: 'solid', icon: <IcoStrokeSolid />, title: t('Solid') },
-                  { value: 'dashed', icon: <IcoStrokeDashed />, title: t('Dashed') },
-                  { value: 'dotted', icon: <IcoStrokeDotted />, title: t('Dotted') },
-                ]} />
-              </Row>
-            </Section>
-          )}
-          {kinds.shape && (
-            <Section title={t('Fill')}>
-              <Row label={t('Filled')}><MiniToggle value={s.filled} onChange={v => setStyle({ filled: v })} label={t('Filled')} /></Row>
-              {s.filled && (<>
-                <Row label={t('Fill color')}><Swatch value={s.bgColor ?? s.color} onChange={v => setStyle({ bgColor: v })} title={t('Fill color')} /></Row>
-                <Row label={t('Fill style')}>
-                  <Seg value={s.fillStyle} onChange={v => setStyle({ fillStyle: v })} options={[
-                    { value: 'hachure', icon: <IcoFillHachure />, title: t('Hachure') },
-                    { value: 'cross-hatch', icon: <IcoFillCrossHatch />, title: t('Cross-hatch') },
-                    { value: 'solid', icon: <IcoFillSolid />, title: t('Solid') },
-                  ]} />
-                </Row>
-              </>)}
-            </Section>
-          )}
-          {kinds.edge && (
-            <Section title={t('Connector')}>
-              <Row label={t('Waypoints')}>
-                <Seg value={s.edgeStyle} onChange={v => setStyle({ edgeStyle: v })} options={[
-                  { value: 'straight', icon: <IcoEdgeStraight />, title: t('Straight') },
-                  { value: 'orthogonal', icon: <IcoEdgeOrtho />, title: t('Orthogonal') },
-                  { value: 'curved', icon: <IcoEdgeCurved />, title: t('Curved') },
-                ]} />
-              </Row>
-              {/* fontSize 0 hides the trigger's text label (the arrow preview
-                  says it all); the option list keeps its names. */}
-              <Row label={t('Line start')}>
-                <Dropdown value={s.startArrow} onChange={v => setStyle({ startArrow: v as DrawArrowHead })} title={`${t('Line start')}: ${t(HEAD_LABELS[s.startArrow])}`} popoverWidth={150}
-                  buttonStyle={{ padding: '3px 7px', fontSize: 0, gap: 6 }}
-                  options={ARROW_HEADS.map(h => ({ value: h, label: t(HEAD_LABELS[h]), icon: <ArrowHeadPreview head={h} flip /> }))} />
-              </Row>
-              <Row label={t('Line end')}>
-                <Dropdown value={s.endArrow} onChange={v => setStyle({ endArrow: v as DrawArrowHead })} title={`${t('Line end')}: ${t(HEAD_LABELS[s.endArrow])}`} popoverWidth={150}
-                  buttonStyle={{ padding: '3px 7px', fontSize: 0, gap: 6 }}
-                  options={ARROW_HEADS.map(h => ({ value: h, label: t(HEAD_LABELS[h]), icon: <ArrowHeadPreview head={h} /> }))} />
-              </Row>
-            </Section>
-          )}
-          <Section title={t('Appearance')}>
-            <Slider label={t('Opacity')} value={s.opacityPct}
-              onChange={v => setStyle({ opacityPct: v }, true)} onCommit={p.commitLive} />
-            {kinds.rect && <Row label={t('Rounded')}><MiniToggle value={s.roundCorners} onChange={v => setStyle({ roundCorners: v })} label={t('Rounded')} /></Row>}
-            {(kinds.shape || kinds.edge || kinds.text) && <Row label={t('Shadow')}><MiniToggle value={s.shadow} onChange={v => setStyle({ shadow: v })} label={t('Shadow')} /></Row>}
-          </Section>
+          <StyleSections t={t} style={s} setStyle={setStyle} commitLive={p.commitLive} kinds={kinds} />
         </>)}
 
         {tab === 'text' && (<>

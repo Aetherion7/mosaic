@@ -22,6 +22,12 @@ export async function insertImageFiles(editor: Editor, files: File[], at?: numbe
   if (typeof at === 'number') chain.insertContentAt(at, content)
   else chain.insertContent(content)
   chain.run()
+  // An image as the last block of its column/note would leave nowhere to
+  // put the cursor — add an empty line after it so typing/Enter just works.
+  const { $to } = editor.state.selection
+  if (!$to.nodeAfter && $to.parent.lastChild?.type.name === 'image') {
+    editor.chain().insertContent({ type: 'paragraph' }).focus().run()
+  }
   return true
 }
 
@@ -114,6 +120,11 @@ export const NoteImage = Node.create({
 
       // Drag the corner handle to resize. Deltas are converted from screen
       // pixels to layout pixels, since the whole board may be CSS-scaled.
+      // Without these the browser ALSO starts dragging the whole (draggable)
+      // image node, and ProseMirror's drop cursor wanders around the note.
+      handle.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation() })
+      handle.addEventListener('dragstart', e => { e.preventDefault(); e.stopPropagation() })
+      handle.draggable = false
       handle.addEventListener('pointerdown', e => {
         if (!editor.isEditable) return
         e.preventDefault(); e.stopPropagation()

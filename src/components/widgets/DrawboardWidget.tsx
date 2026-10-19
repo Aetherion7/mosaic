@@ -28,7 +28,7 @@ import {
   IcoSelectAll, IcoEdgeStraight, IcoEdgeOrtho, IcoEdgeCurved, ShapePreview,
 } from './drawboard/icons'
 import {
-  FormatPanel, Slider, type StyleState, type Kinds, type CanvasBg, type FontFamily,
+  FormatPanel, Slider, StyleSections, type StyleState, type Kinds, type CanvasBg, type FontFamily,
   type FillStyle, type StrokeDash, type TextAlign,
 } from './drawboard/FormatPanel'
 
@@ -232,6 +232,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
   const cursorPtRef = useRef<Pt | null>(null)
   const guideRef    = useRef<{ gx: number | null; gy: number | null }>({ gx: null, gy: null })
   const hoverBindRef = useRef<string | null>(null)
+  const hoverShapeRef = useRef<string | null>(null)
   const spaceRef    = useRef(false)
   const editorRef   = useRef<Editor | null>(null)
   const editorValRef = useRef('')
@@ -286,14 +287,44 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
     for (const el of els) if (el.type !== 'fill') drawElement(ctx, el, o)
   }, [])
 
+  // The canvas bitmap is sized to what's actually on screen: layout size ×
+  // device pixel ratio × the board's own CSS zoom. Without this, zooming
+  // the board out (or a HiDPI display) resampled a 1:1 bitmap and every
+  // stroke went soft. All drawing goes through setTransform(k) and every
+  // coordinate conversion below uses the LAYOUT size (viewRef), never the
+  // bitmap size.
+  const viewRef = useRef({ w: 0, h: 0, k: 1 })
+  const syncBacking = useCallback((): boolean => {
+    const container = containerRef.current, c = canvasRef.current
+    if (!container || !c) return false
+    const w = container.clientWidth, h = container.clientHeight
+    if (!w || !h) return false
+    const r = container.getBoundingClientRect()
+    const boardZoom = r.width / w || 1
+    const raw = (window.devicePixelRatio || 1) * boardZoom
+    const k = Math.max(0.25, Math.min(4, Math.ceil(raw * 8 - 0.01) / 8))
+    const v = viewRef.current
+    if (v.w === w && v.h === h && v.k === k) return false
+    viewRef.current = { w, h, k }
+    for (const cv of [c, cursorCanvasRef.current]) {
+      if (!cv) continue
+      cv.width = Math.round(w * k); cv.height = Math.round(h * k)
+      cv.style.width = `${w}px`; cv.style.height = `${h}px`
+    }
+    return true
+  }, [])
+
   const render = useCallback(() => {
     const canvas = canvasRef.current; if (!canvas) return
     const ctx = canvas.getContext('2d'); if (!ctx) return
+    syncBacking()
+    const { w: W, h: H, k } = viewRef.current
+    ctx.setTransform(k, 0, 0, k, 0, 0)
     const bg = canvasBgRef.current
     const scale = scaleRef.current, pan = panRef.current
 
     ctx.fillStyle = CANVAS_COLOR[bg]
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillRect(0, 0, W, H)
     if (bg === 'grid' || (snapRef.current && bg === 'dark')) {
       const gridPx = Math.max(8, GRID * scale)
       const offX = ((pan.x % gridPx) + gridPx) % gridPx
@@ -301,8 +332,8 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
       ctx.strokeStyle = bg === 'dark' ? 'rgba(255,255,255,0.07)' : '#e5e7eb'
       ctx.lineWidth = 0.5
       ctx.beginPath()
-      for (let x = offX - gridPx; x <= canvas.width + gridPx; x += gridPx) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height) }
-      for (let y = offY - gridPx; y <= canvas.height + gridPx; y += gridPx) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y) }
+      for (let x = offX - gridPx; x <= W + gridPx; x += gridPx) { ctx.moveTo(x, 0); ctx.lineTo(x, H) }
+      for (let y = offY - gridPx; y <= H + gridPx; y += gridPx) { ctx.moveTo(0, y); ctx.lineTo(W, y) }
       ctx.stroke()
     }
 
@@ -313,15 +344,16 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
     const byId: ById = new Map(els.map(e => [e.id, e]))
     const cur = curRef.current
     if (cur) byId.set(cur.id, cur)
-    paintElements(ctx, els, byId, scale, editorRef.current?.id ?? null, () => render())
-    if (cur) drawElement(ctx, cur, { scale, byId, canvasColor: CANVAS_COLOR[bg], dark: bg === 'dark' })
+    // Shadow blur/offset ignore the transform, so they get the bitmap scale too.
+    paintElements(ctx, els, byId, scale * k, editorRef.current?.id ?? null, () => render())
+    if (cur) drawElement(ctx, cur, { scale: scale * k, byId, canvasColor: CANVAS_COLOR[bg], dark: bg === 'dark' })
 
     if (isEditRef.current) {
       const drag = dragRef.current
       drawSelectionOverlay(ctx, els, {
         scale, byId, selected: selIdsRef.current,
         showHandles: toolRef.current === 'select' && drag?.kind !== 'move',
-        showQuick: toolRef.current === 'select' && !drag,
+        quickId: toolRef.current === 'select' && !drag ? quickTarget() : null,
         bindHoverId: hoverBindRef.current,
       })
       if (drag?.kind === 'marquee' && drag.active) {
@@ -336,17 +368,19 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
         ctx.strokeRect(x, y, w, h)
         ctx.restore()
       }
-      const view = { x1: -pan.x / scale, y1: -pan.y / scale, x2: (canvas.width - pan.x) / scale, y2: (canvas.height - pan.y) / scale }
+      const view = { x1: -pan.x / scale, y1: -pan.y / scale, x2: (W - pan.x) / scale, y2: (H - pan.y) / scale }
       drawGuides(ctx, guideRef.current.gx, guideRef.current.gy, view, scale)
     }
     ctx.restore()
-  }, [paintElements])
+  }, [paintElements, syncBacking])
 
   // Pen cursor dot on its own overlay canvas so hovering only repaints one circle.
   const renderCursor = useCallback(() => {
     const canvas = cursorCanvasRef.current; if (!canvas) return
     const ctx = canvas.getContext('2d'); if (!ctx) return
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    const { w: W, h: H, k } = viewRef.current
+    ctx.setTransform(k, 0, 0, k, 0, 0)
+    ctx.clearRect(0, 0, W, H)
     if (!cursorPtRef.current) return
     ctx.save()
     ctx.translate(panRef.current.x, panRef.current.y)
@@ -383,16 +417,13 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
 
   useEffect(() => {
     const container = containerRef.current; if (!container) return
-    const obs = new ResizeObserver(() => {
-      const c = canvasRef.current; if (!c) return
-      c.width = container.clientWidth; c.height = container.clientHeight
-      const cc = cursorCanvasRef.current
-      if (cc) { cc.width = container.clientWidth; cc.height = container.clientHeight }
-      render(); renderCursor()
-    })
+    const obs = new ResizeObserver(() => { syncBacking(); render(); renderCursor() })
     obs.observe(container)
-    return () => obs.disconnect()
-  }, [render, renderCursor])
+    // The board zooms via a CSS transform, which no observer reports —
+    // poll cheaply and re-render at the new resolution when it changes.
+    const poll = setInterval(() => { if (syncBacking()) { render(); renderCursor() } }, 250)
+    return () => { obs.disconnect(); clearInterval(poll) }
+  }, [render, renderCursor, syncBacking])
 
   // View mode is read-only: close everything floating, drop the selection.
   useEffect(() => {
@@ -594,12 +625,12 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
   }
   const zoomBy = (factor: number) => {
     const c = canvasRef.current; if (!c) return
-    zoomAt(scaleRef.current * factor, c.width / 2, c.height / 2)
+    zoomAt(scaleRef.current * factor, viewRef.current.w / 2, viewRef.current.h / 2)
   }
   // Back to 100 % around the middle of the view — keeps you where you are.
   const resetZoom = () => {
     const c = canvasRef.current; if (!c) return
-    zoomAt(1, c.width / 2, c.height / 2)
+    zoomAt(1, viewRef.current.w / 2, viewRef.current.h / 2)
   }
   // Fill rasters span the whole viewport they were made in (mostly
   // transparent), so they only count when there's nothing else.
@@ -613,9 +644,10 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
     const b = unionBox(elsRef.current.filter(el => el.type !== 'fill').map(el => elBox(el, byIdNow())))
     if (!b) { panRef.current = { x: 0, y: 0 }; zoomAt(1, 0, 0); return }
     const w = Math.max(1, boxW(b)), h = Math.max(1, boxH(b))
-    const ns = Math.max(0.1, Math.min(4, Math.min(canvas.width / w, canvas.height / h) * 0.85))
+    const { w: W, h: H } = viewRef.current
+    const ns = Math.max(0.1, Math.min(4, Math.min(W / w, H / h) * 0.85))
     scaleRef.current = ns
-    panRef.current = { x: canvas.width / 2 - (b.x1 + w / 2) * ns, y: canvas.height / 2 - (b.y1 + h / 2) * ns }
+    panRef.current = { x: W / 2 - (b.x1 + w / 2) * ns, y: H / 2 - (b.y1 + h / 2) * ns }
     setZoomPct(Math.round(ns * 100))
     render(); renderCursor(); saveView()
   }
@@ -866,7 +898,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
     const c = canvasRef.current!
     const r = c.getBoundingClientRect()
     // Accounts for a parent CSS transform (the infinite board's zoom).
-    const kx = c.width / r.width, ky = c.height / r.height
+    const kx = viewRef.current.w / r.width, ky = viewRef.current.h / r.height
     return {
       x: ((sx - r.left) * kx - panRef.current.x) / scaleRef.current,
       y: ((sy - r.top) * ky - panRef.current.y) / scaleRef.current,
@@ -1018,13 +1050,15 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
             else dragRef.current = { kind: 'resize', id: el.id, handle: name, orig: { ...el, points: el.points?.map(p => ({ ...p })) }, origBox: normBox(el.x, el.y, el.x2, el.y2), lines }
             render(); return
           }
-          if (isShape(el)) {
-            for (const q of quickArrowPoints(el, scaleRef.current)) {
-              if (Math.hypot(pos.x - q.p.x, pos.y - q.p.y) <= 10 / scaleRef.current) {
-                dragRef.current = { kind: 'quick', shapeId: el.id, dir: q.dir, sx: e.clientX, sy: e.clientY }
-                return
-              }
-            }
+        }
+      }
+      const qt = quickTarget()
+      const qEl = qt ? byId.get(qt) : undefined
+      if (qEl) {
+        for (const q of quickArrowPoints(qEl, scaleRef.current)) {
+          if (Math.hypot(pos.x - q.p.x, pos.y - q.p.y) <= 10 / scaleRef.current) {
+            dragRef.current = { kind: 'quick', shapeId: qEl.id, dir: q.dir, sx: e.clientX, sy: e.clientY }
+            return
           }
         }
       }
@@ -1082,7 +1116,10 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
         id: uid(), type: 'fill', fillImageUrl: fillUrl,
         x: 0, y: 0, x2: canvas.width, y2: canvas.height,
         color: s.color, strokeWidth: 0, opacity: 100, filled: true,
-        fillPanX: panRef.current.x, fillPanY: panRef.current.y, fillScale: scaleRef.current,
+        // The raster is in BITMAP pixels: fold the backing scale into the
+        // recorded pan/zoom so fillBox() maps it back to logical space.
+        fillPanX: panRef.current.x * viewRef.current.k, fillPanY: panRef.current.y * viewRef.current.k,
+        fillScale: scaleRef.current * viewRef.current.k,
       }
       const img = new Image()
       img.onload = () => render()
@@ -1134,7 +1171,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
       id: uid(), type: preset.type, x: sp.x, y: sp.y, x2: sp.x, y2: sp.y,
       color: s.color, strokeWidth: pctToSw(s.strokePct), opacity: s.opacityPct,
       filled: s.filled, bgColor: s.bgColor, fillStyle: s.fillStyle, strokeStyle: s.strokeDash,
-      roundCorners: preset.round || undefined, shadow: s.shadow || undefined,
+      roundCorners: preset.type === 'rect' && s.roundCorners ? true : undefined, shadow: s.shadow || undefined,
     }
     dragRef.current = { kind: 'draw', start: sp, preset, lines }
     render()
@@ -1160,8 +1197,35 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
     if (gone.size) { d.changed = true; render() }
   }
 
+  // The single selected shape, otherwise the shape under the mouse — the
+  // one that shows the blue connect arrows.
+  function quickTarget(): string | null {
+    if (selIdsRef.current.size === 1) {
+      const id = [...selIdsRef.current][0]
+      const el = elsRef.current.find(x => x.id === id)
+      if (el && isShape(el) && !el.locked) return id
+    }
+    const h = hoverShapeRef.current
+    return h && elsRef.current.some(x => x.id === h && !x.locked) ? h : null
+  }
+
+  // Tracks the hovered shape; it stays "hovered" while the mouse is still
+  // within reach of its arrows, so they can actually be clicked.
+  function updateHoverShape(pos: Pt) {
+    const prev = hoverShapeRef.current
+    const hit = hitAt(pos, 'select')
+    let next: string | null = hit && isShape(hit) && !hit.locked ? hit.id : null
+    if (!next && prev) {
+      const el = elsRef.current.find(x => x.id === prev)
+      const reach = 5 + 30 / scaleRef.current
+      if (el && boxContains(normBox(el.x, el.y, el.x2, el.y2), pos, reach)) next = prev
+    }
+    if (next !== prev) { hoverShapeRef.current = next; render() }
+  }
+
   function updateHoverCursor(pos: Pt) {
     const canvas = canvasRef.current; if (!canvas) return
+    updateHoverShape(pos)
     let c = 'default'
     if (spaceRef.current) c = 'grab'
     else {
@@ -1175,8 +1239,10 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
           const hp = handles[name]
           if (hp && Math.hypot(pos.x - hp.x, pos.y - hp.y) <= hitR) { c = HANDLE_CURSORS[name]; break }
         }
-        if (c === 'default' && isShape(el) && quickArrowPoints(el, scaleRef.current).some(q => Math.hypot(pos.x - q.p.x, pos.y - q.p.y) <= 10 / scaleRef.current)) c = 'pointer'
       }
+      const qt = quickTarget()
+      const qEl = qt ? byId.get(qt) : undefined
+      if (c === 'default' && qEl && quickArrowPoints(qEl, scaleRef.current).some(q => Math.hypot(pos.x - q.p.x, pos.y - q.p.y) <= 10 / scaleRef.current)) c = 'pointer'
       if (c === 'default') {
         const hit = hitAt(pos, 'select')
         if (hit) c = hit.locked ? 'not-allowed' : 'move'
@@ -1388,7 +1454,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
     e.stopPropagation()   // keep scroll/zoom inside the widget, don't pan the board
     const c = canvasRef.current!
     const r = c.getBoundingClientRect()
-    const mx = (e.clientX - r.left) * (c.width / r.width), my = (e.clientY - r.top) * (c.height / r.height)
+    const mx = (e.clientX - r.left) * (viewRef.current.w / r.width), my = (e.clientY - r.top) * (viewRef.current.h / r.height)
     if (e.ctrlKey || e.metaKey) {
       zoomAt(scaleRef.current * (e.deltaY < 0 ? 1.1 : 1 / 1.1), mx, my)
     } else {
@@ -1587,14 +1653,14 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
   )
 
   const shapePanel = (
-    <div style={{ ...POPOVER, width: 216 }} onPointerDown={e => e.stopPropagation()}>
+    <div style={{ ...POPOVER, width: 236, maxHeight: 'min(560px, calc(100vh - 80px))', overflowY: 'auto' }} onPointerDown={e => e.stopPropagation()}>
       <div style={POP_LABEL}>{t('Shapes')}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
         {SHAPE_LIBRARY.map(p => {
           const active = tool === 'shape' && shapeKind === p.id
           return (
             <button key={p.id} type="button" title={t(p.label)}
-              onClick={() => { setShapeKind(p.id); setTool('shape'); setSelection([]); setPopover(null) }}
+              onClick={() => { setShapeKind(p.id); setTool('shape'); setSelection([]); if (p.type === 'rect') setRoundCorners(!!p.round) }}
               style={{
                 height: 40, borderRadius: 7, cursor: 'pointer', padding: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1608,6 +1674,11 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
         })}
       </div>
       <div style={{ fontSize: 10, color: 'var(--text3)', lineHeight: 1.4 }}>{t('Click to place, drag to size. Shift keeps proportions.')}</div>
+      {/* Style of the next shape — or of the selected one(s), if any. */}
+      <div style={{ margin: '0 -10px -10px' }}>
+        <StyleSections t={t} style={style} setStyle={setStyle} commitLive={commitLive}
+          kinds={selectedEls.length && selectedEls.some(isShape) ? kinds : { shape: true, edge: false, free: false, text: false, rect: activePreset.type === 'rect' }} />
+      </div>
     </div>
   )
 
@@ -1809,7 +1880,7 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
           onMouseDown={isEdit ? onMouseDown : undefined}
           onMouseMove={isEdit ? onMouseMove : undefined}
           onMouseUp={isEdit ? onMouseUp : undefined}
-          onMouseLeave={isEdit ? () => { if (dragRef.current?.kind !== 'pan') onMouseUp(); cursorPtRef.current = null; renderCursor() } : undefined}
+          onMouseLeave={isEdit ? () => { if (dragRef.current?.kind !== 'pan') onMouseUp(); cursorPtRef.current = null; hoverShapeRef.current = null; renderCursor(); render() } : undefined}
           onDoubleClick={isEdit ? onDoubleClick : undefined}
           onWheel={isEdit ? onWheel : undefined}
           onContextMenu={isEdit ? onContextMenu : undefined}

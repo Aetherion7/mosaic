@@ -491,7 +491,8 @@ export interface OverlayOpts {
   byId: ById
   selected: Set<string>
   showHandles: boolean
-  showQuick: boolean
+  // Shape that shows draw.io's blue connect arrows (selected or hovered).
+  quickId: string | null
   bindHoverId: string | null
 }
 
@@ -541,20 +542,23 @@ export function drawSelectionOverlay(ctx: CanvasRenderingContext2D, els: DrawEle
           const p = points[name]; if (!p) continue
           ctx.beginPath(); ctx.rect(p.x - hs / 2, p.y - hs / 2, hs, hs); ctx.fill(); ctx.stroke()
         }
-        if (o.showQuick && isShape(el)) {
-          ctx.fillStyle = SELECT_COLOR
-          ctx.globalAlpha = 0.75
-          for (const { dir, p } of quickArrowPoints(el, o.scale)) {
-            const a = DIR_ANGLE[dir], r = 6 * s
-            ctx.beginPath()
-            ctx.moveTo(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r)
-            ctx.lineTo(p.x + Math.cos(a + 2.4) * r, p.y + Math.sin(a + 2.4) * r)
-            ctx.lineTo(p.x + Math.cos(a - 2.4) * r, p.y + Math.sin(a - 2.4) * r)
-            ctx.closePath(); ctx.fill()
-          }
-          ctx.globalAlpha = 1
-        }
       }
+    }
+    ctx.restore()
+  }
+
+  const q = o.quickId ? o.byId.get(o.quickId) : undefined
+  if (q && isShape(q) && !q.locked) {
+    ctx.save()
+    ctx.fillStyle = SELECT_COLOR
+    ctx.globalAlpha = o.selected.has(q.id) ? 0.8 : 0.6
+    for (const { dir, p } of quickArrowPoints(q, o.scale)) {
+      const a = DIR_ANGLE[dir], r = 6.5 * s
+      ctx.beginPath()
+      ctx.moveTo(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r)
+      ctx.lineTo(p.x + Math.cos(a + 2.4) * r, p.y + Math.sin(a + 2.4) * r)
+      ctx.lineTo(p.x + Math.cos(a - 2.4) * r, p.y + Math.sin(a - 2.4) * r)
+      ctx.closePath(); ctx.fill()
     }
     ctx.restore()
   }

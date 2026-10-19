@@ -34,6 +34,7 @@ import {
 import type { Widget, NotePdfLink } from '@/types'
 import { NoteImage, insertImageFiles } from './note/NoteImage'
 import { NoteOutline } from './note/NoteOutline'
+import { NoteColumns, NoteColumn, columnCount, setColumnCount } from './note/NoteColumns'
 
 const lowlight = createLowlight(common)
 
@@ -437,6 +438,8 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
     PreventTabEscape,
     PdfRef.configure({ onNavigate: (r, b, p) => navigateRef.current(r, b, p) }),
     NoteImage,
+    NoteColumns,
+    NoteColumn,
   ])
 
   const editor = useEditor({
@@ -458,7 +461,7 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [hasOutline, setHasOutline] = useState(false)
-  const columns = Math.max(1, Math.min(4, Number(d.columns) || 1))
+  const columns = columnCount(editor)
 
   // Current selection's color (or the stored mark at the cursor if the
   // selection is collapsed) — undefined means "no color mark here", not black.
@@ -605,12 +608,11 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
 
           <Divider />
 
-          {/* Split view: the note flows across 2–4 columns side by side
-              (newspaper-style, no pages — it keeps growing downward). The
-              chosen count is a maximum: a narrow widget shows fewer. */}
+          {/* Split view: 2–4 independent columns of the same note, each
+              growing downward on its own; narrow widgets stack them. */}
           <MiniSelect
             value={columns}
-            onChange={v => patch({ columns: Number(v) })}
+            onChange={v => { if (editor) { setColumnCount(editor, Number(v)); patch({ columns: Number(v) }) } }}
             title={t('Columns (split view)')}
             options={[1, 2, 3, 4].map(n => ({ value: n, label: n === 1 ? t('1 column') : `${n} ${t('columns')}` }))}
           />
@@ -798,10 +800,9 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
           ref={scrollRef}
           onPointerDown={e => e.stopPropagation()}
           className="note-md-wrap"
-          data-cols={columns > 1 ? columns : undefined}
           style={{
             flex: 1, overflow: 'auto', minHeight: 0, minWidth: 0, marginRight: hasOutline ? 16 : 0,
-            ...noteStyleVars, '--note-cols': columns,
+            ...noteStyleVars,
           } as React.CSSProperties}
         >
           <EditorContent editor={editor} />
@@ -815,15 +816,18 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
 }
 
 const CSS = `
-/* Split view: up to --note-cols columns, each at least 170px wide, balanced
-   so the note simply grows downward instead of paginating. */
-.note-md-wrap[data-cols] .ProseMirror {
-  columns: 170px var(--note-cols);
-  column-gap: 22px;
-  column-rule: 1px solid var(--border);
+/* Split view: independent columns; each at least 170px, so a narrow
+   widget wraps them onto the next row instead of squeezing them. */
+.note-md-wrap .ProseMirror .note-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px 0;
 }
-.note-md-wrap[data-cols] .ProseMirror :is(pre, table, blockquote, li, .note-img) { break-inside: avoid; }
-.note-md-wrap[data-cols] .ProseMirror :is(h1, h2, h3) { break-after: avoid; }
+.note-md-wrap .ProseMirror .note-column {
+  min-width: 0; min-height: 3.4em; padding: 0 12px;
+  border-left: 1px solid var(--border);
+}
+.note-md-wrap .ProseMirror .note-column:first-child { border-left: none; padding-left: 0; }
 .note-md-wrap .ProseMirror :is(h1, h2, h3) { transition: background 0.3s; border-radius: 4px; }
 .note-md-wrap .ProseMirror .note-heading-flash { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 .note-md-wrap .note-img { position: relative; max-width: 100%; margin: 6px 0; line-height: 0; }
