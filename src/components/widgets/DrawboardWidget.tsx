@@ -3,123 +3,61 @@ import { useRef, useEffect, useCallback, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ColorSwatch } from '@/components/ui/ColorSwatch'
 import { PortalPopover } from '@/components/ui/PortalPopover'
-import { Dropdown } from '@/components/ui/Dropdown'
 import { useBoardStore } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
 import { useT } from '@/hooks/useT'
-import type { Widget, DrawboardData } from '@/types'
+import type { Widget, DrawElement, DrawPoint as Pt, DrawArrowHead, DrawEdgeStyle } from '@/types'
 import { uid } from '@/lib/defaults'
+import {
+  type Box, type ById, type ShapePreset, type SnapLines, type AlignKind, type Unit,
+  SHAPE_LIBRARY, GRID, normBox, boxW, boxH, boxCenter, unionBox, boxContains, boxesIntersect,
+  isShape, isEdge, isBindable, elBox, fillBox, hitShape, hitEdge, segDist,
+  translateEl, resizeEl, detachEdgesFrom, cloneElements, snapCandidates, snapBox, snapPoint,
+  snapToGrid, alignDeltas, distributeDeltas, labelBox,
+} from './drawboard/geometry'
+import {
+  type HandleName, type QuickDir, drawElement, drawSelectionOverlay, drawGuides, getHandlePoints,
+  quickArrowPoints, normalizeElements, refitText, edgeLabelBox, fontOf, measureWidth, FONT_FAMILIES,
+  LINE_HEIGHT, DEFAULT_LABEL_SIZE,
+} from './drawboard/render'
+import { buildSvg } from './drawboard/svgExport'
+import {
+  IcoSelect, IcoPen, IcoText, IcoEraser, IcoBucket, IcoLine, IcoArrow, IcoUndo, IcoRedo, IcoTrash,
+  IcoDownload, IcoShapes, IcoFormat, IcoMore, IcoChevron, IcoZoomFit, IcoCopy, IcoCut, IcoPaste,
+  IcoDuplicate, IcoToFront, IcoToBack, IcoGroup, IcoUngroup, IcoLock, IcoUnlock, IcoEditText,
+  IcoSelectAll, IcoEdgeStraight, IcoEdgeOrtho, IcoEdgeCurved, ShapePreview,
+} from './drawboard/icons'
+import {
+  FormatPanel, Slider, type StyleState, type Kinds, type CanvasBg, type FontFamily,
+  type FillStyle, type StrokeDash, type TextAlign,
+} from './drawboard/FormatPanel'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type DrawTool = 'select' | 'pen' | 'rect' | 'ellipse' | 'triangle' | 'line' | 'arrow' | 'text' | 'eraser' | 'fill'
-type CanvasBg = 'white' | 'grid' | 'dark'
-type BrushType = 'pen' | 'marker' | 'highlighter' | 'spray' | 'chalk' | 'calligraphy'
-type ShapeTool = 'rect' | 'ellipse' | 'triangle' | 'line' | 'arrow'
-const SHAPE_TOOLS: DrawTool[] = ['rect', 'ellipse', 'triangle', 'line', 'arrow']
-const BG_CYCLE: CanvasBg[] = ['white', 'grid', 'dark']
-const BG_LABELS: Record<CanvasBg, string> = { white: 'White', grid: 'Grid', dark: 'Dark' }
-
-// Typ lebt zentral in types/index.ts (DrawboardData.elements ist damit
-// echt typisiert statt unknown[]); hier nur Re-Export + lokales Alias
-import type { DrawElement, DrawPoint as Pt } from '@/types'
 export type { DrawElement }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Types & constants ────────────────────────────────────────────────────────
+
+type DrawTool = 'select' | 'pen' | 'shape' | 'line' | 'arrow' | 'text' | 'eraser' | 'fill'
+const TOOLS: DrawTool[] = ['select', 'pen', 'shape', 'line', 'arrow', 'text', 'eraser', 'fill']
+// Tools persisted by boards from before the shape library existed.
+const LEGACY_SHAPE_TOOLS = ['rect', 'ellipse', 'triangle']
 
 const COLORS = [
-  '#111827','#6b7280','#e5e7eb',
-  '#ef4444','#f97316','#eab308',
-  '#22c55e','#06b6d4','#3b82f6',
-  '#8b5cf6','#ec4899','#ffffff',
+  '#111827', '#6b7280', '#e5e7eb',
+  '#ef4444', '#f97316', '#eab308',
+  '#22c55e', '#06b6d4', '#3b82f6',
+  '#8b5cf6', '#ec4899', '#ffffff',
 ]
 const MAX_SW = 40
+const pctToSw = (pct: number) => Math.max(0.5, (pct / 100) * MAX_SW)
+const swToPct = (sw: number) => Math.max(1, Math.round((sw / MAX_SW) * 100))
 
-function pctToSw(pct: number) { return Math.max(0.5, (pct / 100) * MAX_SW) }
-
-// ─── SVG Icon components ──────────────────────────────────────────────────────
-
-const I = ({ children, size = 15, strokeWidth = '1.6' }: { children: React.ReactNode; size?: number; strokeWidth?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor"
-    strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-    {children}
-  </svg>
-)
-
-const IcoSelect   = () => <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l10 5.5-5 1-2.5 5.5z"/></svg>
-const IcoPen      = () => <I><path d="M11 2l3 3-8 8-3.5.5.5-3.5z"/><line x1="9.5" y1="3.5" x2="12.5" y2="6.5"/></I>
-const IcoText     = () => <I strokeWidth="1.8"><line x1="2" y1="4" x2="14" y2="4"/><line x1="8" y1="4" x2="8" y2="14"/></I>
-const IcoEraser   = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/>
-    <path d="M22 21H7"/><path d="m5 11 8 8"/>
-  </svg>
-)
-const IcoBucket   = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11Z"/>
-    <path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z" fill="currentColor"/>
-  </svg>
-)
-const IcoRect     = () => <I><rect x="2" y="3" width="12" height="10" rx="1"/></I>
-const IcoEllipse  = () => <I><ellipse cx="8" cy="8" rx="6" ry="4.5"/></I>
-const IcoTriangle = () => <I><polygon points="8,2 15,14 1,14"/></I>
-const IcoLine     = () => <I><line x1="2" y1="14" x2="14" y2="2"/></I>
-const IcoArrow    = () => <I><line x1="2" y1="14" x2="14" y2="2"/><path d="M14 2l-4.5 1.5 3 3z" fill="currentColor" stroke="none"/></I>
-const IcoUndo     = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="1 4 1 10 7 10"/>
-    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-  </svg>
-)
-const IcoRedo     = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="23 4 23 10 17 10"/>
-    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-  </svg>
-)
-const IcoTrash    = () => <I><polyline points="3,5 13,5"/><path d="M5 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><rect x="4" y="5" width="8" height="9" rx="1"/></I>
-const IcoDownload = () => <I><line x1="8" y1="2" x2="8" y2="11"/><polyline points="5,8 8,11 11,8"/><polyline points="2,13 2,14 14,14 14,13"/></I>
-const IcoGrid = () => (
-  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
-    {([3.5, 8, 12.5] as const).map(x => <line key={`v${x}`} x1={x} y1="1.5" x2={x} y2="14.5"/>)}
-    {([3.5, 8, 12.5] as const).map(y => <line key={`h${y}`} x1="1.5" y1={y} x2="14.5" y2={y}/>)}
-  </svg>
-)
-const IcoShapes   = () => <I strokeWidth="1.4"><rect x="2" y="3" width="5" height="5" rx="0.5"/><ellipse cx="11.5" cy="5.5" rx="2.5" ry="2"/><line x1="2" y1="12" x2="7" y2="12"/><path d="M9 14l2.5-4 2.5 4z"/></I>
-
-// Fill-style previews
-const IcoFillSolid      = () => <I strokeWidth="1.3"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5" fill="currentColor" fillOpacity="0.35"/></I>
-const HACHURE_LINES: [number, number, number, number][] = [
-  [2.5, 6, 6, 2.5], [2.5, 9.5, 9.5, 2.5], [2.5, 13, 13, 2.5], [6, 13.5, 13.5, 6], [9.5, 13.5, 13.5, 9.5],
-]
-const IcoFillHachure    = () => (
-  <I strokeWidth="0.9"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/>
-    {HACHURE_LINES.map(([x1,y1,x2,y2], i) => <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}/>)}
-  </I>
-)
-const IcoFillCrossHatch = () => (
-  <I strokeWidth="0.9"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/>
-    {HACHURE_LINES.map(([x1,y1,x2,y2], i) => <line key={`a${i}`} x1={x1} y1={y1} x2={x2} y2={y2}/>)}
-    {HACHURE_LINES.map(([x1,y1,x2,y2], i) => <line key={`b${i}`} x1={16-x1} y1={y1} x2={16-x2} y2={y2}/>)}
-  </I>
-)
-// Stroke-style previews
-const IcoStrokeSolid  = () => <I strokeWidth="1.8"><line x1="2" y1="8" x2="14" y2="8"/></I>
-const IcoStrokeDashed = () => <I strokeWidth="1.8"><line x1="2" y1="8" x2="14" y2="8" strokeDasharray="3.5 2.5"/></I>
-const IcoStrokeDotted = () => <I strokeWidth="1.8"><line x1="2" y1="8" x2="14" y2="8" strokeDasharray="0.5 2.5" strokeLinecap="round"/></I>
-const IcoRoundCorner  = () => <I strokeWidth="1.5"><path d="M2 8V5a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H8"/></I>
-// Layer ordering
-const IcoToFront  = () => <I strokeWidth="1.3"><rect x="2" y="5" width="7" height="7" rx="1" opacity="0.4"/><rect x="6" y="2" width="8" height="8" rx="1" fill="currentColor" fillOpacity="0.15"/><path d="M9 2V.8M9 .8l-1.4 1.4M9 .8l1.4 1.4" strokeWidth="1.1"/></I>
-const IcoToBack   = () => <I strokeWidth="1.3"><rect x="6" y="2" width="8" height="8" rx="1" opacity="0.4"/><rect x="2" y="5" width="7" height="7" rx="1" fill="currentColor" fillOpacity="0.15"/><path d="M5.5 14v1.2M5.5 15.2l-1.4-1.4M5.5 15.2l1.4-1.4" strokeWidth="1.1"/></I>
-const IcoForward  = () => <I strokeWidth="1.3"><rect x="2" y="5" width="7" height="7" rx="1" opacity="0.4"/><rect x="6" y="2" width="8" height="8" rx="1" fill="currentColor" fillOpacity="0.15"/><path d="M9 3.5l1.6-1.6M10.6 1.9v1.6M10.6 1.9H9" strokeWidth="1.1"/></I>
-const IcoBackward = () => <I strokeWidth="1.3"><rect x="6" y="2" width="8" height="8" rx="1" opacity="0.4"/><rect x="2" y="5" width="7" height="7" rx="1" fill="currentColor" fillOpacity="0.15"/><path d="M6.5 12.5l-1.6 1.6M4.9 14.1v-1.6M4.9 14.1h1.6" strokeWidth="1.1"/></I>
-const IcoZoomFit  = () => (
-  <I strokeWidth="1.5"><path d="M2 5V3a1 1 0 0 1 1-1h2"/><path d="M14 5V3a1 1 0 0 0-1-1h-2"/><path d="M2 11v2a1 1 0 0 0 1 1h2"/><path d="M14 11v2a1 1 0 0 1-1 1h-2"/><rect x="5" y="5" width="6" height="6" rx="0.5"/></I>
-)
-const IcoCopy     = () => <I strokeWidth="1.4"><rect x="5" y="5" width="8" height="9" rx="1"/><path d="M3 11V3a1 1 0 0 1 1-1h7"/></I>
-const IcoPaste    = () => <I strokeWidth="1.4"><rect x="3" y="4" width="10" height="10" rx="1"/><path d="M6 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1"/></I>
-const IcoDuplicate = () => <I strokeWidth="1.4"><rect x="2" y="2" width="8" height="8" rx="1"/><path d="M6 10v2a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2"/></I>
+// Single-letter tool shortcuts (only while the drawboard has focus, where the
+// board's own E/A/T/S shortcuts are suppressed anyway).
+const TOOL_KEYS: Record<string, { tool: DrawTool; shape?: string }> = {
+  v: { tool: 'select' }, p: { tool: 'pen' }, r: { tool: 'shape', shape: 'rect' }, o: { tool: 'shape', shape: 'ellipse' },
+  d: { tool: 'shape', shape: 'diamond' }, l: { tool: 'line' }, a: { tool: 'arrow' }, t: { tool: 'text' },
+  x: { tool: 'eraser' }, b: { tool: 'fill' },
+}
 
 const PV = ({ children, fill = 'none', stroke = 'currentColor' }: { children: React.ReactNode; fill?: string; stroke?: string }) => (
   <svg viewBox="0 0 90 22" fill={fill} stroke={stroke} style={{ width: '100%', height: 22, display: 'block' }} preserveAspectRatio="none">
@@ -127,7 +65,7 @@ const PV = ({ children, fill = 'none', stroke = 'currentColor' }: { children: Re
   </svg>
 )
 
-const BRUSH_DEFS: { id: BrushType | string; label: string; preview: React.ReactNode }[] = [
+const BRUSH_DEFS: { id: string; label: string; preview: React.ReactNode }[] = [
   { id: 'pen', label: 'Pen',
     preview: <PV><path d="M4 16 Q22 5 45 11 Q68 17 86 6" strokeWidth="1.6" strokeLinecap="round" fill="none"/></PV> },
   { id: 'marker', label: 'Marker',
@@ -136,400 +74,1851 @@ const BRUSH_DEFS: { id: BrushType | string; label: string; preview: React.ReactN
     preview: <PV><path d="M4 11 Q45 9 86 11" strokeWidth="15" strokeLinecap="square" strokeOpacity="0.3" fill="none"/></PV> },
   { id: 'spray', label: 'Spray',
     preview: <PV fill="currentColor" stroke="none"><g>{([
-      [13,9,1.1],[16,7,0.8],[20,6,0.9],[22,9,1.0],[18,13,0.8],[14,12,0.7],[21,14,0.9],
-      [28,8,0.7],[32,14,0.8],[37,7,0.7],
-      [40,9,1.1],[43,7,0.9],[47,6,0.8],[50,9,1.0],[46,14,0.9],[41,14,0.7],[51,13,0.8],
-      [58,8,0.7],[62,14,0.8],
-      [66,9,1.1],[69,7,0.9],[73,6,0.8],[76,9,1.0],[72,14,0.9],[67,13,0.7],[77,14,0.8],
-    ] as [number,number,number][]).map(([cx,cy,r],i)=><circle key={i} cx={cx} cy={cy} r={r}/>)}</g></PV> },
+      [13, 9, 1.1], [16, 7, 0.8], [20, 6, 0.9], [22, 9, 1.0], [18, 13, 0.8], [14, 12, 0.7], [21, 14, 0.9],
+      [28, 8, 0.7], [32, 14, 0.8], [37, 7, 0.7],
+      [40, 9, 1.1], [43, 7, 0.9], [47, 6, 0.8], [50, 9, 1.0], [46, 14, 0.9], [41, 14, 0.7], [51, 13, 0.8],
+      [58, 8, 0.7], [62, 14, 0.8],
+      [66, 9, 1.1], [69, 7, 0.9], [73, 6, 0.8], [76, 9, 1.0], [72, 14, 0.9], [67, 13, 0.7], [77, 14, 0.8],
+    ] as [number, number, number][]).map(([cx, cy, r], i) => <circle key={i} cx={cx} cy={cy} r={r}/>)}</g></PV> },
   { id: 'chalk', label: 'Chalk',
     preview: <PV><path d="M4 15 Q18 9 30 12 Q44 16 58 8 Q70 3 86 9" strokeWidth="1.4" strokeLinecap="round" strokeDasharray="3 2" fill="none"/><path d="M5 16 Q19 10 31 13 Q45 17 59 9 Q71 4 87 10" strokeWidth="0.9" strokeLinecap="round" strokeDasharray="2 3" strokeOpacity="0.5" fill="none"/></PV> },
   { id: 'calligraphy', label: 'Calligraphy',
-    preview: <PV fill="currentColor" stroke="none">
-      {/* S-wave: thin NE going up-right → thick SE going down-right */}
-      <path d="M 5 15 Q 24 5 45 1 Q 66 4 82 13 L 86 22 Q 66 13 45 9 Q 23 20 4 19 Z"/>
-    </PV> },
+    preview: <PV fill="currentColor" stroke="none"><path d="M 5 15 Q 24 5 45 1 Q 66 4 82 13 L 86 22 Q 66 13 45 9 Q 23 20 4 19 Z"/></PV> },
 ]
 
-function srand(s: number) { const x = Math.sin(s * 9301 + 49297) * 233280; return x - Math.floor(x) }
+const CANVAS_COLOR: Record<CanvasBg, string> = { white: '#ffffff', grid: '#ffffff', dark: '#1e1e2e' }
 
-const SHAPE_ICONS: Record<ShapeTool, React.ReactNode> = {
-  rect: <IcoRect />, ellipse: <IcoEllipse />, triangle: <IcoTriangle />, line: <IcoLine />, arrow: <IcoArrow />,
+type Drag =
+  | { kind: 'pan'; mx: number; my: number; ox: number; oy: number }
+  | { kind: 'move'; start: Pt; sx: number; sy: number; moved: boolean; origs: Map<string, DrawElement>; box: Box; lines: SnapLines | null }
+  | { kind: 'resize'; id: string; handle: HandleName; orig: DrawElement; origBox: Box; lines: SnapLines | null }
+  | { kind: 'edgeEnd'; id: string; end: 'start' | 'end'; lines: SnapLines | null }
+  | { kind: 'marquee'; sx: number; sy: number; ex: number; ey: number; additive: boolean; active: boolean; origSel: string[] }
+  | { kind: 'draw'; start: Pt; preset?: ShapePreset; lines: SnapLines | null }
+  | { kind: 'erase'; changed: boolean; last?: Pt }
+  | { kind: 'quick'; shapeId: string; dir: QuickDir; sx: number; sy: number }
+
+type Editor = { id: string | null; x: number; y: number }
+
+// Shared across every drawboard on the page, so a copy in one widget can be
+// pasted into another. Bindings to shapes outside the copied set are
+// already frozen into coordinates at copy time.
+const SHARED = { clipboard: [] as DrawElement[], pasteCount: 0 }
+
+const HANDLE_CURSORS: Record<HandleName, string> = {
+  nw: 'nwse-resize', se: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize',
+  n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize', start: 'crosshair', end: 'crosshair',
 }
-const SHAPE_LABELS: Record<ShapeTool, string> = {
-  rect: 'Rectangle', ellipse: 'Ellipse', triangle: 'Triangle', line: 'Line', arrow: 'Arrow',
+
+// Pulls one persisted view/style field back into local state whenever the
+// widget's OTHER mount (board tile vs. Focus Mode) changes it.
+function useSyncFromStore<T>(stored: T | undefined, current: T, set: (v: T) => void, allowUndefined = false) {
+  const cur = useRef(current)
+  cur.current = current
+  useEffect(() => {
+    if ((stored !== undefined || allowUndefined) && stored !== cur.current) set(stored as T)
+  }, [stored, set, allowUndefined])
 }
-const STROKE_STYLE_LABELS = { solid: 'Solid', dashed: 'Dashed', dotted: 'Dotted' } as const
-const FILL_STYLE_LABELS   = { hachure: 'Hachure', 'cross-hatch': 'Cross-hatch', solid: 'Solid' } as const
 
-// ─── Canvas rendering ─────────────────────────────────────────────────────────
+const BTN: React.CSSProperties = {
+  width: 28, height: 28, borderRadius: 6, border: '1px solid var(--border)',
+  background: 'var(--surface2)', color: 'var(--text2)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  cursor: 'pointer', flexShrink: 0, padding: 0,
+}
+const HUD_BTN: React.CSSProperties = {
+  width: 24, height: 24, borderRadius: 6, border: 'none',
+  background: 'transparent', color: 'var(--text2)',
+  cursor: 'pointer', fontSize: 15, display: 'flex',
+  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+}
+const POPOVER: React.CSSProperties = {
+  background: 'var(--popover-bg)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+  border: '1px solid var(--border)', borderRadius: 10, padding: 10,
+  boxShadow: '0 6px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', gap: 8,
+}
+const POP_LABEL: React.CSSProperties = { fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em' }
+const MENU_ITEM: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6,
+  border: 'none', background: 'none', color: 'var(--text1)', cursor: 'pointer', fontSize: 11.5,
+  textAlign: 'left', width: '100%',
+}
 
-// Named resize-handle points around an element's (padded) bbox — shared by
-// renderEl (drawing them) and onMouseDown (hit-testing them), so the two can
-// never drift apart.
-// 'start'/'end' are only used for line/arrow — those have two meaningful
-// points (their literal endpoints, one of them the arrowhead), not a bbox,
-// so they get 2 draggable handles instead of the usual 8.
-type HandleName = 'nw' | 'n' | 'ne' | 'w' | 'e' | 'sw' | 's' | 'se' | 'start' | 'end'
-const HANDLE_PAD = 5
-function getHandlePoints(el: DrawElement, pad = HANDLE_PAD): Partial<Record<HandleName, Pt>> {
-  if (el.type === 'line' || el.type === 'arrow') {
-    return { start: { x: el.x, y: el.y }, end: { x: el.x2, y: el.y2 } }
+function tb(active: boolean): React.CSSProperties {
+  return { ...BTN, background: active ? 'var(--accent)' : 'var(--surface2)', color: active ? 'var(--on-accent, white)' : 'var(--text2)' }
+}
+
+function download(url: string, name: string) {
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export default function DrawboardWidget({ widget }: { widget: Widget }) {
+  const t = useT()
+  const updateWidget      = useBoardStore(s => s.updateWidget)
+  const updateWidgetQuiet = useBoardStore(s => s.updateWidgetQuiet)
+  const mode   = useUIStore(s => s.mode)
+  const isEdit = mode === 'edit'
+  const data   = (widget.data ?? {}) as Record<string, unknown>
+
+  const canvasRef       = useRef<HTMLCanvasElement>(null)
+  const cursorCanvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef    = useRef<HTMLDivElement>(null)
+  const rootRef         = useRef<HTMLDivElement>(null)
+  const penGroupRef     = useRef<HTMLDivElement>(null)
+  const shapeGroupRef   = useRef<HTMLDivElement>(null)
+  const edgeGroupRef    = useRef<HTMLDivElement>(null)
+  const colorGroupRef   = useRef<HTMLDivElement>(null)
+  const moreGroupRef    = useRef<HTMLDivElement>(null)
+
+  // ── Tool & style state (persisted as view state, s. saveView) ──
+  const init = <T,>(key: string, fallback: T): T => (data[key] as T | undefined) ?? fallback
+  const [tool, setTool] = useState<DrawTool>(() => {
+    const v = data.tool as string | undefined
+    return v && LEGACY_SHAPE_TOOLS.includes(v) ? 'shape' : (TOOLS.includes(v as DrawTool) ? v as DrawTool : 'pen')
+  })
+  const [shapeKind, setShapeKind] = useState<string>(() => {
+    const v = data.tool as string | undefined
+    return v && LEGACY_SHAPE_TOOLS.includes(v) ? v : init('shapeKind', 'rect')
+  })
+  const [color,        setColor]        = useState<string>(() => init('color', '#111827'))
+  const [strokePct,    setStrokePct]    = useState<number>(() => init('strokePct', 10))
+  const [opacityPct,   setOpacityPct]   = useState<number>(() => init('opacityPct', 100))
+  const [filled,       setFilled]       = useState<boolean>(() => init('filled', false))
+  const [bgColor,      setBgColor]      = useState<string | undefined>(() => data.bgColor as string | undefined)
+  const [fillStyle,    setFillStyle]    = useState<FillStyle>(() => init('fillStyle', 'hachure'))
+  const [strokeDash,   setStrokeDash]   = useState<StrokeDash>(() => init('strokeStyle', 'solid'))
+  const [roundCorners, setRoundCorners] = useState<boolean>(() => init('roundCorners', false))
+  const [shadow,       setShadow]       = useState<boolean>(() => init('shadow', false))
+  const [fontSize,     setFontSize]     = useState<number>(() => init('fontSize', 16))
+  const [fontFamily,   setFontFamily]   = useState<FontFamily>(() => init('fontFamily', 'sans'))
+  const [bold,         setBold]         = useState<boolean>(() => init('bold', false))
+  const [italic,       setItalic]       = useState<boolean>(() => init('italic', false))
+  const [textAlign,    setTextAlign]    = useState<TextAlign>('left')
+  const [fontColor,    setFontColor]    = useState<string | undefined>(() => data.fontColor as string | undefined)
+  const [edgeStyle,    setEdgeStyle]    = useState<DrawEdgeStyle>(() => init('edgeStyle', 'straight'))
+  const [startArrow,   setStartArrow]   = useState<DrawArrowHead>(() => init('startArrow', 'none'))
+  const [endArrow,     setEndArrow]     = useState<DrawArrowHead>(() => init('endArrow', 'arrow'))
+  const [brushType,    setBrushType]    = useState<string>(() => init('brushType', 'pen'))
+  const [canvasBg,     setCanvasBg]     = useState<CanvasBg>(() => init('canvasBg', 'white'))
+  const [snapOn,       setSnapOn]       = useState<boolean>(() => init('snapToGrid', false))
+  const [guidesOn,     setGuidesOn]     = useState<boolean>(() => init('guides', true))
+  const [formatOpen,   setFormatOpen]   = useState<boolean>(() => init('formatOpen', false))
+  const [zoomPct,      setZoomPct]      = useState(() => Math.round(init('zoom', 1) * 100))
+
+  // ── Transient UI ──
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; hasTarget: boolean } | null>(null)
+  const [popover, setPopover] = useState<null | 'pen' | 'shape' | 'edge' | 'color' | 'more'>(null)
+  const [editor, setEditor] = useState<Editor | null>(null)
+  const [editorVal, setEditorVal] = useState('')
+  // Bumped on every committed change so panel/context menu re-read elsRef.
+  const [rev, setRev] = useState(0)
+
+  // ── Canvas refs ──
+  const elsRef      = useRef<DrawElement[]>(normalizeElements((widget.data?.elements as DrawElement[] | undefined) ?? []))
+  const curRef      = useRef<DrawElement | null>(null)
+  const dragRef     = useRef<Drag | null>(null)
+  const panRef      = useRef({ x: init('panX', 0), y: init('panY', 0) })
+  const scaleRef    = useRef(init('zoom', 1))
+  const selIdsRef   = useRef<Set<string>>(new Set())
+  const histRef     = useRef<DrawElement[][]>([[...elsRef.current]])
+  const histIdxRef  = useRef(0)
+  const saveTimer   = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const cursorPtRef = useRef<Pt | null>(null)
+  const guideRef    = useRef<{ gx: number | null; gy: number | null }>({ gx: null, gy: null })
+  const hoverBindRef = useRef<string | null>(null)
+  const spaceRef    = useRef(false)
+  const editorRef   = useRef<Editor | null>(null)
+  const editorValRef = useRef('')
+  const fillImgCacheRef   = useRef(new Map<string, HTMLImageElement>())
+  const isWidgetActiveRef = useRef(false)
+  // Last element array this mount saw in the store — distinguishes the
+  // other mount's writes from our own echo (s. the elements sync effect).
+  const lastExtRef  = useRef(widget.data?.elements)
+
+  const style: StyleState = {
+    color, strokePct, opacityPct, filled, bgColor, fillStyle, strokeDash, roundCorners, shadow,
+    fontSize, fontFamily, bold, italic, textAlign, fontColor, edgeStyle, startArrow, endArrow,
   }
-  const x1 = Math.min(el.x, el.x2) - pad, y1 = Math.min(el.y, el.y2) - pad
-  const x2 = Math.max(el.x, el.x2) + pad, y2 = Math.max(el.y, el.y2) + pad
-  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2
-  return {
-    nw: { x: x1, y: y1 }, n: { x: mx, y: y1 }, ne: { x: x2, y: y1 },
-    w:  { x: x1, y: my },                       e:  { x: x2, y: my },
-    sw: { x: x1, y: y2 }, s: { x: mx, y: y2 }, se: { x: x2, y: y2 },
-  }
-}
+  const styleRef = useRef(style);  styleRef.current = style
+  const isEditRef = useRef(isEdit); isEditRef.current = isEdit
+  const toolRef = useRef(tool);     toolRef.current = tool
+  const shapeKindRef = useRef(shapeKind); shapeKindRef.current = shapeKind
+  const brushTypeRef = useRef(brushType); brushTypeRef.current = brushType
+  const canvasBgRef = useRef(canvasBg); canvasBgRef.current = canvasBg
+  const snapRef = useRef(snapOn); snapRef.current = snapOn
+  const guidesRef = useRef(guidesOn); guidesRef.current = guidesOn
+  selIdsRef.current = new Set(selectedIds)
+  editorRef.current = editor
+  editorValRef.current = editorVal
 
-function applyStrokeDash(ctx: CanvasRenderingContext2D, el: DrawElement) {
-  if (el.strokeStyle === 'dashed') ctx.setLineDash([el.strokeWidth * 2.5 + 5, el.strokeWidth * 1.8 + 3])
-  else if (el.strokeStyle === 'dotted') { ctx.setLineDash([0.1, el.strokeWidth * 1.8 + 4]); ctx.lineCap = 'round' }
-  else ctx.setLineDash([])
-}
+  const byIdNow = (): ById => new Map(elsRef.current.map(e => [e.id, e]))
 
-// Fills the CURRENT path. 'solid'/undefined keeps this file's original look
-// (translucent stroke-color fill when no explicit style was ever set, so
-// old boards render pixel-identical); 'hachure'/'cross-hatch' clip to the
-// path and stroke parallel diagonal lines across it — Excalidraw's
-// signature hand-drawn fill look.
-function applyFill(ctx: CanvasRenderingContext2D, el: DrawElement, x1: number, y1: number, x2: number, y2: number) {
-  const style = el.fillStyle
-  const bg = el.bgColor ?? el.color
-  if (!style || style === 'solid') {
-    ctx.fillStyle = style === 'solid' ? bg : el.color + '33'
-    ctx.fill()
-    return
-  }
-  // Path2D so this clip doesn't depend on whatever the caller's "current
-  // path" happens to be at call time (beginPath/moveTo/lineTo etc. are NOT
-  // part of the save/restore-managed state, unlike clip/style/transform).
-  const clipPath = new Path2D()
-  clipPath.rect(x1, y1, x2 - x1, y2 - y1)
-  ctx.save()
-  ctx.clip(clipPath)
-  ctx.strokeStyle = bg
-  ctx.lineWidth = Math.max(1, el.strokeWidth * 0.35)
-  ctx.setLineDash([])
-  const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2
-  const diag = Math.hypot(x2 - x1, y2 - y1) || 1
-  const spacing = 6
-  const drawAngle = (angle: number) => {
-    const cos = Math.cos(angle), sin = Math.sin(angle)
-    ctx.beginPath()
-    for (let o = -diag; o <= diag; o += spacing) {
-      const px = cx - sin * o, py = cy + cos * o
-      ctx.moveTo(px - cos * diag, py - sin * diag)
-      ctx.lineTo(px + cos * diag, py + sin * diag)
-    }
-    ctx.stroke()
-  }
-  drawAngle(Math.PI / 4)
-  if (style === 'cross-hatch') drawAngle(-Math.PI / 4)
-  ctx.restore()
-}
+  // ── Render ────────────────────────────────────────────────────────────────
 
-function renderEl(ctx: CanvasRenderingContext2D, el: DrawElement, selected: boolean, scale = 1, showHandles = false) {
-  ctx.save()
-  ctx.globalAlpha = (el.opacity ?? 100) / 100
-  ctx.strokeStyle = el.color
-  ctx.fillStyle   = el.color + '33'
-  ctx.lineWidth   = el.strokeWidth
-  ctx.lineCap     = 'round'
-  ctx.lineJoin    = 'round'
-  applyStrokeDash(ctx, el)
-
-  switch (el.type) {
-    case 'freedraw': {
-      const pts = el.points ?? []
-      if (pts.length < 1) break
-      const bt = el.brushType ?? 'pen'
-      if (bt.startsWith('custom-')) break  // handled separately in render()
-
-      const drawBezier = () => {
-        ctx.beginPath()
-        ctx.moveTo(pts[0].x, pts[0].y)
-        for (let i = 1; i < pts.length - 1; i++) {
-          const mx = (pts[i].x + pts[i + 1].x) / 2
-          const my = (pts[i].y + pts[i + 1].y) / 2
-          ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my)
-        }
-        if (pts.length > 1) ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y)
+  const paintElements = useCallback((ctx: CanvasRenderingContext2D, els: DrawElement[], byId: ById, scale: number, editingId: string | null, onImg?: () => void) => {
+    // Flood fills are raster snapshots taken at the pan/zoom active when they
+    // were made (s. DrawElement.fillPanX) — drawn at that logical rect so
+    // they track pan/zoom like everything else, underneath all vectors.
+    for (const el of els) {
+      if (el.type !== 'fill' || !el.fillImageUrl) continue
+      let img = fillImgCacheRef.current.get(el.id)
+      if (!img) {
+        img = new Image()
+        fillImgCacheRef.current.set(el.id, img)
+        if (onImg) img.onload = onImg
+        img.src = el.fillImageUrl
       }
-
-      if (bt === 'spray') {
-        ctx.fillStyle = el.color
-        const r = Math.max(4, el.strokeWidth * 5)
-        const dotR = Math.max(0.4, el.strokeWidth * 0.35)
-        for (let pi = 0; pi < pts.length; pi++) {
-          const pt = pts[pi]
-          for (let i = 0; i < 14; i++) {
-            const seed = pi * 200 + i
-            const angle = srand(seed) * Math.PI * 2
-            const dist  = srand(seed + 100) * r
-            ctx.beginPath()
-            ctx.arc(pt.x + Math.cos(angle) * dist, pt.y + Math.sin(angle) * dist, dotR, 0, Math.PI * 2)
-            ctx.fill()
-          }
-        }
-      } else if (bt === 'marker') {
-        ctx.globalAlpha *= 0.5
-        ctx.lineWidth  *= 3
-        drawBezier(); ctx.stroke()
-      } else if (bt === 'highlighter') {
-        ctx.globalAlpha *= 0.22
-        ctx.lineWidth  *= 9
-        ctx.lineCap = 'square'
-        drawBezier(); ctx.stroke()
-      } else if (bt === 'chalk') {
-        const baseAlpha = ctx.globalAlpha
-        for (let pass = 0; pass < 3; pass++) {
-          ctx.globalAlpha = baseAlpha * (0.25 + srand(pass * 7 + pts.length) * 0.35)
-          ctx.lineWidth   = el.strokeWidth * (0.8 + srand(pass * 13) * 0.5)
-          ctx.beginPath()
-          ctx.moveTo(pts[0].x + (srand(pass * 31) - 0.5) * 2, pts[0].y + (srand(pass * 37) - 0.5) * 2)
-          for (let i = 1; i < pts.length - 1; i++) {
-            const jx = (srand(pass * 50 + i) - 0.5) * 2.5
-            const jy = (srand(pass * 70 + i) - 0.5) * 2.5
-            const mx = (pts[i].x + pts[i + 1].x) / 2 + jx
-            const my = (pts[i].y + pts[i + 1].y) / 2 + jy
-            ctx.quadraticCurveTo(pts[i].x + jx, pts[i].y + jy, mx, my)
-          }
-          if (pts.length > 1) ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y)
-          ctx.stroke()
-        }
-      } else if (bt === 'calligraphy') {
-        ctx.fillStyle = el.color
-        const nibAngle = Math.PI / 4
-        if (pts.length < 2) break
-
-        // Layer 1: pre-smooth raw mouse points (2 passes of weighted 3-pt average)
-        let spts = pts as { x: number; y: number }[]
-        for (let pass = 0; pass < 2; pass++) {
-          spts = spts.map((p, i) =>
-            i === 0 || i === spts.length - 1 ? p
-              : { x: (spts[i-1].x + p.x * 2 + spts[i+1].x) / 4, y: (spts[i-1].y + p.y * 2 + spts[i+1].y) / 4 }
-          )
-        }
-
-        // Layer 2: adaptive EMA on direction with lower alpha cap (never respond too fast)
-        const lx: number[] = [], ly: number[] = [], rx: number[] = [], ry: number[] = []
-        let avgDx = spts[1].x - spts[0].x || 1
-        let avgDy = spts[1].y - spts[0].y || 0
-        let prevW  = el.strokeWidth * 0.7
-        for (let i = 0; i < spts.length; i++) {
-          const rdx  = i > 0 ? spts[i].x - spts[i-1].x : avgDx
-          const rdy  = i > 0 ? spts[i].y - spts[i-1].y : avgDy
-          const dist = Math.hypot(rdx, rdy)
-          const a = Math.min(0.45, Math.max(0.03, dist / 15))
-          avgDx = a * rdx + (1 - a) * avgDx
-          avgDy = a * rdy + (1 - a) * avgDy
-          const len = Math.hypot(avgDx, avgDy)
-          if (len < 1e-9) {
-            lx.push(spts[i].x); ly.push(spts[i].y)
-            rx.push(spts[i].x); ry.push(spts[i].y)
-            continue
-          }
-          const dir  = Math.atan2(avgDy, avgDx)
-          // Deutlich feinere Feder: schmale Grundbreite, dünne Haarlinien quer zur Federrichtung
-          const rawW = Math.max(0.15, el.strokeWidth * Math.abs(Math.cos(dir - nibAngle)) * 1.4 + 0.15)
-          prevW = 0.10 * rawW + 0.90 * prevW
-          const perp = dir + Math.PI / 2
-          const cp = Math.cos(perp), sp = Math.sin(perp)
-          lx.push(spts[i].x + cp * prevW); ly.push(spts[i].y + sp * prevW)
-          rx.push(spts[i].x - cp * prevW); ry.push(spts[i].y - sp * prevW)
-        }
-
-        // Layer 3: post-smooth the outline arrays to remove residual jitter
-        const smArr = (a: number[]) =>
-          a.map((v, i) => i === 0 || i === a.length - 1 ? v : (a[i-1] + v * 2 + a[i+1]) / 4)
-        const slx = smArr(lx), sly = smArr(ly), srx = smArr(rx), sry = smArr(ry)
-
-        if (slx.length < 2) break
-        ctx.beginPath()
-        ctx.moveTo(slx[0], sly[0])
-        for (let i = 1; i < slx.length - 1; i++) {
-          const mx = (slx[i] + slx[i+1]) / 2, my = (sly[i] + sly[i+1]) / 2
-          ctx.quadraticCurveTo(slx[i], sly[i], mx, my)
-        }
-        ctx.lineTo(slx[slx.length-1], sly[sly.length-1])
-        for (let i = srx.length - 1; i >= 1; i--) {
-          const mx = (srx[i] + srx[i-1]) / 2, my = (sry[i] + sry[i-1]) / 2
-          ctx.quadraticCurveTo(srx[i], sry[i], mx, my)
-        }
-        ctx.lineTo(srx[0], sry[0])
-        ctx.closePath(); ctx.fill()
-      } else {
-        drawBezier(); ctx.stroke()
+      if (img.complete && img.naturalWidth > 0) {
+        const b = fillBox(el)
+        ctx.save()
+        ctx.globalAlpha = (el.opacity ?? 100) / 100
+        ctx.drawImage(img, b.x1, b.y1, boxW(b), boxH(b))
+        ctx.restore()
       }
-      break
     }
-    case 'rect': {
-      const x = Math.min(el.x, el.x2), y = Math.min(el.y, el.y2)
-      const w = Math.abs(el.x2 - el.x), h = Math.abs(el.y2 - el.y)
-      const buildPath = () => {
-        ctx.beginPath()
-        if (el.roundCorners) ctx.roundRect(x, y, w, h, Math.min(Math.min(w, h) * 0.12 + 2, w / 2, h / 2))
-        else ctx.rect(x, y, w, h)
-      }
-      buildPath()
-      if (el.filled) applyFill(ctx, el, x, y, x + w, y + h)
-      // applyFill's hachure/cross-hatch branch calls ctx.beginPath() itself
-      // (repeatedly, for each hachure line) — beginPath/moveTo/lineTo are
-      // NOT saved/restored by ctx.save()/restore() (only clip/style/transform
-      // are), so the shape's own path here would otherwise still be
-      // whatever hachure line was drawn LAST, making this stroke() re-trace
-      // that instead of the rect — rebuild it explicitly first.
-      buildPath()
-      applyStrokeDash(ctx, el)
-      ctx.stroke()
-      break
-    }
-    case 'ellipse': {
-      const cx = (el.x + el.x2) / 2, cy = (el.y + el.y2) / 2
-      const rx = Math.abs(el.x2 - el.x) / 2, ry = Math.abs(el.y2 - el.y) / 2
-      if (rx < 1 || ry < 1) break
-      const buildPath = () => { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2) }
-      buildPath()
-      if (el.filled) applyFill(ctx, el, cx - rx, cy - ry, cx + rx, cy + ry)
-      buildPath()   // s. rect case above for why this must be rebuilt
-      applyStrokeDash(ctx, el)
-      ctx.stroke()
-      break
-    }
-    case 'triangle': {
-      const x1 = Math.min(el.x, el.x2), y1 = Math.min(el.y, el.y2)
-      const x2 = Math.max(el.x, el.x2), y2 = Math.max(el.y, el.y2)
-      const buildPath = () => {
-        ctx.beginPath()
-        ctx.moveTo((x1 + x2) / 2, y1)
-        ctx.lineTo(x2, y2)
-        ctx.lineTo(x1, y2)
-        ctx.closePath()
-      }
-      buildPath()
-      if (el.filled) applyFill(ctx, el, x1, y1, x2, y2)
-      buildPath()   // s. rect case above for why this must be rebuilt
-      applyStrokeDash(ctx, el)
-      ctx.stroke()
-      break
-    }
-    case 'line':
-      ctx.beginPath(); ctx.moveTo(el.x, el.y); ctx.lineTo(el.x2, el.y2); ctx.stroke()
-      break
-    case 'arrow': {
-      const ang = Math.atan2(el.y2 - el.y, el.x2 - el.x)
-      const h = Math.max(12, el.strokeWidth * 4)
-      // Shorten shaft so it doesn't poke through the filled head
-      const sx = el.x2 - h * Math.cos(ang) * 0.75
-      const sy = el.y2 - h * Math.sin(ang) * 0.75
-      ctx.beginPath(); ctx.moveTo(el.x, el.y); ctx.lineTo(sx, sy); ctx.stroke()
-      // Filled closed triangle arrowhead
+    const o = { scale, byId, canvasColor: CANVAS_COLOR[canvasBgRef.current], editingId, dark: canvasBgRef.current === 'dark' }
+    for (const el of els) if (el.type !== 'fill') drawElement(ctx, el, o)
+  }, [])
+
+  const render = useCallback(() => {
+    const canvas = canvasRef.current; if (!canvas) return
+    const ctx = canvas.getContext('2d'); if (!ctx) return
+    const bg = canvasBgRef.current
+    const scale = scaleRef.current, pan = panRef.current
+
+    ctx.fillStyle = CANVAS_COLOR[bg]
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    if (bg === 'grid' || (snapRef.current && bg === 'dark')) {
+      const gridPx = Math.max(8, GRID * scale)
+      const offX = ((pan.x % gridPx) + gridPx) % gridPx
+      const offY = ((pan.y % gridPx) + gridPx) % gridPx
+      ctx.strokeStyle = bg === 'dark' ? 'rgba(255,255,255,0.07)' : '#e5e7eb'
+      ctx.lineWidth = 0.5
       ctx.beginPath()
-      ctx.moveTo(el.x2, el.y2)
-      ctx.lineTo(el.x2 - h * Math.cos(ang - Math.PI / 6), el.y2 - h * Math.sin(ang - Math.PI / 6))
-      ctx.lineTo(el.x2 - h * Math.cos(ang + Math.PI / 6), el.y2 - h * Math.sin(ang + Math.PI / 6))
-      ctx.closePath()
-      ctx.fillStyle = el.color
-      ctx.fill()
-      break
+      for (let x = offX - gridPx; x <= canvas.width + gridPx; x += gridPx) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height) }
+      for (let y = offY - gridPx; y <= canvas.height + gridPx; y += gridPx) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y) }
+      ctx.stroke()
     }
-    case 'text': {
-      const fs = el.fontSize ?? 16
-      ctx.font = `${fs}px sans-serif`
-      ctx.fillStyle = el.color
-      ctx.fillText(el.text ?? '', el.x, el.y)
-      break
-    }
-  }
 
-  if (selected) {
-    ctx.globalAlpha = 1
     ctx.save()
-    ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 3])
-    const pad = HANDLE_PAD
-    ctx.strokeRect(Math.min(el.x, el.x2) - pad, Math.min(el.y, el.y2) - pad, Math.abs(el.x2 - el.x) + pad * 2, Math.abs(el.y2 - el.y) + pad * 2)
-    ctx.restore()
+    ctx.translate(pan.x, pan.y)
+    ctx.scale(scale, scale)
+    const els = elsRef.current
+    const byId: ById = new Map(els.map(e => [e.id, e]))
+    const cur = curRef.current
+    if (cur) byId.set(cur.id, cur)
+    paintElements(ctx, els, byId, scale, editorRef.current?.id ?? null, () => render())
+    if (cur) drawElement(ctx, cur, { scale, byId, canvasColor: CANVAS_COLOR[bg], dark: bg === 'dark' })
 
-    if (showHandles) {
-      ctx.save()
-      ctx.setLineDash([])
-      const hs = 7 / scale
-      const points = getHandlePoints(el)
-      ctx.fillStyle = '#fff'
-      ctx.strokeStyle = '#3b82f6'
-      ctx.lineWidth = 1.5 / scale
-      for (const name of Object.keys(points) as HandleName[]) {
-        const p = points[name]; if (!p) continue
-        ctx.beginPath()
-        ctx.rect(p.x - hs / 2, p.y - hs / 2, hs, hs)
-        ctx.fill(); ctx.stroke()
+    if (isEditRef.current) {
+      const drag = dragRef.current
+      drawSelectionOverlay(ctx, els, {
+        scale, byId, selected: selIdsRef.current,
+        showHandles: toolRef.current === 'select' && drag?.kind !== 'move',
+        showQuick: toolRef.current === 'select' && !drag,
+        bindHoverId: hoverBindRef.current,
+      })
+      if (drag?.kind === 'marquee' && drag.active) {
+        const x = Math.min(drag.sx, drag.ex), y = Math.min(drag.sy, drag.ey)
+        const w = Math.abs(drag.ex - drag.sx), h = Math.abs(drag.ey - drag.sy)
+        ctx.save()
+        ctx.fillStyle = 'rgba(59,130,246,0.10)'
+        ctx.strokeStyle = 'rgba(59,130,246,0.7)'
+        ctx.lineWidth = 1 / scale
+        ctx.setLineDash([4 / scale, 3 / scale])
+        ctx.fillRect(x, y, w, h)
+        ctx.strokeRect(x, y, w, h)
+        ctx.restore()
       }
-      ctx.restore()
+      const view = { x1: -pan.x / scale, y1: -pan.y / scale, x2: (canvas.width - pan.x) / scale, y2: (canvas.height - pan.y) / scale }
+      drawGuides(ctx, guideRef.current.gx, guideRef.current.gy, view, scale)
+    }
+    ctx.restore()
+  }, [paintElements])
+
+  // Pen cursor dot on its own overlay canvas so hovering only repaints one circle.
+  const renderCursor = useCallback(() => {
+    const canvas = cursorCanvasRef.current; if (!canvas) return
+    const ctx = canvas.getContext('2d'); if (!ctx) return
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    if (!cursorPtRef.current) return
+    ctx.save()
+    ctx.translate(panRef.current.x, panRef.current.y)
+    ctx.scale(scaleRef.current, scaleRef.current)
+    const { x, y } = cursorPtRef.current
+    ctx.beginPath()
+    ctx.arc(x, y, 4 / scaleRef.current, 0, Math.PI * 2)
+    ctx.fillStyle = styleRef.current.color
+    ctx.fill()
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)'
+    ctx.lineWidth = 1.5 / scaleRef.current
+    ctx.stroke()
+    ctx.restore()
+  }, [])
+
+  useEffect(() => { cursorPtRef.current = null; renderCursor(); render() }, [tool, renderCursor, render])
+  useEffect(() => { render() }, [canvasBg, snapOn, selectedIds, render])
+
+  // External changes (e.g. drawing in Focus Mode while the tile stays mounted).
+  // Our own saves write elsRef.current itself to the store, so they pass
+  // through this unchanged.
+  useEffect(() => {
+    const ext = widget.data?.elements as DrawElement[] | undefined
+    if (ext === lastExtRef.current) return
+    lastExtRef.current = ext
+    if (ext === elsRef.current) return
+    elsRef.current = normalizeElements(ext ?? [])
+    histRef.current = [[...elsRef.current]]
+    histIdxRef.current = 0
+    setSelectedIds([])
+    setRev(r => r + 1)
+    render()
+  }, [widget.data?.elements, render])
+
+  useEffect(() => {
+    const container = containerRef.current; if (!container) return
+    const obs = new ResizeObserver(() => {
+      const c = canvasRef.current; if (!c) return
+      c.width = container.clientWidth; c.height = container.clientHeight
+      const cc = cursorCanvasRef.current
+      if (cc) { cc.width = container.clientWidth; cc.height = container.clientHeight }
+      render(); renderCursor()
+    })
+    obs.observe(container)
+    return () => obs.disconnect()
+  }, [render, renderCursor])
+
+  // View mode is read-only: close everything floating, drop the selection.
+  useEffect(() => {
+    if (isEdit) return
+    setPopover(null)
+    editorRef.current = null
+    setEditor(null)
+    setSelectedIds([])
+    setCtxMenu(null)
+    cursorPtRef.current = null
+    render(); renderCursor()
+  }, [isEdit, render, renderCursor])
+
+  // ── Persist ───────────────────────────────────────────────────────────────
+
+  // Reads the LIVE store data at fire time instead of the (possibly stale)
+  // `widget.data` prop: save() and saveView() are independent debounced
+  // timers that replace `data` wholesale, and a stale spread from one would
+  // silently wipe whatever the other just wrote.
+  function getLiveData(): Record<string, unknown> {
+    const boards = useBoardStore.getState().boards
+    const boardId = Object.keys(boards).find(bid => boards[bid]?.widgets[widget.id])
+    const live = boardId ? boards[boardId].widgets[widget.id]?.data : undefined
+    return (live ?? widget.data ?? {}) as Record<string, unknown>
+  }
+
+  const savePendingRef = useRef(false)
+  const writeElements = useCallback(() => {
+    savePendingRef.current = false
+    lastExtRef.current = elsRef.current
+    updateWidget(widget.id, { data: { ...getLiveData(), elements: elsRef.current } })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widget.id, updateWidget])
+  const save = useCallback(() => {
+    clearTimeout(saveTimer.current)
+    savePendingRef.current = true
+    saveTimer.current = setTimeout(writeElements, 600)
+  }, [writeElements])
+  // Don't lose the last edit if the window closes / the widget unmounts
+  // inside the debounce window.
+  useEffect(() => {
+    const flush = () => { if (savePendingRef.current) { clearTimeout(saveTimer.current); writeElements() } }
+    window.addEventListener('pagehide', flush)
+    window.addEventListener('beforeunload', flush)
+    return () => {
+      window.removeEventListener('pagehide', flush)
+      window.removeEventListener('beforeunload', flush)
+      flush()
+    }
+  }, [writeElements])
+
+  // View/tool state is a pure view change (no undo step) but still has to
+  // reach the store so a simultaneously open Focus Mode mount stays in sync.
+  const saveViewTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const saveView = useCallback(() => {
+    clearTimeout(saveViewTimer.current)
+    saveViewTimer.current = setTimeout(() => {
+      const s = styleRef.current
+      updateWidgetQuiet(widget.id, { data: {
+        ...getLiveData(),
+        zoom: scaleRef.current, panX: panRef.current.x, panY: panRef.current.y,
+        tool: toolRef.current, shapeKind: shapeKindRef.current, brushType: brushTypeRef.current,
+        color: s.color, strokePct: s.strokePct, opacityPct: s.opacityPct, filled: s.filled,
+        bgColor: s.bgColor, fillStyle: s.fillStyle, strokeStyle: s.strokeDash, roundCorners: s.roundCorners,
+        shadow: s.shadow, fontSize: s.fontSize, fontFamily: s.fontFamily, bold: s.bold, italic: s.italic,
+        fontColor: s.fontColor, edgeStyle: s.edgeStyle, startArrow: s.startArrow, endArrow: s.endArrow,
+        canvasBg: canvasBgRef.current, snapToGrid: snapRef.current, guides: guidesRef.current, formatOpen: formatOpenRef.current,
+      } })
+    }, 400)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widget.id, updateWidgetQuiet])
+  const formatOpenRef = useRef(formatOpen); formatOpenRef.current = formatOpen
+  useEffect(() => () => { clearTimeout(saveViewTimer.current) }, [])
+  useEffect(() => { saveView() }, [
+    saveView, tool, shapeKind, brushType, color, strokePct, opacityPct, filled, bgColor, fillStyle, strokeDash,
+    roundCorners, shadow, fontSize, fontFamily, bold, italic, fontColor, edgeStyle, startArrow, endArrow,
+    canvasBg, snapOn, guidesOn, formatOpen,
+  ])
+
+  // ── Re-sync from the other mount ──
+  useEffect(() => {
+    const z = data.zoom as number | undefined, px = data.panX as number | undefined, py = data.panY as number | undefined
+    let changed = false
+    if (typeof z === 'number' && z !== scaleRef.current) { scaleRef.current = z; setZoomPct(Math.round(z * 100)); changed = true }
+    if (typeof px === 'number' && typeof py === 'number' && (px !== panRef.current.x || py !== panRef.current.y)) {
+      panRef.current = { x: px, y: py }; changed = true
+    }
+    if (changed) { render(); renderCursor() }
+  }, [data.zoom, data.panX, data.panY, render, renderCursor])
+  useEffect(() => {
+    const v = data.tool as string | undefined
+    if (!v) return
+    if (LEGACY_SHAPE_TOOLS.includes(v)) { setTool('shape'); setShapeKind(v) }
+    else if (TOOLS.includes(v as DrawTool) && v !== toolRef.current) setTool(v as DrawTool)
+  }, [data.tool])
+  useSyncFromStore(data.shapeKind as string | undefined, shapeKind, setShapeKind)
+  useSyncFromStore(data.color as string | undefined, color, setColor)
+  useSyncFromStore(data.strokePct as number | undefined, strokePct, setStrokePct)
+  useSyncFromStore(data.opacityPct as number | undefined, opacityPct, setOpacityPct)
+  useSyncFromStore(data.filled as boolean | undefined, filled, setFilled)
+  useSyncFromStore(data.bgColor as string | undefined, bgColor, setBgColor, true)
+  useSyncFromStore(data.fillStyle as FillStyle | undefined, fillStyle, setFillStyle)
+  useSyncFromStore(data.strokeStyle as StrokeDash | undefined, strokeDash, setStrokeDash)
+  useSyncFromStore(data.roundCorners as boolean | undefined, roundCorners, setRoundCorners)
+  useSyncFromStore(data.shadow as boolean | undefined, shadow, setShadow)
+  useSyncFromStore(data.fontSize as number | undefined, fontSize, setFontSize)
+  useSyncFromStore(data.fontFamily as FontFamily | undefined, fontFamily, setFontFamily)
+  useSyncFromStore(data.bold as boolean | undefined, bold, setBold)
+  useSyncFromStore(data.italic as boolean | undefined, italic, setItalic)
+  useSyncFromStore(data.fontColor as string | undefined, fontColor, setFontColor, true)
+  useSyncFromStore(data.edgeStyle as DrawEdgeStyle | undefined, edgeStyle, setEdgeStyle)
+  useSyncFromStore(data.startArrow as DrawArrowHead | undefined, startArrow, setStartArrow)
+  useSyncFromStore(data.endArrow as DrawArrowHead | undefined, endArrow, setEndArrow)
+  useSyncFromStore(data.brushType as string | undefined, brushType, setBrushType)
+  useSyncFromStore(data.canvasBg as CanvasBg | undefined, canvasBg, setCanvasBg)
+  useSyncFromStore(data.snapToGrid as boolean | undefined, snapOn, setSnapOn)
+  useSyncFromStore(data.guides as boolean | undefined, guidesOn, setGuidesOn)
+  useSyncFromStore(data.formatOpen as boolean | undefined, formatOpen, setFormatOpen)
+
+  // Selecting something pulls ITS style into the toolbar/panel (draw.io's
+  // format panel always reflects the selection), which is what makes the
+  // controls read as "edit this shape" rather than "next shape's defaults".
+  useEffect(() => {
+    if (!selectedIds.length) return
+    // Each property group comes from the first selected element that has
+    // it, so e.g. a box + arrow selection shows the ARROW's line ends.
+    const sel = elsRef.current.filter(x => selectedIds.includes(x.id) && x.type !== 'fill')
+    if (!sel.length) return
+    const first = sel[0]
+    setColor(first.color)
+    setOpacityPct(first.opacity ?? 100)
+    setShadow(!!first.shadow)
+    const stroked = sel.find(el => el.type !== 'text')
+    if (stroked) { setStrokePct(swToPct(stroked.strokeWidth)); setStrokeDash(stroked.strokeStyle ?? 'solid') }
+    const shapeEl = sel.find(isShape)
+    if (shapeEl) {
+      setFilled(!!shapeEl.filled)
+      setBgColor(shapeEl.bgColor)
+      if (shapeEl.fillStyle) setFillStyle(shapeEl.fillStyle)
+      setRoundCorners(!!shapeEl.roundCorners)
+    }
+    const free = sel.find(el => el.type === 'freedraw')
+    if (free?.brushType) setBrushType(free.brushType)
+    const texty = sel.find(el => el.type !== 'freedraw')
+    if (texty) {
+      setFontSize(texty.fontSize ?? (texty.type === 'text' ? 16 : DEFAULT_LABEL_SIZE))
+      setFontFamily(texty.fontFamily ?? 'sans')
+      setBold(!!texty.bold)
+      setItalic(!!texty.italic)
+      setTextAlign(texty.textAlign ?? (texty.type === 'text' ? 'left' : 'center'))
+      setFontColor(texty.type === 'text' ? undefined : texty.fontColor)
+    }
+    const edgeEl = sel.find(isEdge)
+    if (edgeEl) {
+      setEdgeStyle(edgeEl.edgeStyle ?? 'straight')
+      setStartArrow(edgeEl.startArrow ?? 'none')
+      setEndArrow(edgeEl.endArrow ?? (edgeEl.type === 'arrow' ? 'arrow' : 'none'))
+    }
+  }, [selectedIds])
+
+  // ── History ───────────────────────────────────────────────────────────────
+
+  function pushHist(els: DrawElement[]) {
+    histRef.current = histRef.current.slice(0, histIdxRef.current + 1)
+    histRef.current.push([...els])
+    if (histRef.current.length > 200) histRef.current.shift()
+    histIdxRef.current = histRef.current.length - 1
+    setRev(r => r + 1)
+  }
+  function commit(next: DrawElement[]) {
+    elsRef.current = next
+    pushHist(next); render(); save()
+  }
+  function setSelection(ids: string[]) {
+    selIdsRef.current = new Set(ids)
+    setSelectedIds(ids)
+  }
+  const undo = () => {
+    if (histIdxRef.current <= 0) return
+    histIdxRef.current--
+    elsRef.current = [...histRef.current[histIdxRef.current]]
+    setSelection([]); setRev(r => r + 1); render(); save()
+  }
+  const redo = () => {
+    if (histIdxRef.current >= histRef.current.length - 1) return
+    histIdxRef.current++
+    elsRef.current = [...histRef.current[histIdxRef.current]]
+    setSelection([]); setRev(r => r + 1); render(); save()
+  }
+
+  // ── Zoom ──────────────────────────────────────────────────────────────────
+
+  function zoomAt(ns: number, mx: number, my: number) {
+    ns = Math.max(0.1, Math.min(10, ns))
+    panRef.current = { x: mx - (mx - panRef.current.x) * (ns / scaleRef.current), y: my - (my - panRef.current.y) * (ns / scaleRef.current) }
+    scaleRef.current = ns
+    setZoomPct(Math.round(ns * 100))
+    render(); renderCursor(); saveView()
+  }
+  const zoomBy = (factor: number) => {
+    const c = canvasRef.current; if (!c) return
+    zoomAt(scaleRef.current * factor, c.width / 2, c.height / 2)
+  }
+  // Back to 100 % around the middle of the view — keeps you where you are.
+  const resetZoom = () => {
+    const c = canvasRef.current; if (!c) return
+    zoomAt(1, c.width / 2, c.height / 2)
+  }
+  // Fill rasters span the whole viewport they were made in (mostly
+  // transparent), so they only count when there's nothing else.
+  function contentBounds(): Box | null {
+    const byId = byIdNow()
+    return unionBox(elsRef.current.filter(el => el.type !== 'fill').map(el => elBox(el, byId)))
+      ?? unionBox(elsRef.current.map(fillBox))
+  }
+  const zoomToFit = () => {
+    const canvas = canvasRef.current; if (!canvas) return
+    const b = unionBox(elsRef.current.filter(el => el.type !== 'fill').map(el => elBox(el, byIdNow())))
+    if (!b) { panRef.current = { x: 0, y: 0 }; zoomAt(1, 0, 0); return }
+    const w = Math.max(1, boxW(b)), h = Math.max(1, boxH(b))
+    const ns = Math.max(0.1, Math.min(4, Math.min(canvas.width / w, canvas.height / h) * 0.85))
+    scaleRef.current = ns
+    panRef.current = { x: canvas.width / 2 - (b.x1 + w / 2) * ns, y: canvas.height / 2 - (b.y1 + h / 2) * ns }
+    setZoomPct(Math.round(ns * 100))
+    render(); renderCursor(); saveView()
+  }
+
+  // ── Style application ─────────────────────────────────────────────────────
+
+  function selectedEditable(): Set<string> {
+    return new Set(elsRef.current.filter(el => selIdsRef.current.has(el.id) && !el.locked).map(el => el.id))
+  }
+
+  function patchFor(patch: Partial<StyleState>) {
+    return (el: DrawElement): DrawElement => {
+      const out: Partial<DrawElement> = {}
+      const hasText = el.type !== 'freedraw' && el.type !== 'fill'
+      if (patch.color !== undefined) out.color = patch.color
+      if (patch.strokePct !== undefined && el.type !== 'text') out.strokeWidth = pctToSw(patch.strokePct)
+      if (patch.opacityPct !== undefined) out.opacity = patch.opacityPct
+      if (patch.strokeDash !== undefined && el.type !== 'text') out.strokeStyle = patch.strokeDash
+      if (patch.shadow !== undefined) out.shadow = patch.shadow || undefined
+      if (isShape(el)) {
+        if (patch.filled !== undefined) {
+          out.filled = patch.filled
+          // Turning fill on also applies the style/color currently shown, so
+          // a shape without its own fill style doesn't fall back to the plain
+          // legacy look regardless of what the panel displays.
+          if (patch.filled) { out.fillStyle = styleRef.current.fillStyle; out.bgColor = styleRef.current.bgColor }
+        }
+        if ('bgColor' in patch) out.bgColor = patch.bgColor
+        if (patch.fillStyle !== undefined) out.fillStyle = patch.fillStyle
+        if (patch.roundCorners !== undefined && el.type === 'rect') out.roundCorners = patch.roundCorners
+      }
+      if (hasText) {
+        if (patch.fontSize !== undefined) out.fontSize = patch.fontSize
+        if (patch.fontFamily !== undefined) out.fontFamily = patch.fontFamily
+        if (patch.bold !== undefined) out.bold = patch.bold || undefined
+        if (patch.italic !== undefined) out.italic = patch.italic || undefined
+        if (patch.textAlign !== undefined) out.textAlign = patch.textAlign
+        if (patch.fontColor !== undefined) { if (el.type === 'text') out.color = patch.fontColor; else out.fontColor = patch.fontColor }
+      }
+      if (isEdge(el)) {
+        if (patch.edgeStyle !== undefined) out.edgeStyle = patch.edgeStyle
+        if (patch.startArrow !== undefined) out.startArrow = patch.startArrow
+        if (patch.endArrow !== undefined) out.endArrow = patch.endArrow
+      }
+      const next = { ...el, ...out }
+      return next.type === 'text' ? refitText(next) : next
     }
   }
-  ctx.restore()
-}
 
-// ─── Hit testing ──────────────────────────────────────────────────────────────
+  // Every style control both sets the default for the next element AND
+  // restyles the current selection. `live` = slider being dragged: repaint
+  // without a history entry; commitLive() records one on release.
+  function setStyle(patch: Partial<StyleState>, live = false) {
+    if (patch.color !== undefined) setColor(patch.color)
+    if (patch.strokePct !== undefined) setStrokePct(patch.strokePct)
+    if (patch.opacityPct !== undefined) setOpacityPct(patch.opacityPct)
+    if (patch.filled !== undefined) setFilled(patch.filled)
+    if ('bgColor' in patch) setBgColor(patch.bgColor)
+    if (patch.fillStyle !== undefined) setFillStyle(patch.fillStyle)
+    if (patch.strokeDash !== undefined) setStrokeDash(patch.strokeDash)
+    if (patch.roundCorners !== undefined) setRoundCorners(patch.roundCorners)
+    if (patch.shadow !== undefined) setShadow(patch.shadow)
+    if (patch.fontSize !== undefined) setFontSize(patch.fontSize)
+    if (patch.fontFamily !== undefined) setFontFamily(patch.fontFamily)
+    if (patch.bold !== undefined) setBold(patch.bold)
+    if (patch.italic !== undefined) setItalic(patch.italic)
+    if (patch.textAlign !== undefined) setTextAlign(patch.textAlign)
+    if (patch.fontColor !== undefined) {
+      setFontColor(patch.fontColor)
+      if (elsRef.current.some(el => selIdsRef.current.has(el.id) && el.type === 'text')) setColor(patch.fontColor)
+    }
+    if (patch.edgeStyle !== undefined) setEdgeStyle(patch.edgeStyle)
+    if (patch.startArrow !== undefined) setStartArrow(patch.startArrow)
+    if (patch.endArrow !== undefined) setEndArrow(patch.endArrow)
 
-function segDist(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
-  const dx = bx - ax, dy = by - ay
-  const t  = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy || 1)))
-  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy))
-}
-
-function hitEl(el: DrawElement, px: number, py: number, ctx: CanvasRenderingContext2D): boolean {
-  const t = Math.max(el.strokeWidth, 8)
-  switch (el.type) {
-    case 'freedraw': {
-      const pts = el.points ?? []
-      return pts.some((p, i) => i < pts.length - 1 && segDist(px, py, p.x, p.y, pts[i + 1].x, pts[i + 1].y) < t)
-    }
-    case 'rect': {
-      const x1 = Math.min(el.x, el.x2), y1 = Math.min(el.y, el.y2)
-      const x2 = Math.max(el.x, el.x2), y2 = Math.max(el.y, el.y2)
-      if (el.filled) return px >= x1 && px <= x2 && py >= y1 && py <= y2
-      return (Math.abs(px - x1) < t && py >= y1 && py <= y2) || (Math.abs(px - x2) < t && py >= y1 && py <= y2) ||
-             (Math.abs(py - y1) < t && px >= x1 && px <= x2) || (Math.abs(py - y2) < t && px >= x1 && px <= x2)
-    }
-    case 'ellipse': {
-      const cx = (el.x + el.x2) / 2, cy = (el.y + el.y2) / 2
-      const rx = Math.abs(el.x2 - el.x) / 2, ry = Math.abs(el.y2 - el.y) / 2
-      if (!rx || !ry) return false
-      const d = Math.hypot((px - cx) / rx, (py - cy) / ry)
-      return el.filled ? d <= 1 : Math.abs(d - 1) < t / Math.max(rx, ry)
-    }
-    case 'triangle': {
-      const x1 = Math.min(el.x, el.x2), y1 = Math.min(el.y, el.y2)
-      const x2 = Math.max(el.x, el.x2), y2 = Math.max(el.y, el.y2)
-      const tx = (x1 + x2) / 2
-      return segDist(px, py, tx, y1, x2, y2) < t || segDist(px, py, x2, y2, x1, y2) < t || segDist(px, py, x1, y2, tx, y1) < t
-    }
-    case 'line': case 'arrow': return segDist(px, py, el.x, el.y, el.x2, el.y2) < t
-    case 'text': {
-      ctx.font = `${el.fontSize ?? 16}px sans-serif`
-      const w = ctx.measureText(el.text ?? '').width
-      const h = el.fontSize ?? 16
-      return px >= el.x && px <= el.x + w && py >= el.y - h && py <= el.y + 4
-    }
-    case 'fill': return false
+    const ids = selectedEditable()
+    if (!ids.size) return
+    const fn = patchFor(patch)
+    elsRef.current = elsRef.current.map(el => ids.has(el.id) ? fn(el) : el)
+    if (live) render()
+    else { pushHist(elsRef.current); render(); save() }
   }
+  function commitLive() {
+    if (!selectedEditable().size) return
+    pushHist(elsRef.current); save()
+  }
+
+  // ── Selection operations ──────────────────────────────────────────────────
+
+  function withGroups(ids: string[]): string[] {
+    const groups = new Set(elsRef.current.filter(e => ids.includes(e.id) && e.groupId).map(e => e.groupId!))
+    if (!groups.size) return ids
+    return Array.from(new Set([...ids, ...elsRef.current.filter(e => e.groupId && groups.has(e.groupId)).map(e => e.id)]))
+  }
+
+  const selectAll = () => setSelection(elsRef.current.filter(el => el.type !== 'fill' && !el.locked).map(el => el.id))
+
+  function copySelection() {
+    const sel = elsRef.current.filter(el => selIdsRef.current.has(el.id))
+    if (!sel.length) return
+    SHARED.clipboard = cloneElements(sel, byIdNow(), 0, 0, uid)
+    SHARED.pasteCount = 0
+  }
+  function pasteClipboard() {
+    const clip = SHARED.clipboard
+    if (!clip.length) return
+    SHARED.pasteCount++
+    const off = 24 * SHARED.pasteCount
+    const pasted = cloneElements(clip, new Map(clip.map(e => [e.id, e])), off, off, uid)
+    commit([...elsRef.current, ...pasted])
+    setSelection(pasted.map(p => p.id))
+  }
+  function duplicateSelection() {
+    const sel = elsRef.current.filter(el => selIdsRef.current.has(el.id))
+    if (!sel.length) return
+    const dups = cloneElements(sel, byIdNow(), 16, 16, uid)
+    commit([...elsRef.current, ...dups])
+    setSelection(dups.map(d => d.id))
+  }
+  // draw.io semantics: Delete leaves connected lines in place (detached);
+  // Ctrl+Delete removes them together with the shape.
+  function deleteSelection(withEdges = false) {
+    const removed = selectedEditable()
+    if (!removed.size) return
+    if (withEdges) {
+      for (const el of elsRef.current) {
+        if (isEdge(el) && !el.locked && ((el.startId && removed.has(el.startId)) || (el.endId && removed.has(el.endId)))) removed.add(el.id)
+      }
+    }
+    const byId = byIdNow()
+    commit(detachEdgesFrom(elsRef.current.filter(el => !removed.has(el.id)), removed, byId))
+    setSelection([])
+  }
+  function cutSelection() { copySelection(); deleteSelection() }
+
+  function groupSelection() {
+    const ids = selectedEditable()
+    if (ids.size < 2) return
+    const gid = uid()
+    commit(elsRef.current.map(el => ids.has(el.id) ? { ...el, groupId: gid } : el))
+  }
+  function ungroupSelection() {
+    const ids = selectedEditable()
+    if (![...ids].some(id => elsRef.current.find(e => e.id === id)?.groupId)) return
+    commit(elsRef.current.map(el => ids.has(el.id) ? { ...el, groupId: undefined } : el))
+  }
+  function toggleLock() {
+    const sel = elsRef.current.filter(el => selIdsRef.current.has(el.id))
+    if (!sel.length) return
+    const lock = !sel.every(el => el.locked)
+    commit(elsRef.current.map(el => selIdsRef.current.has(el.id) ? { ...el, locked: lock || undefined } : el))
+  }
+
+  // Array order = paint order. front/back move the whole selection to one
+  // end; forward/backward swap each selected element past one neighbour,
+  // iterating from the right end so a multi-selection moves as a block.
+  function reorderSelection(dir: 'front' | 'back' | 'forward' | 'backward') {
+    if (!selIdsRef.current.size) return
+    const isSel = (el: DrawElement) => selIdsRef.current.has(el.id)
+    const arr = elsRef.current
+    let next: DrawElement[]
+    if (dir === 'front') next = [...arr.filter(el => !isSel(el)), ...arr.filter(isSel)]
+    else if (dir === 'back') next = [...arr.filter(isSel), ...arr.filter(el => !isSel(el))]
+    else if (dir === 'forward') {
+      next = [...arr]
+      for (let i = next.length - 2; i >= 0; i--) if (isSel(next[i]) && !isSel(next[i + 1])) [next[i], next[i + 1]] = [next[i + 1], next[i]]
+    } else {
+      next = [...arr]
+      for (let i = 1; i < next.length; i++) if (isSel(next[i]) && !isSel(next[i - 1])) [next[i], next[i - 1]] = [next[i - 1], next[i]]
+    }
+    commit(next)
+  }
+
+  // A group moves as one unit; lines attached at both ends just follow.
+  function selectionUnits(): { units: Unit[]; members: Map<string, string[]> } {
+    const byId = byIdNow()
+    const members = new Map<string, string[]>()
+    const boxes = new Map<string, Box[]>()
+    for (const el of elsRef.current) {
+      if (!selIdsRef.current.has(el.id) || el.locked || el.type === 'fill') continue
+      if (isEdge(el) && el.startId && el.endId) continue
+      const key = el.groupId ?? el.id
+      members.set(key, [...(members.get(key) ?? []), el.id])
+      boxes.set(key, [...(boxes.get(key) ?? []), elBox(el, byId)])
+    }
+    return { units: [...boxes.entries()].map(([key, bs]) => ({ key, box: unionBox(bs)! })), members }
+  }
+  function applyUnitDeltas(deltas: Map<string, Pt>, members: Map<string, string[]>) {
+    const move = new Map<string, Pt>()
+    for (const [key, d] of deltas) for (const id of members.get(key) ?? []) move.set(id, d)
+    if (![...move.values()].some(d => Math.abs(d.x) > 0.01 || Math.abs(d.y) > 0.01)) return
+    commit(elsRef.current.map(el => { const d = move.get(el.id); return d ? translateEl(el, d.x, d.y) : el }))
+  }
+  function alignSelection(kind: AlignKind) {
+    const { units, members } = selectionUnits()
+    if (units.length >= 2) applyUnitDeltas(alignDeltas(units, kind), members)
+  }
+  function distributeSelection(axis: 'h' | 'v') {
+    const { units, members } = selectionUnits()
+    if (units.length >= 3) applyUnitDeltas(distributeDeltas(units, axis), members)
+  }
+  function nudge(dx: number, dy: number) {
+    const { units, members } = selectionUnits()
+    applyUnitDeltas(new Map(units.map(u => [u.key, { x: dx, y: dy }])), members)
+  }
+  function setGeometry(b: Box) {
+    const sel = elsRef.current.filter(el => selIdsRef.current.has(el.id))
+    if (sel.length !== 1 || sel[0].locked || isEdge(sel[0])) return
+    const el = sel[0]
+    const ob = normBox(el.x, el.y, el.x2, el.y2)
+    const next = el.type === 'text' ? translateEl(el, b.x1 - ob.x1, b.y1 - ob.y1) : resizeEl(el, ob, b)
+    commit(elsRef.current.map(x => x.id === el.id ? next : x))
+  }
+
+  // draw.io's blue hover arrows: clone the shape next to itself and connect.
+  function cloneAndConnect(shapeId: string, dir: QuickDir) {
+    const src = elsRef.current.find(e => e.id === shapeId)
+    if (!src) return
+    const b = normBox(src.x, src.y, src.x2, src.y2)
+    const gap = 60
+    const dx = dir === 'right' ? boxW(b) + gap : dir === 'left' ? -(boxW(b) + gap) : 0
+    const dy = dir === 'down' ? boxH(b) + gap : dir === 'up' ? -(boxH(b) + gap) : 0
+    const clone: DrawElement = { ...translateEl(src, dx, dy), id: uid(), label: undefined, groupId: undefined, locked: undefined }
+    const edge = newEdge(src.id, boxCenter(b), boxCenter(normBox(clone.x, clone.y, clone.x2, clone.y2)), src)
+    edge.endId = clone.id
+    commit([...elsRef.current, clone, edge])
+    setSelection([clone.id])
+  }
+
+  function newEdge(startId: string | undefined, a: Pt, b: Pt, from?: DrawElement, type: 'line' | 'arrow' = 'arrow'): DrawElement {
+    const s = styleRef.current
+    return {
+      id: uid(), type, x: a.x, y: a.y, x2: b.x, y2: b.y,
+      // Quick-connect lines take the source shape's stroke (capped, so a
+      // thick outline doesn't produce a club of an arrow).
+      color: from?.color ?? s.color, strokeWidth: from ? Math.min(from.strokeWidth, 4) : pctToSw(s.strokePct),
+      opacity: s.opacityPct, filled: false,
+      strokeStyle: s.strokeDash, shadow: s.shadow || undefined,
+      startId, edgeStyle: s.edgeStyle,
+      startArrow: s.startArrow !== 'none' ? s.startArrow : undefined,
+      endArrow: type === 'arrow' ? (s.endArrow !== 'arrow' ? s.endArrow : undefined) : undefined,
+    }
+  }
+
+  // ── Coordinates & hit testing ─────────────────────────────────────────────
+
+  function toCanvas(sx: number, sy: number): Pt {
+    const c = canvasRef.current!
+    const r = c.getBoundingClientRect()
+    // Accounts for a parent CSS transform (the infinite board's zoom).
+    const kx = c.width / r.width, ky = c.height / r.height
+    return {
+      x: ((sx - r.left) * kx - panRef.current.x) / scaleRef.current,
+      y: ((sy - r.top) * ky - panRef.current.y) / scaleRef.current,
+    }
+  }
+
+  function hitFreedraw(el: DrawElement, p: Pt, tol: number): boolean {
+    const pts = el.points ?? []
+    const bt = el.brushType ?? 'pen'
+    const reach = Math.max(tol, el.strokeWidth * (bt === 'spray' ? 5 : bt === 'highlighter' ? 4.5 : bt === 'marker' ? 1.5 : 0.6))
+    if (pts.length === 1) return Math.hypot(p.x - pts[0].x, p.y - pts[0].y) < reach
+    return pts.some((q, i) => i < pts.length - 1 && segDist(p.x, p.y, q.x, q.y, pts[i + 1].x, pts[i + 1].y) < reach)
+  }
+
+  // 'select' also returns the empty interior of an unfilled shape (but only
+  // if nothing visible was hit); 'erase' only what's actually drawn.
+  function hitAt(p: Pt, purpose: 'select' | 'erase'): DrawElement | null {
+    const els = elsRef.current
+    const byId = byIdNow()
+    const tol = 6 / scaleRef.current
+    let weak: DrawElement | null = null
+    for (let i = els.length - 1; i >= 0; i--) {
+      const el = els[i]
+      if (el.type === 'fill') continue
+      if (purpose === 'erase' && el.locked) continue
+      if (isEdge(el)) {
+        if (hitEdge(el, p, tol, byId) || (el.label && boxContains(edgeLabelBox(el, byId), p))) return el
+      } else if (isShape(el)) {
+        const h = hitShape(el, p, tol)
+        if (h === 'strong') return el
+        if (h === 'weak' && !weak) weak = el
+      } else if (el.type === 'text') {
+        if (boxContains(normBox(el.x, el.y, el.x2, el.y2), p, tol / 2)) return el
+      } else if (el.type === 'freedraw') {
+        if (hitFreedraw(el, p, tol)) return el
+      }
+    }
+    return purpose === 'select' ? weak : null
+  }
+
+  function bindableAt(p: Pt, exclude: Set<string>): DrawElement | null {
+    const els = elsRef.current
+    const tol = 8 / scaleRef.current
+    for (let i = els.length - 1; i >= 0; i--) {
+      const el = els[i]
+      if (exclude.has(el.id) || !isBindable(el)) continue
+      if (el.type === 'text' ? boxContains(normBox(el.x, el.y, el.x2, el.y2), p, tol) : hitShape(el, p, tol)) return el
+    }
+    return null
+  }
+
+  function snapLines(exclude: Set<string>): SnapLines | null {
+    return guidesRef.current ? snapCandidates(elsRef.current, exclude, byIdNow()) : null
+  }
+  const snapThr = () => 6 / scaleRef.current
+
+  // ── Text editor ───────────────────────────────────────────────────────────
+
+  function openEditor(el: DrawElement | null, at?: Pt) {
+    if (el?.locked) return
+    const ed: Editor = el ? { id: el.id, x: 0, y: 0 } : { id: null, x: at?.x ?? 0, y: at?.y ?? 0 }
+    editorRef.current = ed
+    setEditor(ed)
+    const v = el ? (el.type === 'text' ? el.text ?? '' : el.label ?? '') : ''
+    editorValRef.current = v
+    setEditorVal(v)
+    setPopover(null)
+    render()
+  }
+
+  function commitEditor() {
+    const ed = editorRef.current
+    if (!ed) return
+    editorRef.current = null
+    setEditor(null)
+    const val = editorValRef.current.replace(/\s+$/, '')
+    const s = styleRef.current
+    if (ed.id === null) {
+      if (val.trim()) {
+        const el = refitText({
+          id: uid(), type: 'text', x: ed.x, y: ed.y, x2: ed.x, y2: ed.y, textTop: true,
+          text: val, fontSize: s.fontSize, fontFamily: s.fontFamily !== 'sans' ? s.fontFamily : undefined,
+          bold: s.bold || undefined, italic: s.italic || undefined,
+          color: s.color, strokeWidth: pctToSw(s.strokePct), opacity: s.opacityPct, filled: false,
+          shadow: s.shadow || undefined,
+        })
+        commit([...elsRef.current, el])
+        return
+      }
+    } else {
+      const el = elsRef.current.find(e => e.id === ed.id)
+      if (el) {
+        if (el.type === 'text') {
+          if (!val.trim()) {
+            const gone = new Set([el.id])
+            commit(detachEdgesFrom(elsRef.current.filter(e => e.id !== el.id), gone, byIdNow()))
+            setSelection([])
+            return
+          }
+          if (val !== el.text) { commit(elsRef.current.map(e => e.id === el.id ? refitText({ ...e, text: val }) : e)); return }
+        } else {
+          const label = val.trim() ? val : undefined
+          if (label !== el.label) { commit(elsRef.current.map(e => e.id === el.id ? { ...e, label } : e)); return }
+        }
+      }
+    }
+    render()
+  }
+
+  function cancelEditor() {
+    editorRef.current = null
+    setEditor(null)
+    render()
+  }
+
+  // ── Pointer handlers ──────────────────────────────────────────────────────
+
+  function onMouseDown(e: React.MouseEvent<HTMLCanvasElement>) {
+    // preventDefault keeps the browser from moving focus on its own after
+    // this handler (which would instantly blur a text editor opened below).
+    e.preventDefault()
+    if (editorRef.current) commitEditor()
+    rootRef.current?.focus({ preventScroll: true })
+    setPopover(null)
+    setCtxMenu(null)
+
+    if (e.button === 1 || (e.button === 0 && (e.altKey || spaceRef.current))) {
+      dragRef.current = { kind: 'pan', mx: e.clientX, my: e.clientY, ox: panRef.current.x, oy: panRef.current.y }
+      return
+    }
+    if (e.button !== 0) return
+    const pos = toCanvas(e.clientX, e.clientY)
+    const tool = toolRef.current
+    const s = styleRef.current
+
+    if (tool === 'select') {
+      const byId = byIdNow()
+      const sel = [...selIdsRef.current]
+      if (sel.length === 1) {
+        const el = byId.get(sel[0])
+        if (el && !el.locked) {
+          const hitR = 9 / scaleRef.current
+          const handles = getHandlePoints(el, byId)
+          for (const name of Object.keys(handles) as HandleName[]) {
+            const hp = handles[name]; if (!hp) continue
+            if (Math.hypot(pos.x - hp.x, pos.y - hp.y) > hitR) continue
+            const lines = snapLines(new Set([el.id]))
+            if (name === 'start' || name === 'end') dragRef.current = { kind: 'edgeEnd', id: el.id, end: name, lines }
+            else dragRef.current = { kind: 'resize', id: el.id, handle: name, orig: { ...el, points: el.points?.map(p => ({ ...p })) }, origBox: normBox(el.x, el.y, el.x2, el.y2), lines }
+            render(); return
+          }
+          if (isShape(el)) {
+            for (const q of quickArrowPoints(el, scaleRef.current)) {
+              if (Math.hypot(pos.x - q.p.x, pos.y - q.p.y) <= 10 / scaleRef.current) {
+                dragRef.current = { kind: 'quick', shapeId: el.id, dir: q.dir, sx: e.clientX, sy: e.clientY }
+                return
+              }
+            }
+          }
+        }
+      }
+      const hit = hitAt(pos, 'select')
+      if (hit) {
+        const groupIds = withGroups([hit.id])
+        let next: string[]
+        if (e.shiftKey) {
+          next = selIdsRef.current.has(hit.id)
+            ? [...selIdsRef.current].filter(id => !groupIds.includes(id))
+            : [...new Set([...selIdsRef.current, ...groupIds])]
+        } else if (selIdsRef.current.has(hit.id)) next = [...selIdsRef.current]
+        else next = groupIds
+        setSelection(next)
+        if (next.includes(hit.id)) {
+          const moving = new Set(next.filter(id => !byId.get(id)?.locked))
+          const origs = new Map<string, DrawElement>()
+          // A line moved without the shape it's attached to lets go of it.
+          const detachFrom = new Set<string>()
+          for (const el of elsRef.current) {
+            if (!moving.has(el.id)) continue
+            if (isEdge(el)) {
+              if (el.startId && !moving.has(el.startId)) detachFrom.add(el.startId)
+              if (el.endId && !moving.has(el.endId)) detachFrom.add(el.endId)
+            }
+          }
+          const base = detachFrom.size ? detachEdgesFrom(elsRef.current.filter(el => moving.has(el.id)), detachFrom, byId) : elsRef.current.filter(el => moving.has(el.id))
+          for (const el of base) origs.set(el.id, el)
+          const box = unionBox([...origs.values()].map(el => elBox(el, byId)))
+          if (box) dragRef.current = { kind: 'move', start: pos, sx: e.clientX, sy: e.clientY, moved: false, origs, box, lines: snapLines(new Set(next)) }
+        }
+      } else {
+        if (!e.shiftKey) setSelection([])
+        dragRef.current = { kind: 'marquee', sx: pos.x, sy: pos.y, ex: pos.x, ey: pos.y, additive: e.shiftKey, active: false, origSel: e.shiftKey ? [...selIdsRef.current] : [] }
+      }
+      render(); return
+    }
+
+    if (tool === 'fill') {
+      const canvas = canvasRef.current!
+      const ctx = canvas.getContext('2d')!
+      const r = canvas.getBoundingClientRect()
+      const kx = canvas.width / r.width, ky = canvas.height / r.height
+      const px = Math.min(canvas.width - 1, Math.max(0, Math.round((e.clientX - r.left) * kx)))
+      const py = Math.min(canvas.height - 1, Math.max(0, Math.round((e.clientY - r.top) * ky)))
+      // Repaint without the selection overlay first, so its handles/boxes
+      // don't act as walls for the flood fill.
+      setSelection([]); selIdsRef.current = new Set(); render()
+      const filledData = applyFloodFill(ctx.getImageData(0, 0, canvas.width, canvas.height), px, py, s.color)
+      const tmp = document.createElement('canvas')
+      tmp.width = canvas.width; tmp.height = canvas.height
+      tmp.getContext('2d')!.putImageData(filledData, 0, 0)
+      const fillUrl = tmp.toDataURL()
+      const fillEl: DrawElement = {
+        id: uid(), type: 'fill', fillImageUrl: fillUrl,
+        x: 0, y: 0, x2: canvas.width, y2: canvas.height,
+        color: s.color, strokeWidth: 0, opacity: 100, filled: true,
+        fillPanX: panRef.current.x, fillPanY: panRef.current.y, fillScale: scaleRef.current,
+      }
+      const img = new Image()
+      img.onload = () => render()
+      img.src = fillUrl
+      fillImgCacheRef.current.set(fillEl.id, img)
+      // Fills paint underneath all vector elements; keeping them at the
+      // front of the array matches that so layer order stays honest.
+      commit([fillEl, ...elsRef.current])
+      return
+    }
+
+    if (tool === 'eraser') {
+      dragRef.current = { kind: 'erase', changed: false }
+      eraseAt(pos)
+      return
+    }
+
+    if (tool === 'text') {
+      const hit = hitAt(pos, 'select')
+      if (hit && !hit.locked && (hit.type === 'text' || isShape(hit) || isEdge(hit))) openEditor(hit)
+      else openEditor(null, pos)
+      return
+    }
+
+    const lines = snapLines(new Set())
+    const noSnap = e.altKey
+    const sp = (tool === 'pen' || noSnap) ? pos : snapPoint(pos, lines, snapThr(), snapRef.current).p
+
+    if (tool === 'line' || tool === 'arrow') {
+      const start = e.ctrlKey || e.metaKey ? null : bindableAt(pos, new Set())
+      curRef.current = newEdge(start?.id, sp, sp, undefined, tool)
+      dragRef.current = { kind: 'draw', start: sp, lines }
+      render(); return
+    }
+
+    if (tool === 'pen') {
+      curRef.current = {
+        id: uid(), type: 'freedraw', x: pos.x, y: pos.y, x2: pos.x, y2: pos.y, points: [pos],
+        color: s.color, strokeWidth: pctToSw(s.strokePct), opacity: s.opacityPct, filled: false,
+        brushType: brushTypeRef.current, strokeStyle: s.strokeDash !== 'solid' ? s.strokeDash : undefined,
+      }
+      dragRef.current = { kind: 'draw', start: pos, lines: null }
+      render(); return
+    }
+
+    // shape
+    const preset = SHAPE_LIBRARY.find(p => p.id === shapeKindRef.current) ?? SHAPE_LIBRARY[0]
+    curRef.current = {
+      id: uid(), type: preset.type, x: sp.x, y: sp.y, x2: sp.x, y2: sp.y,
+      color: s.color, strokeWidth: pctToSw(s.strokePct), opacity: s.opacityPct,
+      filled: s.filled, bgColor: s.bgColor, fillStyle: s.fillStyle, strokeStyle: s.strokeDash,
+      roundCorners: preset.round || undefined, shadow: s.shadow || undefined,
+    }
+    dragRef.current = { kind: 'draw', start: sp, preset, lines }
+    render()
+  }
+
+  // Samples the whole swipe since the last event (not just its end point),
+  // so a fast stroke can't skip over thin lines.
+  function eraseAt(pos: Pt) {
+    const d = dragRef.current
+    if (d?.kind !== 'erase') return
+    const from = d.last ?? pos
+    const steps = Math.max(1, Math.ceil(Math.hypot(pos.x - from.x, pos.y - from.y) / (4 / scaleRef.current)))
+    const gone = new Set<string>()
+    for (let i = 0; i <= steps; i++) {
+      const p = { x: from.x + (pos.x - from.x) * (i / steps), y: from.y + (pos.y - from.y) * (i / steps) }
+      for (let hit = hitAt(p, 'erase'); hit && !gone.has(hit.id); hit = hitAt(p, 'erase')) {
+        gone.add(hit.id)
+        const byId = byIdNow()
+        elsRef.current = detachEdgesFrom(elsRef.current.filter(el => el.id !== hit!.id), new Set([hit.id]), byId)
+      }
+    }
+    d.last = pos
+    if (gone.size) { d.changed = true; render() }
+  }
+
+  function updateHoverCursor(pos: Pt) {
+    const canvas = canvasRef.current; if (!canvas) return
+    let c = 'default'
+    if (spaceRef.current) c = 'grab'
+    else {
+      const byId = byIdNow()
+      const sel = [...selIdsRef.current]
+      const el = sel.length === 1 ? byId.get(sel[0]) : undefined
+      const hitR = 9 / scaleRef.current
+      if (el && !el.locked) {
+        const handles = getHandlePoints(el, byId)
+        for (const name of Object.keys(handles) as HandleName[]) {
+          const hp = handles[name]
+          if (hp && Math.hypot(pos.x - hp.x, pos.y - hp.y) <= hitR) { c = HANDLE_CURSORS[name]; break }
+        }
+        if (c === 'default' && isShape(el) && quickArrowPoints(el, scaleRef.current).some(q => Math.hypot(pos.x - q.p.x, pos.y - q.p.y) <= 10 / scaleRef.current)) c = 'pointer'
+      }
+      if (c === 'default') {
+        const hit = hitAt(pos, 'select')
+        if (hit) c = hit.locked ? 'not-allowed' : 'move'
+      }
+    }
+    if (canvas.style.cursor !== c) canvas.style.cursor = c
+  }
+
+  function onMouseMove(e: React.MouseEvent<HTMLCanvasElement>) {
+    const tool = toolRef.current
+    const pos = toCanvas(e.clientX, e.clientY)
+    if (tool === 'pen') cursorPtRef.current = pos
+    const d = dragRef.current
+    if (!d) {
+      if (tool === 'pen') renderCursor()
+      else if (tool === 'select') updateHoverCursor(pos)
+      return
+    }
+    const noSnap = e.altKey
+    const thr = snapThr()
+
+    switch (d.kind) {
+      case 'pan':
+        panRef.current = { x: d.ox + e.clientX - d.mx, y: d.oy + e.clientY - d.my }
+        render(); renderCursor(); return
+
+      case 'move': {
+        if (!d.moved && Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 3) return
+        d.moved = true
+        let dx = pos.x - d.start.x, dy = pos.y - d.start.y
+        if (!noSnap) {
+          const sn = snapBox({ x1: d.box.x1 + dx, y1: d.box.y1 + dy, x2: d.box.x2 + dx, y2: d.box.y2 + dy }, d.lines, thr, snapRef.current)
+          dx += sn.dx; dy += sn.dy
+          guideRef.current = { gx: sn.gx, gy: sn.gy }
+        } else guideRef.current = { gx: null, gy: null }
+        elsRef.current = elsRef.current.map(el => { const o = d.origs.get(el.id); return o ? translateEl(o, dx, dy) : el })
+        render(); return
+      }
+
+      case 'resize': {
+        const { id, handle, orig, origBox } = d
+        let p = pos
+        if (!noSnap) { const sn = snapPoint(pos, d.lines, thr, snapRef.current); p = sn.p; guideRef.current = { gx: sn.gx, gy: sn.gy } }
+        let { x1, y1, x2, y2 } = origBox
+        if (handle === 'nw' || handle === 'n' || handle === 'ne') y1 = p.y
+        if (handle === 'sw' || handle === 's' || handle === 'se') y2 = p.y
+        if (handle === 'nw' || handle === 'w' || handle === 'sw') x1 = p.x
+        if (handle === 'ne' || handle === 'e' || handle === 'se') x2 = p.x
+        const isCorner = handle === 'nw' || handle === 'ne' || handle === 'sw' || handle === 'se'
+        if ((e.shiftKey || orig.type === 'text') && isCorner) {
+          const ratio = (boxW(origBox) || 1) / (boxH(origBox) || 1)
+          const nw = x2 - x1, nh = y2 - y1
+          if (Math.abs(nw) > Math.abs(nh) * ratio) {
+            const th = Math.sign(nh || 1) * Math.abs(nw) / ratio
+            if (handle === 'nw' || handle === 'ne') y1 = y2 - th; else y2 = y1 + th
+          } else {
+            const tw = Math.sign(nw || 1) * Math.abs(nh) * ratio
+            if (handle === 'nw' || handle === 'sw') x1 = x2 - tw; else x2 = x1 + tw
+          }
+        }
+        elsRef.current = elsRef.current.map(el => {
+          if (el.id !== id) return el
+          if (orig.type === 'text') {
+            const k = Math.abs(x2 - x1) / (boxW(origBox) || 1)
+            const fs = Math.max(6, Math.round((orig.fontSize ?? 16) * k))
+            return refitText({ ...orig, x: Math.min(x1, x2), y: Math.min(y1, y2), fontSize: fs })
+          }
+          return resizeEl(orig, origBox, orig.type === 'freedraw' ? { x1, y1, x2, y2 } : normBox(x1, y1, x2, y2))
+        })
+        render(); return
+      }
+
+      case 'edgeEnd': {
+        const el = elsRef.current.find(x => x.id === d.id); if (!el) return
+        const other = d.end === 'start' ? el.endId : el.startId
+        const cand = e.ctrlKey || e.metaKey ? null : bindableAt(pos, new Set([el.id, ...(other ? [other] : [])]))
+        hoverBindRef.current = cand?.id ?? null
+        let p = pos
+        if (!cand && !noSnap) { const sn = snapPoint(pos, d.lines, thr, snapRef.current); p = sn.p; guideRef.current = { gx: sn.gx, gy: sn.gy } }
+        else guideRef.current = { gx: null, gy: null }
+        elsRef.current = elsRef.current.map(x => x.id !== d.id ? x : d.end === 'start'
+          ? { ...x, x: p.x, y: p.y, startId: cand?.id }
+          : { ...x, x2: p.x, y2: p.y, endId: cand?.id })
+        render(); return
+      }
+
+      case 'marquee': {
+        d.ex = pos.x; d.ey = pos.y
+        if (!d.active && Math.hypot(d.ex - d.sx, d.ey - d.sy) > 4 / scaleRef.current) d.active = true
+        if (d.active) {
+          const area = normBox(d.sx, d.sy, d.ex, d.ey)
+          const byId = byIdNow()
+          const hits = elsRef.current.filter(el => el.type !== 'fill' && !el.locked && boxesIntersect(elBox(el, byId), area)).map(el => el.id)
+          const next = withGroups(d.additive ? [...new Set([...d.origSel, ...hits])] : hits)
+          setSelection(next)
+        }
+        render(); return
+      }
+
+      case 'quick': {
+        if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 5) return
+        const src = elsRef.current.find(x => x.id === d.shapeId)
+        if (!src) { dragRef.current = null; return }
+        curRef.current = newEdge(src.id, boxCenter(normBox(src.x, src.y, src.x2, src.y2)), pos, src)
+        dragRef.current = { kind: 'draw', start: pos, lines: snapLines(new Set()) }
+        render(); return
+      }
+
+      case 'erase':
+        eraseAt(pos); return
+
+      case 'draw': {
+        const el = curRef.current; if (!el) return
+        if (el.type === 'freedraw') {
+          el.points = [...(el.points ?? []), pos]
+          el.x = Math.min(el.x, pos.x); el.y = Math.min(el.y, pos.y)
+          el.x2 = Math.max(el.x2, pos.x); el.y2 = Math.max(el.y2, pos.y)
+        } else if (isEdge(el)) {
+          const cand = e.ctrlKey || e.metaKey ? null : bindableAt(pos, new Set(el.startId ? [el.startId] : []))
+          hoverBindRef.current = cand?.id ?? null
+          el.endId = cand?.id
+          let p = pos
+          if (!cand) {
+            if (e.shiftKey && !el.startId) {
+              const dx = pos.x - el.x, dy = pos.y - el.y
+              const a = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4)
+              const dist = Math.hypot(dx, dy)
+              p = { x: el.x + dist * Math.cos(a), y: el.y + dist * Math.sin(a) }
+              guideRef.current = { gx: null, gy: null }
+            } else if (!noSnap) {
+              const sn = snapPoint(pos, d.lines, thr, snapRef.current); p = sn.p; guideRef.current = { gx: sn.gx, gy: sn.gy }
+            }
+          } else guideRef.current = { gx: null, gy: null }
+          el.x2 = p.x; el.y2 = p.y
+        } else {
+          let p = pos
+          if (!noSnap) { const sn = snapPoint(pos, d.lines, thr, snapRef.current); p = sn.p; guideRef.current = { gx: sn.gx, gy: sn.gy } }
+          if (e.shiftKey || d.preset?.aspect) {
+            const dx = p.x - el.x, dy = p.y - el.y
+            const m = Math.max(Math.abs(dx), Math.abs(dy))
+            p = { x: el.x + Math.sign(dx || 1) * m, y: el.y + Math.sign(dy || 1) * m }
+          }
+          el.x2 = p.x; el.y2 = p.y
+        }
+        render(); renderCursor(); return
+      }
+    }
+  }
+
+  function onMouseUp() {
+    const d = dragRef.current
+    dragRef.current = null
+    guideRef.current = { gx: null, gy: null }
+    hoverBindRef.current = null
+    if (!d) return
+    switch (d.kind) {
+      case 'pan': saveView(); return
+      case 'move': if (d.moved) { pushHist(elsRef.current); save() } render(); return
+      case 'resize': case 'edgeEnd': {
+        if (d.kind === 'edgeEnd') {
+          // A line can't start and end on the same shape.
+          elsRef.current = elsRef.current.map(x => x.id === d.id && x.startId && x.startId === x.endId ? { ...x, endId: undefined } : x)
+        }
+        pushHist(elsRef.current); save(); render(); return
+      }
+      case 'marquee': render(); return
+      case 'quick': cloneAndConnect(d.shapeId, d.dir); return
+      case 'erase': if (d.changed) { pushHist(elsRef.current); save() } return
+      case 'draw': {
+        const el = curRef.current
+        curRef.current = null
+        if (!el) { render(); return }
+        let ok = false
+        let add = el
+        if (el.type === 'freedraw') ok = (el.points?.length ?? 0) > 1
+        else if (isEdge(el)) {
+          if (el.endId && el.endId === el.startId) add = { ...el, endId: undefined }
+          ok = !!add.endId || Math.hypot(el.x2 - el.x, el.y2 - el.y) > 4 / scaleRef.current
+        } else {
+          ok = true
+          if (Math.abs(el.x2 - el.x) < 3 && Math.abs(el.y2 - el.y) < 3) {
+            // A plain click places the shape at its library default size.
+            const p = d.preset ?? SHAPE_LIBRARY[0]
+            let x = d.start.x - p.w / 2, y = d.start.y - p.h / 2
+            if (snapRef.current) { x = snapToGrid(x); y = snapToGrid(y) }
+            add = { ...el, x, y, x2: x + p.w, y2: y + p.h }
+          }
+        }
+        if (ok) {
+          commit([...elsRef.current, add])
+          if (toolRef.current === 'select') setSelection([add.id])
+        } else render()
+        return
+      }
+    }
+  }
+
+  function onDoubleClick(e: React.MouseEvent<HTMLCanvasElement>) {
+    if (toolRef.current !== 'select') return
+    const pos = toCanvas(e.clientX, e.clientY)
+    const hit = hitAt(pos, 'select')
+    if (hit) {
+      if (hit.type === 'text' || isShape(hit) || isEdge(hit)) { setSelection([hit.id]); openEditor(hit) }
+    } else openEditor(null, pos)
+  }
+
+  function onWheel(e: React.WheelEvent<HTMLCanvasElement>) {
+    e.preventDefault()
+    e.stopPropagation()   // keep scroll/zoom inside the widget, don't pan the board
+    const c = canvasRef.current!
+    const r = c.getBoundingClientRect()
+    const mx = (e.clientX - r.left) * (c.width / r.width), my = (e.clientY - r.top) * (c.height / r.height)
+    if (e.ctrlKey || e.metaKey) {
+      zoomAt(scaleRef.current * (e.deltaY < 0 ? 1.1 : 1 / 1.1), mx, my)
+    } else {
+      panRef.current = { x: panRef.current.x - e.deltaX, y: panRef.current.y - e.deltaY }
+      render(); renderCursor(); saveView()
+    }
+    if (editorRef.current) setRev(r => r + 1)
+  }
+
+  function onContextMenu(e: React.MouseEvent<HTMLCanvasElement>) {
+    e.preventDefault()
+    if (editorRef.current) commitEditor()
+    if (toolRef.current !== 'select') setTool('select')
+    const pos = toCanvas(e.clientX, e.clientY)
+    const hit = hitAt(pos, 'select')
+    if (hit && !selIdsRef.current.has(hit.id)) setSelection(withGroups([hit.id]))
+    else if (!hit) setSelection([])
+    setCtxMenu({ x: e.clientX, y: e.clientY, hasTarget: !!hit })
+    render()
+  }
+
+  // ── Keyboard (only while the drawboard has focus) ─────────────────────────
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (!isEditRef.current) return
+    const target = e.target as HTMLElement
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) return
+    const mod = e.ctrlKey || e.metaKey
+    const k = e.key.toLowerCase()
+    const hasSel = selIdsRef.current.size > 0
+    let handled = true
+    if (mod && k === 'z' && !e.shiftKey) undo()
+    else if (mod && (k === 'y' || (k === 'z' && e.shiftKey))) redo()
+    else if (mod && k === 'a') { setTool('select'); selectAll() }
+    else if (mod && k === 'c') copySelection()
+    else if (mod && k === 'x') cutSelection()
+    else if (mod && k === 'v') pasteClipboard()
+    else if (mod && k === 'd') duplicateSelection()
+    else if (mod && e.shiftKey && (k === 'g' || k === 'u')) ungroupSelection()
+    else if (mod && k === 'g') groupSelection()
+    else if (mod && k === 'l') toggleLock()
+    else if (mod && e.shiftKey && k === 'f') reorderSelection('front')
+    else if (mod && e.shiftKey && k === 'b') reorderSelection('back')
+    else if (mod && k === '0') resetZoom()
+    else if (e.shiftKey && e.code === 'Digit1') zoomToFit()
+    else if ((e.key === 'Delete' || e.key === 'Backspace') && hasSel) deleteSelection(mod)
+    else if (e.key.startsWith('Arrow') && hasSel) {
+      const step = e.shiftKey ? GRID : 1
+      nudge(e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0, e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0)
+    }
+    else if ((e.key === 'Enter' || e.key === 'F2') && selIdsRef.current.size === 1) {
+      const el = elsRef.current.find(x => selIdsRef.current.has(x.id))
+      if (el && (el.type === 'text' || isShape(el) || isEdge(el))) openEditor(el)
+    }
+    else if (e.key === 'Escape') {
+      if (hasSel) setSelection([])
+      else if (toolRef.current !== 'select') setTool('select')
+      else handled = false
+    }
+    else if (e.key === ' ') {
+      if (!spaceRef.current) { spaceRef.current = true; if (canvasRef.current) canvasRef.current.style.cursor = 'grab' }
+    }
+    else if (!mod && !e.altKey && TOOL_KEYS[k]) {
+      const tk = TOOL_KEYS[k]
+      setTool(tk.tool)
+      if (tk.shape) setShapeKind(tk.shape)
+      if (tk.tool !== 'select') setSelection([])
+    }
+    else handled = false
+    if (handled) { e.preventDefault(); e.stopPropagation(); render() }
+  }
+  function onKeyUp(e: React.KeyboardEvent) {
+    if (e.key === ' ') {
+      spaceRef.current = false
+      if (canvasRef.current) canvasRef.current.style.cursor = ''
+    }
+  }
+
+  // Deactivate wheel capture when clicking outside the widget.
+  useEffect(() => {
+    const onDocDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) isWidgetActiveRef.current = false
+    }
+    document.addEventListener('mousedown', onDocDown)
+    return () => document.removeEventListener('mousedown', onDocDown)
+  }, [])
+  // Block wheel events from reaching the board while the widget is active.
+  useEffect(() => {
+    const canvas = canvasRef.current; if (!canvas) return
+    const onNativeWheel = (e: WheelEvent) => { if (isWidgetActiveRef.current) e.stopPropagation() }
+    canvas.addEventListener('wheel', onNativeWheel, { passive: false })
+    return () => canvas.removeEventListener('wheel', onNativeWheel)
+  }, [])
+  // Close the context menu on an outside click or Escape.
+  useEffect(() => {
+    if (!ctxMenu) return
+    const onDown = () => setCtxMenu(null)
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setCtxMenu(null) }
+    document.addEventListener('pointerdown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('pointerdown', onDown); document.removeEventListener('keydown', onKey) }
+  }, [ctxMenu])
+
+  // ── Export ────────────────────────────────────────────────────────────────
+
+  function exportPng() {
+    const b = contentBounds()
+    if (!b) { const c = canvasRef.current; if (c) download(c.toDataURL('image/png'), `${t('drawing')}.png`); return }
+    const pad = 24
+    const w = boxW(b) + pad * 2, h = boxH(b) + pad * 2
+    const k = Math.min(2, 8192 / Math.max(w, h))
+    const out = document.createElement('canvas')
+    out.width = Math.ceil(w * k); out.height = Math.ceil(h * k)
+    const ctx = out.getContext('2d')!
+    ctx.fillStyle = CANVAS_COLOR[canvasBgRef.current]
+    ctx.fillRect(0, 0, out.width, out.height)
+    ctx.scale(k, k)
+    ctx.translate(pad - b.x1, pad - b.y1)
+    paintElements(ctx, elsRef.current, byIdNow(), k, null)
+    download(out.toDataURL('image/png'), `${t('drawing')}.png`)
+  }
+
+  function exportSvg() {
+    const b = contentBounds() ?? { x1: 0, y1: 0, x2: 400, y2: 300 }
+    const pad = 24
+    const svg = buildSvg(elsRef.current, byIdNow(), { x1: b.x1 - pad, y1: b.y1 - pad, x2: b.x2 + pad, y2: b.y2 + pad }, CANVAS_COLOR[canvasBgRef.current], canvasBgRef.current === 'dark')
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }))
+    download(url, `${t('drawing')}.svg`)
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
+  function clearAll() {
+    curRef.current = null
+    setSelection([])
+    commit([])
+  }
+
+  // ── Derived UI data ───────────────────────────────────────────────────────
+
+  void rev
+  const selectedEls = elsRef.current.filter(el => selectedIds.includes(el.id))
+  const activePreset = SHAPE_LIBRARY.find(p => p.id === shapeKind) ?? SHAPE_LIBRARY[0]
+  const kinds: Kinds = selectedEls.length
+    ? {
+        shape: selectedEls.some(isShape), edge: selectedEls.some(isEdge), free: selectedEls.some(el => el.type === 'freedraw'),
+        text: selectedEls.some(el => el.type === 'text'), rect: selectedEls.some(el => el.type === 'rect'),
+      }
+    : tool === 'shape' ? { shape: true, edge: false, free: false, text: false, rect: activePreset.type === 'rect' }
+    : tool === 'line' || tool === 'arrow' ? { shape: false, edge: true, free: false, text: false, rect: false }
+    : tool === 'pen' ? { shape: false, edge: false, free: true, text: false, rect: false }
+    : tool === 'text' ? { shape: false, edge: false, free: false, text: true, rect: false }
+    : { shape: true, edge: true, free: true, text: true, rect: true }
+  const singleSel = selectedEls.length === 1 ? selectedEls[0] : null
+  const unitCount = selectedEls.length ? new Set(selectedEls.filter(el => !(isEdge(el) && el.startId && el.endId)).map(el => el.groupId ?? el.id)).size : 0
+  const allLocked = selectedEls.length > 0 && selectedEls.every(el => el.locked)
+  const canGroup = selectedEls.filter(el => !el.locked).length >= 2 && new Set(selectedEls.map(el => el.groupId ?? `_${el.id}`)).size > 1
+  const canUngroup = selectedEls.some(el => el.groupId && !el.locked)
+  const canEditText = !!singleSel && !singleSel.locked && singleSel.type !== 'freedraw'
+  const cursor = tool === 'pen' ? 'none' : tool === 'select' ? 'default' : tool === 'eraser' ? 'cell' : tool === 'text' ? 'text' : 'crosshair'
+  const panelW = 212 + 16
+  const togglePop = (p: NonNullable<typeof popover>) => setPopover(cur => cur === p ? null : p)
+
+  // ── Popover contents ──────────────────────────────────────────────────────
+
+  const penPanel = (
+    <div style={{ ...POPOVER, width: 220 }} onPointerDown={e => e.stopPropagation()}>
+      <div style={POP_LABEL}>{t('Brush type')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {BRUSH_DEFS.map(b => (
+          <button key={b.id} type="button"
+            onClick={() => {
+              setBrushType(b.id); setTool('pen')
+              const ids = selectedEditable()
+              if (ids.size) commit(elsRef.current.map(el => ids.has(el.id) && el.type === 'freedraw' ? { ...el, brushType: b.id } : el))
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', borderRadius: 7, cursor: 'pointer',
+              border: '1px solid var(--border)',
+              background: brushType === b.id ? 'var(--accent)' : 'var(--surface2)',
+              color: brushType === b.id ? 'var(--on-accent, white)' : 'var(--text2)',
+            }}>
+            <div style={{ flex: 1, minWidth: 0 }}>{b.preview}</div>
+            <span style={{ fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>{t(b.label)}</span>
+          </button>
+        ))}
+      </div>
+      <div style={{ height: 1, background: 'var(--border)' }} />
+      <Slider label={t('Stroke width')} value={strokePct} min={1}
+        onChange={v => setStyle({ strokePct: v }, true)} onCommit={commitLive} />
+      <div style={{ height: 26, background: 'var(--surface2)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--border)' }}>
+        <div style={{ width: '80%', height: Math.max(1, pctToSw(strokePct)), background: color, opacity: opacityPct / 100, borderRadius: 999 }} />
+      </div>
+      <Slider label={t('Opacity')} value={opacityPct}
+        onChange={v => setStyle({ opacityPct: v }, true)} onCommit={commitLive} />
+    </div>
+  )
+
+  const shapePanel = (
+    <div style={{ ...POPOVER, width: 216 }} onPointerDown={e => e.stopPropagation()}>
+      <div style={POP_LABEL}>{t('Shapes')}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+        {SHAPE_LIBRARY.map(p => {
+          const active = tool === 'shape' && shapeKind === p.id
+          return (
+            <button key={p.id} type="button" title={t(p.label)}
+              onClick={() => { setShapeKind(p.id); setTool('shape'); setSelection([]); setPopover(null) }}
+              style={{
+                height: 40, borderRadius: 7, cursor: 'pointer', padding: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: `1px solid ${active ? 'color-mix(in srgb, var(--accent) 55%, transparent)' : 'var(--border)'}`,
+                background: active ? 'color-mix(in srgb, var(--accent) 16%, var(--surface2))' : 'var(--surface2)',
+                color: active ? 'var(--accent)' : 'var(--text2)',
+              }}>
+              <ShapePreview id={p.id} />
+            </button>
+          )
+        })}
+      </div>
+      <div style={{ fontSize: 10, color: 'var(--text3)', lineHeight: 1.4 }}>{t('Click to place, drag to size. Shift keeps proportions.')}</div>
+    </div>
+  )
+
+  const edgePanel = (
+    <div style={{ ...POPOVER, width: 216 }} onPointerDown={e => e.stopPropagation()}>
+      <div style={POP_LABEL}>{t('Connector')}</div>
+      <div style={{ display: 'flex', gap: 4 }}>
+        {(['line', 'arrow'] as const).map(k => (
+          <button key={k} type="button" onClick={() => { setTool(k); setSelection([]); setPopover(null) }}
+            style={{ ...tb(tool === k), flex: 1, width: 'auto', gap: 6, fontSize: 11, fontWeight: 600 }}>
+            {k === 'line' ? <IcoLine /> : <IcoArrow />}{t(k === 'line' ? 'Line' : 'Arrow')}
+          </button>
+        ))}
+      </div>
+      <div style={POP_LABEL}>{t('Waypoints')}</div>
+      <div style={{ display: 'flex', gap: 4 }}>
+        {([['straight', <IcoEdgeStraight key="s" />, 'Straight'], ['orthogonal', <IcoEdgeOrtho key="o" />, 'Orthogonal'], ['curved', <IcoEdgeCurved key="c" />, 'Curved']] as [DrawEdgeStyle, React.ReactNode, string][]).map(([v, icon, label]) => (
+          <button key={v} type="button" title={t(label)} onClick={() => setStyle({ edgeStyle: v })}
+            style={{ ...tb(edgeStyle === v), flex: 1, width: 'auto' }}>{icon}</button>
+        ))}
+      </div>
+      <div style={{ fontSize: 10, color: 'var(--text3)', lineHeight: 1.4 }}>{t('Start or end on a shape to connect it — the line then follows the shape. Hold Ctrl to place it freely.')}</div>
+    </div>
+  )
+
+  const colorPanel = (
+    <div style={{ ...POPOVER, padding: 6, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 4 }} onPointerDown={e => e.stopPropagation()}>
+      {COLORS.map(c => (
+        <button key={c} type="button" onClick={() => { setStyle({ color: c }); setPopover(null) }}
+          title={`${t('Color')} ${c}`}
+          style={{ width: 24, height: 24, borderRadius: 5, background: c, border: c === color ? '2px solid var(--accent)' : '1px solid rgba(0,0,0,0.25)', cursor: 'pointer' }} />
+      ))}
+      <ColorSwatch value={color} onChange={v => setStyle({ color: v })}
+        trigger={onClick => (
+          <div onClick={onClick} title={t('Custom color')} style={{
+            width: 24, height: 24, borderRadius: 5, cursor: 'pointer',
+            background: 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)', border: '1px solid var(--border)',
+          }} />
+        )}
+      />
+    </div>
+  )
+
+  const morePanel = (
+    <div style={{ ...POPOVER, padding: 4, gap: 1, minWidth: 180 }} onPointerDown={e => e.stopPropagation()}>
+      {([
+        { icon: <IcoDownload />, label: 'Export as PNG', fn: exportPng },
+        { icon: <IcoDownload />, label: 'Export as SVG', fn: exportSvg },
+        { icon: <IcoZoomFit />, label: 'Zoom to fit', key: 'Shift+1', fn: zoomToFit },
+        { icon: <IcoSelectAll />, label: 'Select all', key: 'Ctrl+A', fn: () => { setTool('select'); selectAll() } },
+      ] as { icon: React.ReactNode; label: string; key?: string; fn: () => void }[]).map(item => (
+        <button key={item.label} type="button" onClick={() => { item.fn(); setPopover(null) }} style={MENU_ITEM}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none' }}>
+          <span style={{ color: 'var(--text2)', display: 'flex' }}>{item.icon}</span>
+          <span style={{ flex: 1 }}>{t(item.label)}</span>
+          {item.key && <span style={{ fontSize: 9.5, color: 'var(--text3)' }}>{item.key}</span>}
+        </button>
+      ))}
+      <div style={{ height: 1, background: 'var(--border)', margin: '3px 4px' }} />
+      <button type="button" onClick={() => { clearAll(); setPopover(null) }} style={{ ...MENU_ITEM, color: 'var(--danger, #ef4444)' }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'none' }}>
+        <span style={{ display: 'flex' }}><IcoTrash /></span><span style={{ flex: 1 }}>{t('Clear all')}</span>
+      </button>
+    </div>
+  )
+
+  // ── Text editor overlay ───────────────────────────────────────────────────
+
+  let editorEl: React.ReactNode = null
+  if (editor && isEdit) {
+    const s = scaleRef.current, pan = panRef.current
+    const el = editor.id ? elsRef.current.find(x => x.id === editor.id) : null
+    const isText = !el || el.type === 'text'
+    const fs = (el?.fontSize ?? (isText ? fontSize : DEFAULT_LABEL_SIZE))
+    const fam = FONT_FAMILIES[(el ? el.fontFamily : fontFamily) ?? 'sans']
+    const lines = Math.max(1, editorVal.split('\n').length)
+    const lineH = fs * LINE_HEIGHT * s
+    let left: number, top: number, width: number, align: TextAlign
+    if (isText) {
+      left = (el?.x ?? editor.x) * s + pan.x
+      top = (el?.y ?? editor.y) * s + pan.y
+      const font = fontOf(el ?? { fontFamily, bold, italic }, fs)
+      width = Math.max(90, Math.max(...editorVal.split('\n').map(l => measureWidth(l + 'W', font, fs))) * s + 10)
+      align = el?.textAlign ?? 'left'
+    } else {
+      const b = isEdge(el) ? edgeLabelBox(el, byIdNow()) : labelBox(el, normBox(el.x, el.y, el.x2, el.y2))
+      width = Math.max(80, boxW(b) * s)
+      left = (b.x1 + b.x2) / 2 * s + pan.x - width / 2
+      top = (b.y1 + b.y2) / 2 * s + pan.y - (lines * lineH) / 2 - 3
+      align = el.textAlign ?? 'center'
+    }
+    editorEl = (
+      <textarea
+        autoFocus
+        data-text-input="true"
+        value={editorVal}
+        rows={lines}
+        placeholder={t(isText ? 'Text…' : 'Label…')}
+        onChange={e => { editorValRef.current = e.target.value; setEditorVal(e.target.value) }}
+        onBlur={commitEditor}
+        onFocus={e => { const v = e.currentTarget.value; e.currentTarget.setSelectionRange(v.length, v.length) }}
+        onKeyDown={e => {
+          e.stopPropagation()
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEditor(); rootRef.current?.focus({ preventScroll: true }) }
+          if (e.key === 'Escape') { e.preventDefault(); cancelEditor(); rootRef.current?.focus({ preventScroll: true }) }
+        }}
+        onPointerDown={e => e.stopPropagation()}
+        style={{
+          position: 'absolute', left, top, width, height: lines * lineH + 6,
+          fontSize: fs * s, lineHeight: LINE_HEIGHT, fontFamily: fam,
+          fontWeight: (el ? el.bold : bold) ? 700 : 400, fontStyle: (el ? el.italic : italic) ? 'italic' : 'normal',
+          color: el ? (el.type === 'text' ? el.color : (el.fontColor ?? el.color)) : color,
+          textAlign: align, background: 'rgba(59,130,246,0.06)', border: 'none', outline: '1.5px dashed #3b82f6',
+          borderRadius: 3, padding: '3px 0', margin: 0, resize: 'none', overflow: 'hidden', zIndex: 10, whiteSpace: 'pre',
+        }}
+      />
+    )
+  }
+
+  // ── JSX ───────────────────────────────────────────────────────────────────
+
+  const sep = <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 1px', flexShrink: 0 }} />
+
+  return (
+    <div ref={rootRef} data-widget-content tabIndex={-1}
+      style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 4, overflow: 'hidden', outline: 'none' }}
+      onPointerDown={e => { e.stopPropagation(); isWidgetActiveRef.current = true }}
+      onWheel={e => { if (isWidgetActiveRef.current) e.stopPropagation() }}
+      onKeyDown={onKeyDown}
+      onKeyUp={onKeyUp}>
+
+      {isEdit && (
+        <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
+          <button type="button" title={`${t('Select')} (V)`} onClick={() => { setTool('select'); render() }} style={tb(tool === 'select')}>
+            <IcoSelect />
+          </button>
+
+          <div ref={penGroupRef} style={{ display: 'flex' }}>
+            <button type="button" title={`${t('Freehand')} (P)`} onClick={() => { setTool('pen'); setSelection([]); setPopover(null) }}
+              style={{ ...tb(tool === 'pen'), borderRadius: '6px 0 0 6px', borderRight: 'none' }}>
+              <IcoPen />
+            </button>
+            <button type="button" title={t('Pen options')} onClick={() => togglePop('pen')}
+              style={{ ...tb(popover === 'pen'), borderRadius: '0 6px 6px 0', width: 14 }}>
+              <IcoChevron />
+            </button>
+            <PortalPopover open={popover === 'pen'} anchorRef={penGroupRef} onClose={() => setPopover(null)}>{penPanel}</PortalPopover>
+          </div>
+
+          <div ref={shapeGroupRef}>
+            <button type="button" title={`${t('Shapes')} (R, O, D)`} onClick={() => togglePop('shape')}
+              style={{ ...tb(tool === 'shape' || popover === 'shape'), gap: 2, width: 'auto', padding: '0 4px 0 2px' }}>
+              {tool === 'shape' ? <ShapePreview id={shapeKind} size={22} /> : <IcoShapes />}
+              <IcoChevron />
+            </button>
+            <PortalPopover open={popover === 'shape'} anchorRef={shapeGroupRef} onClose={() => setPopover(null)}>{shapePanel}</PortalPopover>
+          </div>
+
+          <div ref={edgeGroupRef}>
+            <button type="button" title={`${t('Connector')} (L, A)`} onClick={() => togglePop('edge')}
+              style={{ ...tb(tool === 'line' || tool === 'arrow' || popover === 'edge'), gap: 3, width: 'auto', padding: '0 5px' }}>
+              {tool === 'line' ? <IcoLine /> : <IcoArrow />}
+              <IcoChevron />
+            </button>
+            <PortalPopover open={popover === 'edge'} anchorRef={edgeGroupRef} onClose={() => setPopover(null)}>{edgePanel}</PortalPopover>
+          </div>
+
+          <button type="button" title={`${t('Text')} (T)`} onClick={() => { setTool('text'); setSelection([]) }} style={tb(tool === 'text')}><IcoText /></button>
+          <button type="button" title={`${t('Eraser')} (X)`} onClick={() => { setTool('eraser'); setSelection([]) }} style={tb(tool === 'eraser')}><IcoEraser /></button>
+          <button type="button" title={`${t('Fill bucket (fill area with color)')} (B)`} onClick={() => { setTool('fill'); setSelection([]) }} style={tb(tool === 'fill')}><IcoBucket /></button>
+
+          {sep}
+
+          <div ref={colorGroupRef}>
+            <button type="button" title={t('Color')} onClick={() => togglePop('color')}
+              style={{ ...BTN, background: color, border: popover === 'color' ? '2px solid var(--accent)' : '2px solid rgba(0,0,0,0.4)' }} />
+            <PortalPopover open={popover === 'color'} anchorRef={colorGroupRef} onClose={() => setPopover(null)}>{colorPanel}</PortalPopover>
+          </div>
+
+          <div style={{ flex: 1, minWidth: 4 }} />
+
+          <button type="button" title={t('Undo (Ctrl+Z)')} onClick={undo} style={BTN}><IcoUndo /></button>
+          <button type="button" title={t('Redo (Ctrl+Y)')} onClick={redo} style={BTN}><IcoRedo /></button>
+          {sep}
+          <button type="button" title={t('Format panel')} onClick={() => setFormatOpen(o => !o)} style={tb(formatOpen)}><IcoFormat /></button>
+          <div ref={moreGroupRef}>
+            <button type="button" title={t('More')} onClick={() => togglePop('more')} style={tb(popover === 'more')}><IcoMore /></button>
+            <PortalPopover open={popover === 'more'} anchorRef={moreGroupRef} onClose={() => setPopover(null)}>{morePanel}</PortalPopover>
+          </div>
+        </div>
+      )}
+
+      <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', borderRadius: 6, border: '1px solid var(--border)' }}>
+        <canvas
+          ref={canvasRef}
+          style={{ display: 'block', cursor: isEdit ? cursor : 'default' }}
+          onMouseDown={isEdit ? onMouseDown : undefined}
+          onMouseMove={isEdit ? onMouseMove : undefined}
+          onMouseUp={isEdit ? onMouseUp : undefined}
+          onMouseLeave={isEdit ? () => { if (dragRef.current?.kind !== 'pan') onMouseUp(); cursorPtRef.current = null; renderCursor() } : undefined}
+          onDoubleClick={isEdit ? onDoubleClick : undefined}
+          onWheel={isEdit ? onWheel : undefined}
+          onContextMenu={isEdit ? onContextMenu : undefined}
+        />
+        <canvas ref={cursorCanvasRef} style={{ display: 'block', position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} />
+
+        {isEdit && formatOpen && (
+          <FormatPanel
+            t={t}
+            hasSelection={selectedEls.length > 0}
+            kinds={kinds}
+            style={style}
+            setStyle={setStyle}
+            commitLive={commitLive}
+            diagram={{ canvasBg, snap: snapOn, guides: guidesOn, count: elsRef.current.filter(el => el.type !== 'fill').length }}
+            setDiagram={p => {
+              if (p.canvasBg) setCanvasBg(p.canvasBg)
+              if (p.snap !== undefined) setSnapOn(p.snap)
+              if (p.guides !== undefined) setGuidesOn(p.guides)
+            }}
+            arrange={{
+              units: unitCount, canGroup, canUngroup, allLocked, canEditText,
+              geometry: singleSel && !isEdge(singleSel) ? normBox(singleSel.x, singleSel.y, singleSel.x2, singleSel.y2) : null,
+            }}
+            actions={{
+              reorder: reorderSelection, align: alignSelection, distribute: distributeSelection,
+              group: groupSelection, ungroup: ungroupSelection, toggleLock, duplicate: duplicateSelection,
+              remove: () => deleteSelection(), setGeometry, editText: () => { if (singleSel) openEditor(singleSel) },
+            }}
+            onClose={() => setFormatOpen(false)}
+          />
+        )}
+
+        {isEdit && (
+          <div
+            style={{
+              position: 'absolute', bottom: 8, right: formatOpen ? panelW : 8, zIndex: 5,
+              display: 'flex', alignItems: 'center', gap: 2,
+              background: 'color-mix(in srgb, var(--surface) 88%, transparent)',
+              backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+              border: '1px solid var(--border)', borderRadius: 9,
+              boxShadow: '0 4px 14px rgba(0,0,0,0.22)', padding: '3px 4px',
+            }}
+            onPointerDown={e => e.stopPropagation()}
+          >
+            <button type="button" title={t('Zoom out')} onClick={() => zoomBy(1 / 1.15)} style={HUD_BTN}>−</button>
+            <button type="button" title={t('Reset zoom (Ctrl+0)')} onClick={resetZoom}
+              style={{ ...HUD_BTN, width: 'auto', padding: '0 6px', fontSize: 10.5, fontWeight: 700 }}>
+              {zoomPct}%
+            </button>
+            <button type="button" title={t('Zoom in')} onClick={() => zoomBy(1.15)} style={HUD_BTN}>+</button>
+            <div style={{ width: 1, height: 16, background: 'var(--border)', margin: '0 1px' }} />
+            <button type="button" title={t('Zoom to fit (Shift+1)')} onClick={zoomToFit} style={HUD_BTN}><IcoZoomFit /></button>
+          </div>
+        )}
+
+        {ctxMenu && createPortal(
+          <div
+            style={{
+              position: 'fixed', left: ctxMenu.x, top: ctxMenu.y, zIndex: 50,
+              background: 'var(--popover-bg)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+              border: '1px solid var(--border)', borderRadius: 9, padding: 4,
+              boxShadow: '0 8px 28px rgba(0,0,0,0.28)', display: 'flex', flexDirection: 'column', gap: 1, minWidth: 180,
+            }}
+            onPointerDown={e => e.stopPropagation()}
+          >
+            {([
+              ...(ctxMenu.hasTarget && canEditText ? [{ icon: <IcoEditText />, label: 'Edit text', key: 'Enter', fn: () => singleSel && openEditor(singleSel) }] : []),
+              ...(ctxMenu.hasTarget ? [
+                { icon: <IcoDuplicate />, label: 'Duplicate', key: 'Ctrl+D', fn: duplicateSelection },
+                { icon: <IcoCopy />, label: 'Copy selection', key: 'Ctrl+C', fn: copySelection },
+                { icon: <IcoCut />, label: 'Cut', key: 'Ctrl+X', fn: cutSelection },
+              ] : []),
+              ...(SHARED.clipboard.length ? [{ icon: <IcoPaste />, label: 'Paste', key: 'Ctrl+V', fn: pasteClipboard }] : []),
+              ...(!ctxMenu.hasTarget ? [{ icon: <IcoSelectAll />, label: 'Select all', key: 'Ctrl+A', fn: selectAll }] : []),
+              ...(ctxMenu.hasTarget ? [
+                ...(canGroup ? [{ icon: <IcoGroup />, label: 'Group', key: 'Ctrl+G', fn: groupSelection }] : []),
+                ...(canUngroup ? [{ icon: <IcoUngroup />, label: 'Ungroup', key: 'Ctrl+Shift+G', fn: ungroupSelection }] : []),
+                { icon: allLocked ? <IcoUnlock /> : <IcoLock />, label: allLocked ? 'Unlock' : 'Lock', key: 'Ctrl+L', fn: toggleLock },
+                { icon: <IcoToFront />, label: 'Bring to front', key: 'Ctrl+Shift+F', fn: () => reorderSelection('front') },
+                { icon: <IcoToBack />, label: 'Send to back', key: 'Ctrl+Shift+B', fn: () => reorderSelection('back') },
+                ...(!allLocked ? [{ icon: <IcoTrash />, label: 'Delete', key: 'Del', fn: () => deleteSelection() }] : []),
+              ] : []),
+            ] as { icon: React.ReactNode; label: string; key?: string; fn: () => void }[]).map(item => (
+              <button key={item.label} type="button" onClick={() => { item.fn(); setCtxMenu(null) }} style={MENU_ITEM}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'none' }}>
+                <span style={{ color: 'var(--text2)', display: 'flex', flexShrink: 0 }}>{item.icon}</span>
+                <span style={{ flex: 1 }}>{t(item.label)}</span>
+                {item.key && <span style={{ fontSize: 9.5, color: 'var(--text3)' }}>{item.key}</span>}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
+
+        {editorEl}
+      </div>
+    </div>
+  )
 }
 
 // ─── Flood fill ───────────────────────────────────────────────────────────────
 
+// Returns ONLY the newly filled pixels (transparent elsewhere) instead of a
+// full canvas snapshot — otherwise everything already drawn would be baked
+// into this one fill element, leaving the originals unselectable beneath it.
 function applyFloodFill(imageData: ImageData, startX: number, startY: number, fillHex: string): ImageData {
   const { data, width, height } = imageData
-  // Nur die neu gefüllten Pixel werden zurückgegeben (sonst überall
-  // transparent) statt eines vollen Kanvas-Schnappschusses — sonst würde
-  // jeder bereits vorhandene Inhalt dauerhaft in dieses eine Fill-Element
-  // eingebacken, und die Original-Elemente blieben unsichtbar darunter statt
-  // weiterhin einzeln auswähl-/verschiebbar zu sein (s. Aufrufstelle unten).
   const out = new Uint8ClampedArray(data.length)
   const hex = fillHex.startsWith('#') && fillHex.length >= 7 ? fillHex : '#000000'
   const fr = parseInt(hex.slice(1, 3), 16)
@@ -539,9 +1928,8 @@ function applyFloodFill(imageData: ImageData, startX: number, startY: number, fi
   const tr = data[si], tg = data[si + 1], tb = data[si + 2], ta = data[si + 3]
   if (tr === fr && tg === fg && tb === fb) return new ImageData(width, height)
   const TOL = 25
-  function matches(pos: number) {
-    return Math.abs(data[pos] - tr) + Math.abs(data[pos + 1] - tg) + Math.abs(data[pos + 2] - tb) + Math.abs(data[pos + 3] - ta) <= TOL * 4
-  }
+  const matches = (pos: number) =>
+    Math.abs(data[pos] - tr) + Math.abs(data[pos + 1] - tg) + Math.abs(data[pos + 2] - tb) + Math.abs(data[pos + 3] - ta) <= TOL * 4
   const visited = new Uint8Array(width * height)
   const queue: number[] = [startY * width + startX]
   visited[startY * width + startX] = 1
@@ -557,1425 +1945,4 @@ function applyFloodFill(imageData: ImageData, startX: number, startY: number, fi
     if (y < height - 1 && !visited[p + width] && matches((p + width) * 4)) { visited[p + width] = 1; queue.push(p + width) }
   }
   return new ImageData(out, width, height)
-}
-
-// ─── Slider component ─────────────────────────────────────────────────────────
-
-function Slider({ label, value, onChange, onCommit, unit = '%' }: { label: string; value: number; onChange: (v: number) => void; onCommit?: () => void; unit?: string }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text2)' }}>{label}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <input
-            type="number" min={0} max={100} value={value}
-            onChange={e => onChange(Math.max(0, Math.min(100, Number(e.target.value))))}
-            onBlur={onCommit}
-            style={{ width: 36, fontSize: 10, textAlign: 'right', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 4px', color: 'var(--text1)' }}
-          />
-          <span style={{ fontSize: 10, color: 'var(--text3)' }}>{unit}</span>
-        </div>
-      </div>
-      <input type="range" min={0} max={100} value={value}
-        onChange={e => onChange(Number(e.target.value))}
-        onMouseUp={onCommit} onTouchEnd={onCommit}
-        style={{ width: '100%', cursor: 'pointer' }}
-      />
-    </div>
-  )
-}
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
-const BTN: React.CSSProperties = {
-  width: 28, height: 28, borderRadius: 6, border: '1px solid var(--border)',
-  background: 'var(--surface2)', color: 'var(--text2)',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  cursor: 'pointer', flexShrink: 0, padding: 0,
-}
-
-// Zoom-HUD-Buttons — kein eigener Rahmen (die HUD-Pille selbst hat schon
-// einen), gleiches Muster wie das Board-Zoom-HUD (InfiniteCanvas.tsx).
-const HUD_BTN: React.CSSProperties = {
-  width: 24, height: 24, borderRadius: 6, border: 'none',
-  background: 'transparent', color: 'var(--text2)',
-  cursor: 'pointer', fontSize: 15, display: 'flex',
-  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-}
-
-export default function DrawboardWidget({ widget }: { widget: Widget }) {
-  const t = useT()
-  const updateWidget      = useBoardStore(s => s.updateWidget)
-  const updateWidgetQuiet = useBoardStore(s => s.updateWidgetQuiet)
-  const mode         = useUIStore(s => s.mode)
-  const isEdit       = mode === 'edit'
-  const canvasRef    = useRef<HTMLCanvasElement>(null)
-  const cursorCanvasRef = useRef<HTMLCanvasElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  // ── UI state ──
-  const [tool,        setTool]        = useState<DrawTool>('pen')
-  const [color,       setColor]       = useState('#111827')
-  const [strokePct,   setStrokePct]   = useState(10)
-  const [opacityPct,  setOpacityPct]  = useState(100)
-  const [filled,      setFilled]      = useState(false)
-  const [showColors,     setShowColors]     = useState(false)
-  const [showFormat,     setShowFormat]     = useState(false)
-  const [showPenOpts,    setShowPenOpts]    = useState(false)
-  // Anker für die Portal-Popovers unten (Pinsel-/Format-/Farb-Panel) — die
-  // Panels selbst rendern via createPortal in document.body, damit sie nicht
-  // von den overflow:hidden-Containern des Widgets abgeschnitten werden,
-  // sobald die Kachel schmaler ist als das Panel.
-  const penGroupRef    = useRef<HTMLDivElement>(null)
-  const formatGroupRef = useRef<HTMLDivElement>(null)
-  const colorGroupRef  = useRef<HTMLDivElement>(null)
-  const [zoomPct,        setZoomPct]        = useState(100)
-  const [textPos,        setTextPos]        = useState<{ cx: number; cy: number; sx: number; sy: number } | null>(null)
-  const [textVal,        setTextVal]        = useState('')
-  const [canvasBg,       setCanvasBg]       = useState<CanvasBg>('white')
-  const [fontSize,       setFontSize]       = useState(16)
-  const [brushType,      setBrushType]      = useState<string>('pen')
-  const [bgColor,        setBgColor]        = useState<string | undefined>(undefined)
-  const [fillStyle,      setFillStyleState] = useState<'hachure' | 'cross-hatch' | 'solid'>('hachure')
-  const [strokeDash,     setStrokeDash]     = useState<'solid' | 'dashed' | 'dotted'>('solid')
-  const [roundCorners,   setRoundCorners]   = useState(false)
-
-  // Selected element ids — reactive (not just a ref) so the toolbar can
-  // mirror the selected element's own style back into itself (s. the
-  // selection-mirror effect below), which is what makes restyling read as
-  // "editing the shape" rather than "blindly overwriting the next-draw
-  // defaults". `selIdsRef` mirrors it for the perf-critical mouse handlers,
-  // same dual state+ref convention as `tool`/`toolRef` etc. below.
-  const [selectedIds,    setSelectedIds]    = useState<string[]>([])
-  const [ctxMenu,        setCtxMenu]        = useState<{ x: number; y: number; hasTarget: boolean } | null>(null)
-
-  const textPosRef    = useRef<typeof textPos>(null)
-  const textValRef    = useRef('')
-  const commitTextRef = useRef<() => void>(() => {})
-  textPosRef.current = textPos
-  textValRef.current = textVal
-
-  // ── Canvas refs ──
-  const elsRef      = useRef<DrawElement[]>(widget.data?.elements ?? [])
-  const curRef      = useRef<DrawElement | null>(null)
-  const drawingRef  = useRef(false)
-  const panRef      = useRef({ x: 0, y: 0 })
-  const scaleRef    = useRef(1)
-  const panningRef  = useRef(false)
-  const panStartRef = useRef({ mx: 0, my: 0, ox: 0, oy: 0 })
-  const selIdsRef   = useRef<Set<string>>(new Set())
-  // Group move: captures the pre-drag box/points of every currently
-  // selected element, keyed by id, so dragging any one of them (when
-  // multiple are selected) moves the whole group together.
-  const moveRef      = useRef<{ mx: number; my: number; items: { id: string; ox: number; oy: number; ox2: number; oy2: number; pts?: Pt[] }[] } | null>(null)
-  const resizeRef    = useRef<{ id: string; handle: HandleName; anchor: Pt; orig: DrawElement; origBox: { x1: number; y1: number; x2: number; y2: number } } | null>(null)
-  const marqueeRef   = useRef<{ sx: number; sy: number; ex: number; ey: number; additive: boolean; active: boolean; origSel: string[] } | null>(null)
-  const clipboardRef = useRef<DrawElement[]>([])
-  const histRef     = useRef<DrawElement[][]>([[...(widget.data?.elements ?? [])]])
-  const histIdxRef  = useRef(0)
-  const saveTimer   = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const cursorPtRef = useRef<Pt | null>(null)
-
-  const fillImgCacheRef      = useRef(new Map<string, HTMLImageElement>())
-  const isWidgetActiveRef    = useRef(false)
-  const widgetRootRef        = useRef<HTMLDivElement>(null)
-
-  const isEditRef   = useRef(true);                isEditRef.current   = isEdit
-  const toolRef     = useRef<DrawTool>('pen');    toolRef.current     = tool
-  const colorRef    = useRef('#111827');           colorRef.current    = color
-  const swRef            = useRef(pctToSw(10));       swRef.current            = pctToSw(strokePct)
-  const opacRef          = useRef(100);               opacRef.current          = opacityPct
-  const filledRef        = useRef(false);             filledRef.current        = filled
-  const canvasBgRef      = useRef<CanvasBg>('white'); canvasBgRef.current      = canvasBg
-  const fontSizeRef      = useRef(16);                fontSizeRef.current      = fontSize
-  const brushTypeRef     = useRef<string>('pen');     brushTypeRef.current     = brushType
-  const bgColorRef       = useRef<string | undefined>(undefined); bgColorRef.current = bgColor
-  const fillStyleRef     = useRef(fillStyle);         fillStyleRef.current     = fillStyle
-  const strokeDashRef    = useRef(strokeDash);        strokeDashRef.current    = strokeDash
-  const roundCornersRef  = useRef(false);             roundCornersRef.current  = roundCorners
-  selIdsRef.current = new Set(selectedIds)
-
-  // ── Render ────────────────────────────────────────────────────────────────
-
-  const render = useCallback(() => {
-    const canvas = canvasRef.current; if (!canvas) return
-    const ctx = canvas.getContext('2d'); if (!ctx) return
-    const bg = canvasBgRef.current
-
-    ctx.fillStyle = bg === 'dark' ? '#1e1e2e' : '#ffffff'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-    if (bg === 'grid') {
-      const gridPx = Math.max(8, 20 * scaleRef.current)
-      const offX = ((panRef.current.x % gridPx) + gridPx) % gridPx
-      const offY = ((panRef.current.y % gridPx) + gridPx) % gridPx
-      ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 0.5
-      ctx.beginPath()
-      for (let x = offX - gridPx; x <= canvas.width + gridPx; x += gridPx) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height) }
-      for (let y = offY - gridPx; y <= canvas.height + gridPx; y += gridPx) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y) }
-      ctx.stroke()
-    }
-
-    ctx.save()
-    ctx.translate(panRef.current.x, panRef.current.y)
-    ctx.scale(scaleRef.current, scaleRef.current)
-
-    // Fill elements: the image is a raster snapshot of the canvas AS
-    // DISPLAYED at whatever pan/zoom was active when it was created (s.
-    // DrawElement.fillPanX/Y/Scale in types/index.ts) — screen pixel (sx,sy)
-    // back then was logical point ((sx-fillPanX)/fillScale, (sy-fillPanY)/
-    // fillScale). Drawing it at that same logical rect, inside this same
-    // translate+scale block every other element already uses, is what makes
-    // it track pan/zoom instead of staying stamped at a fixed screen spot —
-    // previously drawn with ctx.drawImage(img,0,0) OUTSIDE this transform
-    // entirely, which is why filling then panning visibly slid it out of
-    // place relative to everything else.
-    for (const el of elsRef.current) {
-      if (el.type !== 'fill' || !el.fillImageUrl) continue
-      let img = fillImgCacheRef.current.get(el.id)
-      if (!img) {
-        img = new Image()
-        fillImgCacheRef.current.set(el.id, img)
-        img.onload = () => render()
-        img.src = el.fillImageUrl
-      }
-      if (img.complete && img.naturalWidth > 0) {
-        const fPanX = el.fillPanX ?? 0, fPanY = el.fillPanY ?? 0, fScale = el.fillScale ?? 1
-        ctx.drawImage(img, -fPanX / fScale, -fPanY / fScale, img.naturalWidth / fScale, img.naturalHeight / fScale)
-      }
-    }
-
-    const showHandles = toolRef.current === 'select' && selIdsRef.current.size === 1
-    for (const el of elsRef.current) {
-      if (el.type !== 'fill') renderEl(ctx, el, selIdsRef.current.has(el.id), scaleRef.current, showHandles && selIdsRef.current.has(el.id))
-    }
-    if (curRef.current) renderEl(ctx, curRef.current, false, scaleRef.current)
-
-    // Marquee (rubber-band) selection rectangle — drawn in the same
-    // transformed logical space as everything else so it tracks pan/zoom
-    // like the rest of the canvas instead of needing a separate DOM overlay.
-    const mq = marqueeRef.current
-    if (mq?.active) {
-      const x = Math.min(mq.sx, mq.ex), y = Math.min(mq.sy, mq.ey)
-      const w = Math.abs(mq.ex - mq.sx), h = Math.abs(mq.ey - mq.sy)
-      ctx.save()
-      ctx.fillStyle = 'rgba(59,130,246,0.10)'
-      ctx.strokeStyle = 'rgba(59,130,246,0.7)'
-      ctx.lineWidth = 1 / scaleRef.current
-      ctx.setLineDash([4 / scaleRef.current, 3 / scaleRef.current])
-      ctx.fillRect(x, y, w, h)
-      ctx.strokeRect(x, y, w, h)
-      ctx.restore()
-    }
-
-    ctx.restore()
-  }, [])
-
-  // Pen cursor dot lives on its own overlay canvas so hovering with the pen
-  // tool (no stroke in progress) only repaints a single small circle instead
-  // of re-running the full render() over every element on every mousemove.
-  const renderCursor = useCallback(() => {
-    const canvas = cursorCanvasRef.current; if (!canvas) return
-    const ctx = canvas.getContext('2d'); if (!ctx) return
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    if (!cursorPtRef.current) return
-    ctx.save()
-    ctx.translate(panRef.current.x, panRef.current.y)
-    ctx.scale(scaleRef.current, scaleRef.current)
-    const { x, y } = cursorPtRef.current
-    const r = 4 / scaleRef.current
-    ctx.beginPath()
-    ctx.arc(x, y, r, 0, Math.PI * 2)
-    ctx.fillStyle = colorRef.current
-    ctx.globalAlpha = 1
-    ctx.fill()
-    ctx.strokeStyle = 'rgba(255,255,255,0.85)'
-    ctx.lineWidth = 1.5 / scaleRef.current
-    ctx.stroke()
-    ctx.restore()
-  }, [])
-
-  useEffect(() => { elsRef.current = widget.data?.elements ?? []; render() }, []) // eslint-disable-line
-  useEffect(() => { cursorPtRef.current = null; renderCursor() }, [tool, renderCursor])
-
-  // Externe Änderungen übernehmen (z. B. Zeichnen im Fokus-Modus, während die
-  // Kachel weiter gemountet ist). Eigene Saves schreiben elsRef.current selbst
-  // in den Store — der Referenzvergleich lässt sie unangetastet durch.
-  useEffect(() => {
-    const ext = widget.data?.elements ?? []
-    if (ext !== elsRef.current) {
-      elsRef.current = ext
-      histRef.current = [[...ext]]
-      histIdxRef.current = 0
-      setSelectedIds([])
-      render()
-    }
-  }, [widget.data?.elements, render])
-
-  useEffect(() => {
-    const container = containerRef.current; if (!container) return
-    const obs = new ResizeObserver(() => {
-      const c = canvasRef.current; if (!c) return
-      c.width = container.clientWidth; c.height = container.clientHeight
-      const cc = cursorCanvasRef.current
-      if (cc) { cc.width = container.clientWidth; cc.height = container.clientHeight }
-      render(); renderCursor()
-    })
-    obs.observe(container); return () => obs.disconnect()
-  }, [render, renderCursor])
-
-  // Ansichtsmodus ist rein lesend: schwebende Popover/Text-Eingabe schließen,
-  // Auswahl & Stift-Cursor zurücksetzen, sobald der Bearbeitungsmodus verlassen wird.
-  useEffect(() => {
-    if (isEdit) return
-    setShowColors(false); setShowFormat(false); setShowPenOpts(false)
-    if (textPosRef.current) { setTextPos(null); setTextVal('') }
-    setSelectedIds([])
-    setCtxMenu(null)
-    cursorPtRef.current = null
-    render(); renderCursor()
-  }, [isEdit, render, renderCursor])
-
-  // ── Persist ───────────────────────────────────────────────────────────────
-
-  // save() and saveView() are two INDEPENDENT debounced timers (elements at
-  // 600ms, view/tool state at 400ms) that can easily both be in flight at
-  // once — e.g. drawing a shape then immediately switching tools. Each used
-  // to spread the `widget.data` PROP closed over at schedule time; since
-  // updateWidget/updateWidgetQuiet replace `data` wholesale (no deep merge,
-  // s. boardStore.ts), whichever one fired with the STALER snapshot would
-  // silently wipe out whatever the other had just written — including
-  // wiping `elements` back to an earlier (sometimes empty) state. Reading
-  // the LIVE store data at fire time instead of the stale prop closes that
-  // race — same fix TaskWidget.tsx's weekly-reset effect already uses for
-  // exactly this "read fresh state instead of trusting a stale closure"
-  // reason.
-  function getLiveData(): Record<string, unknown> {
-    const boards = useBoardStore.getState().boards
-    const boardId = Object.keys(boards).find(bid => boards[bid]?.widgets[widget.id])
-    const live = boardId ? boards[boardId].widgets[widget.id]?.data : undefined
-    return (live ?? widget.data ?? {}) as Record<string, unknown>
-  }
-
-  const save = useCallback(() => {
-    clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(() => {
-      updateWidget(widget.id, { data: { ...getLiveData(), elements: elsRef.current } })
-    }, 600)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.id, updateWidget])
-
-  // ── View state (zoom/pan/tool/color/…) sync ─────────────────────────────────
-  // Same "two simultaneous mounts" issue as `elements` above, but for the
-  // toolbar/viewport state instead of the drawing itself: zooming or panning
-  // in Focus Mode while the board tile is still mounted (or vice versa) left
-  // the two completely out of sync, since none of this was ever written back
-  // to widget.data at all. updateWidgetQuiet (not updateWidget): panning/
-  // zooming/switching tools is a pure view change, same category as the
-  // calendar's month navigation — no undo step, no lastEdited bump.
-  const saveViewTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const saveView = useCallback(() => {
-    clearTimeout(saveViewTimer.current)
-    saveViewTimer.current = setTimeout(() => {
-      updateWidgetQuiet(widget.id, { data: {
-        ...getLiveData(),
-        zoom: scaleRef.current, panX: panRef.current.x, panY: panRef.current.y,
-        tool, color, strokePct, opacityPct, filled, canvasBg, brushType,
-        bgColor, fillStyle, strokeStyle: strokeDash, roundCorners,
-      } })
-    }, 400)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.id, updateWidgetQuiet, tool, color, strokePct, opacityPct, filled, canvasBg, brushType, bgColor, fillStyle, strokeDash, roundCorners])
-  useEffect(() => () => clearTimeout(saveViewTimer.current), [])
-  // Fires whenever any of the "plain state" toolbar fields change — the
-  // zoom/pan refs are saved from their own call sites instead (zoomBy,
-  // resetZoom, onWheel, end-of-pan in onMouseUp), since changing them doesn't
-  // touch any of this state and wouldn't otherwise trigger this effect.
-  useEffect(() => { saveView() // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tool, color, strokePct, opacityPct, filled, canvasBg, brushType, bgColor, fillStyle, strokeDash, roundCorners])
-
-  // Re-sync from the store whenever this widget's OTHER simultaneous mount
-  // (board tile vs. Focus Mode) changes the view — plain value checks, no
-  // write-back here, so this can't ping-pong with saveView() above (see the
-  // `elements` sync effect's own comment for the same reasoning).
-  useEffect(() => {
-    const z  = widget.data?.zoom as number | undefined
-    const px = widget.data?.panX as number | undefined
-    const py = widget.data?.panY as number | undefined
-    let changed = false
-    if (typeof z === 'number' && z !== scaleRef.current) { scaleRef.current = z; setZoomPct(Math.round(z * 100)); changed = true }
-    if (typeof px === 'number' && typeof py === 'number' && (px !== panRef.current.x || py !== panRef.current.y)) {
-      panRef.current = { x: px, y: py }; changed = true
-    }
-    if (changed) { render(); renderCursor() }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.data?.zoom, widget.data?.panX, widget.data?.panY])
-  useEffect(() => {
-    const dTool = widget.data?.tool as DrawTool | undefined
-    if (dTool && dTool !== tool) setTool(dTool)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.data?.tool])
-  useEffect(() => {
-    const dColor = widget.data?.color as string | undefined
-    if (dColor && dColor !== color) setColor(dColor)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.data?.color])
-  useEffect(() => {
-    const v = widget.data?.strokePct as number | undefined
-    if (typeof v === 'number' && v !== strokePct) setStrokePct(v)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.data?.strokePct])
-  useEffect(() => {
-    const v = widget.data?.opacityPct as number | undefined
-    if (typeof v === 'number' && v !== opacityPct) setOpacityPct(v)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.data?.opacityPct])
-  useEffect(() => {
-    const v = widget.data?.filled as boolean | undefined
-    if (typeof v === 'boolean' && v !== filled) setFilled(v)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.data?.filled])
-  useEffect(() => {
-    const v = widget.data?.canvasBg as CanvasBg | undefined
-    if (v && v !== canvasBg) setCanvasBg(v)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.data?.canvasBg])
-  useEffect(() => {
-    const v = widget.data?.brushType as string | undefined
-    if (v && v !== brushType) setBrushType(v)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.data?.brushType])
-  useEffect(() => {
-    const v = widget.data?.bgColor as string | undefined
-    if (v !== bgColor) setBgColor(v)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.data?.bgColor])
-  useEffect(() => {
-    const v = widget.data?.fillStyle as 'hachure' | 'cross-hatch' | 'solid' | undefined
-    if (v && v !== fillStyle) setFillStyleState(v)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.data?.fillStyle])
-  useEffect(() => {
-    const v = widget.data?.strokeStyle as 'solid' | 'dashed' | 'dotted' | undefined
-    if (v && v !== strokeDash) setStrokeDash(v)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.data?.strokeStyle])
-  useEffect(() => {
-    const v = widget.data?.roundCorners as boolean | undefined
-    if (typeof v === 'boolean' && v !== roundCorners) setRoundCorners(v)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.data?.roundCorners])
-
-  // Selecting a single element pulls ITS style back into the toolbar
-  // (mirrors Excalidraw's left panel reflecting the selected shape) — this,
-  // together with applyToSelection() further down, is what makes changing a
-  // toolbar control read as "editing the selected shape" instead of just
-  // "setting what the next new shape will look like". Deliberately a no-op
-  // for an empty or multi-element selection: there's no single style to
-  // mirror, so the toolbar just keeps showing whatever was last active.
-  useEffect(() => {
-    if (selectedIds.length !== 1) return
-    const el = elsRef.current.find(x => x.id === selectedIds[0])
-    if (!el) return
-    setColor(el.color)
-    setStrokePct(Math.max(1, Math.round((el.strokeWidth / MAX_SW) * 100)))
-    setOpacityPct(el.opacity ?? 100)
-    setFilled(!!el.filled)
-    setBgColor(el.bgColor)
-    if (el.fillStyle) setFillStyleState(el.fillStyle)
-    setStrokeDash(el.strokeStyle ?? 'solid')
-    setRoundCorners(!!el.roundCorners)
-    if (el.type === 'freedraw' && el.brushType) setBrushType(el.brushType)
-    if (el.type === 'text' && el.fontSize) setFontSize(el.fontSize)
-  }, [selectedIds])
-
-  // ── History ───────────────────────────────────────────────────────────────
-
-  function pushHist(els: DrawElement[]) {
-    histRef.current = histRef.current.slice(0, histIdxRef.current + 1)
-    histRef.current.push([...els]); histIdxRef.current = histRef.current.length - 1
-  }
-  const undo = useCallback(() => {
-    if (histIdxRef.current <= 0) return
-    histIdxRef.current--; elsRef.current = [...histRef.current[histIdxRef.current]]
-    setSelectedIds([]); render(); save()
-  }, [render, save])
-  const redo = useCallback(() => {
-    if (histIdxRef.current >= histRef.current.length - 1) return
-    histIdxRef.current++; elsRef.current = [...histRef.current[histIdxRef.current]]
-    setSelectedIds([]); render(); save()
-  }, [render, save])
-
-  // Für die +/- Zoom-Buttons im schwebenden HUD: dieselbe Zentrums-Zoom-
-  // Mathematik wie beim Ctrl+Wheel-Zoom (s. onWheel unten), nur um die Mitte
-  // des sichtbaren Canvas statt um die Mausposition (Buttons haben keine
-  // Mauskoordinate, an der gezoomt werden könnte).
-  const zoomBy = useCallback((factor: number) => {
-    const r = canvasRef.current?.getBoundingClientRect()
-    if (!r) return
-    const mx = r.width / 2, my = r.height / 2
-    const ns = Math.max(0.1, Math.min(10, scaleRef.current * factor))
-    panRef.current = { x: mx - (mx - panRef.current.x) * (ns / scaleRef.current), y: my - (my - panRef.current.y) * (ns / scaleRef.current) }
-    scaleRef.current = ns
-    setZoomPct(Math.round(ns * 100))
-    render(); renderCursor(); saveView()
-  }, [render, renderCursor, saveView])
-
-  const resetZoom = useCallback(() => {
-    panRef.current = { x: 0, y: 0 }; scaleRef.current = 1; setZoomPct(100); render(); renderCursor(); saveView()
-  }, [render, renderCursor, saveView])
-
-  const zoomToFit = useCallback(() => {
-    const canvas = canvasRef.current; if (!canvas) return
-    const els = elsRef.current
-    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity
-    for (const el of els) {
-      if (el.type === 'fill') continue
-      const pts = el.points?.length ? el.points : [{ x: el.x, y: el.y }, { x: el.x2, y: el.y2 }]
-      for (const p of pts) { x1 = Math.min(x1, p.x); y1 = Math.min(y1, p.y); x2 = Math.max(x2, p.x); y2 = Math.max(y2, p.y) }
-    }
-    if (!isFinite(x1)) { resetZoom(); return }
-    const w = Math.max(1, x2 - x1), h = Math.max(1, y2 - y1)
-    const ns = Math.max(0.1, Math.min(10, Math.min(canvas.width / w, canvas.height / h) * 0.9))
-    scaleRef.current = ns
-    panRef.current = { x: canvas.width / 2 - (x1 + w / 2) * ns, y: canvas.height / 2 - (y1 + h / 2) * ns }
-    setZoomPct(Math.round(ns * 100))
-    render(); renderCursor(); saveView()
-  }, [render, renderCursor, saveView, resetZoom])
-
-  // ── Selection ops ────────────────────────────────────────────────────────
-  // Unifies "set the next-draw default" and "restyle what's selected": every
-  // toolbar control that calls setColor/setFilled/etc. for the former also
-  // calls this for the latter — see the selection-mirror effect further
-  // down for the other half (selecting something pulls ITS style back into
-  // the toolbar), which together make this read as "editing the shape"
-  // instead of two disconnected behaviors.
-  function applyToSelection(patch: Partial<DrawElement> | ((el: DrawElement) => Partial<DrawElement>)) {
-    if (!selIdsRef.current.size) return
-    elsRef.current = elsRef.current.map(el =>
-      selIdsRef.current.has(el.id) ? { ...el, ...(typeof patch === 'function' ? patch(el) : patch) } : el)
-    pushHist(elsRef.current); render(); save()
-  }
-  // For sliders being dragged: applies every tick for instant feedback
-  // WITHOUT pushing history (that would spam one entry per pixel of drag) —
-  // pair with commitSelectionEdit() on the input's release.
-  function liveApplyToSelection(patch: Partial<DrawElement>) {
-    if (!selIdsRef.current.size) return
-    elsRef.current = elsRef.current.map(el => selIdsRef.current.has(el.id) ? { ...el, ...patch } : el)
-    render()
-  }
-  function commitSelectionEdit() {
-    if (!selIdsRef.current.size) return
-    pushHist(elsRef.current); save()
-  }
-
-  const duplicateSelection = useCallback(() => {
-    if (!selIdsRef.current.size) return
-    const dups = elsRef.current.filter(el => selIdsRef.current.has(el.id)).map(src => ({
-      ...src, id: uid(),
-      x: src.x + 12, y: src.y + 12, x2: src.x2 + 12, y2: src.y2 + 12,
-      points: src.points?.map(p => ({ x: p.x + 12, y: p.y + 12 })),
-    }))
-    elsRef.current = [...elsRef.current, ...dups]
-    setSelectedIds(dups.map(d => d.id))
-    pushHist(elsRef.current); render(); save()
-  }, [render, save])
-
-  const deleteSelection = useCallback(() => {
-    if (!selIdsRef.current.size) return
-    elsRef.current = elsRef.current.filter(el => !selIdsRef.current.has(el.id))
-    setSelectedIds([]); pushHist(elsRef.current); render(); save()
-  }, [render, save])
-
-  const copySelection = useCallback(() => {
-    if (!selIdsRef.current.size) return
-    clipboardRef.current = elsRef.current
-      .filter(el => selIdsRef.current.has(el.id))
-      .map(el => ({ ...el, points: el.points?.map(p => ({ ...p })) }))
-  }, [])
-
-  const pasteClipboard = useCallback(() => {
-    if (!clipboardRef.current.length) return
-    const pastes = clipboardRef.current.map(src => ({
-      ...src, id: uid(),
-      x: src.x + 24, y: src.y + 24, x2: src.x2 + 24, y2: src.y2 + 24,
-      points: src.points?.map(p => ({ x: p.x + 24, y: p.y + 24 })),
-    }))
-    elsRef.current = [...elsRef.current, ...pastes]
-    setSelectedIds(pastes.map(p => p.id))
-    pushHist(elsRef.current); render(); save()
-  }, [render, save])
-
-  // Array order = paint order (render()'s loop already draws elsRef.current
-  // front-to-back in array order) — "reorder" just means reordering the
-  // array. front/back move the whole selection to one end (preserving its
-  // relative order); forward/backward swap each selected element past its
-  // one non-selected neighbor, iterating from the appropriate end so a
-  // multi-selection moves as a block instead of elements leapfrogging
-  // each other one at a time.
-  const reorderSelection = useCallback((dir: 'front' | 'back' | 'forward' | 'backward') => {
-    if (!selIdsRef.current.size) return
-    const isSel = (el: DrawElement) => selIdsRef.current.has(el.id)
-    const arr = elsRef.current
-    let next: DrawElement[]
-    if (dir === 'front') next = [...arr.filter(el => !isSel(el)), ...arr.filter(isSel)]
-    else if (dir === 'back') next = [...arr.filter(isSel), ...arr.filter(el => !isSel(el))]
-    else if (dir === 'forward') {
-      next = [...arr]
-      for (let i = next.length - 2; i >= 0; i--) {
-        if (isSel(next[i]) && !isSel(next[i + 1])) { const tmp = next[i]; next[i] = next[i + 1]; next[i + 1] = tmp }
-      }
-    } else {
-      next = [...arr]
-      for (let i = 1; i < next.length; i++) {
-        if (isSel(next[i]) && !isSel(next[i - 1])) { const tmp = next[i]; next[i] = next[i - 1]; next[i - 1] = tmp }
-      }
-    }
-    elsRef.current = next
-    pushHist(elsRef.current); render(); save()
-  }, [render, save])
-
-  // ── Keyboard ─────────────────────────────────────────────────────────────
-
-  // Deactivate widget focus when clicking outside
-  useEffect(() => {
-    const onDocDown = (e: MouseEvent) => {
-      if (widgetRootRef.current && !widgetRootRef.current.contains(e.target as Node)) {
-        isWidgetActiveRef.current = false
-      }
-    }
-    document.addEventListener('mousedown', onDocDown)
-    return () => document.removeEventListener('mousedown', onDocDown)
-  }, [])
-
-  // Close the right-click context menu on an outside click or Escape.
-  useEffect(() => {
-    if (!ctxMenu) return
-    const onDown = () => setCtxMenu(null)
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setCtxMenu(null) }
-    document.addEventListener('pointerdown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => { document.removeEventListener('pointerdown', onDown); document.removeEventListener('keydown', onKey) }
-  }, [ctxMenu])
-
-  // Block wheel events from reaching the board (native listeners) when widget is active
-  useEffect(() => {
-    const canvas = canvasRef.current; if (!canvas) return
-    const onNativeWheel = (e: WheelEvent) => {
-      if (isWidgetActiveRef.current) e.stopPropagation()
-    }
-    canvas.addEventListener('wheel', onNativeWheel, { passive: false })
-    return () => canvas.removeEventListener('wheel', onNativeWheel)
-  }, [])
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!isWidgetActiveRef.current || !isEditRef.current) return
-      const tag = (e.target as HTMLElement).tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault(); e.stopPropagation(); undo()
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-        e.preventDefault(); e.stopPropagation(); redo()
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === '0') {
-        e.preventDefault(); resetZoom()
-      }
-      if (e.shiftKey && e.key === '!') {   // Shift+1 — Excalidraw's own zoom-to-fit shortcut
-        e.preventDefault(); zoomToFit()
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
-        e.preventDefault(); duplicateSelection()
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-        copySelection()
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-        if (clipboardRef.current.length) { e.preventDefault(); pasteClipboard() }
-      }
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selIdsRef.current.size) {
-        e.preventDefault(); deleteSelection()
-      }
-      if (e.key === 'Escape' && selIdsRef.current.size) {
-        setSelectedIds([])
-      }
-    }
-    window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey)
-  }, [undo, redo, render, save, resetZoom, zoomToFit, duplicateSelection, deleteSelection, copySelection, pasteClipboard])
-
-  // ── Coords ───────────────────────────────────────────────────────────────
-
-  function toCanvas(sx: number, sy: number): Pt {
-    const c = canvasRef.current!
-    const r = c.getBoundingClientRect()
-    // Account for any parent CSS transform (e.g. InfiniteCanvas scale)
-    const kx = c.width  / r.width
-    const ky = c.height / r.height
-    return {
-      x: ((sx - r.left) * kx - panRef.current.x) / scaleRef.current,
-      y: ((sy - r.top)  * ky - panRef.current.y) / scaleRef.current,
-    }
-  }
-
-  // ── Mouse handlers ────────────────────────────────────────────────────────
-
-  function onMouseDown(e: React.MouseEvent<HTMLCanvasElement>) {
-    setShowColors(false); setShowFormat(false)
-    if (e.button === 1 || (e.button === 0 && e.altKey)) {
-      panningRef.current = true
-      panStartRef.current = { mx: e.clientX, my: e.clientY, ox: panRef.current.x, oy: panRef.current.y }
-      e.preventDefault(); return
-    }
-    if (e.button !== 0) return
-    const pos = toCanvas(e.clientX, e.clientY)
-
-    if (toolRef.current === 'select') {
-      setCtxMenu(null)
-      // 1. Resize-handle hit test, only meaningful with exactly one element
-      // selected — checked before the general hit-test below so grabbing a
-      // handle on the selected shape always wins over re-selecting it.
-      if (selIdsRef.current.size === 1) {
-        const id = Array.from(selIdsRef.current)[0]
-        const el = elsRef.current.find(x => x.id === id)
-        if (el) {
-          const handles = getHandlePoints(el)
-          const hitR = 9 / scaleRef.current
-          let hit: HandleName | null = null
-          for (const name of Object.keys(handles) as HandleName[]) {
-            const hp = handles[name]; if (!hp) continue
-            if (Math.hypot(pos.x - hp.x, pos.y - hp.y) <= hitR) { hit = name; break }
-          }
-          if (hit) {
-            const x1 = Math.min(el.x, el.x2), y1 = Math.min(el.y, el.y2)
-            const x2 = Math.max(el.x, el.x2), y2 = Math.max(el.y, el.y2)
-            const anchors: Partial<Record<HandleName, Pt>> = {
-              nw: { x: x2, y: y2 }, n: { x: x1, y: y2 }, ne: { x: x1, y: y2 },
-              w:  { x: x2, y: y1 },                       e:  { x: x1, y: y1 },
-              sw: { x: x2, y: y1 }, s: { x: x1, y: y1 }, se: { x: x1, y: y1 },
-              start: { x: el.x2, y: el.y2 }, end: { x: el.x, y: el.y },
-            }
-            resizeRef.current = {
-              id, handle: hit,
-              orig: { ...el, points: el.points?.map(p => ({ ...p })) },
-              anchor: anchors[hit]!,
-              origBox: { x1, y1, x2, y2 },
-            }
-            drawingRef.current = true
-            render(); return
-          }
-        }
-      }
-      const ctx = canvasRef.current!.getContext('2d')!
-      let found: string | null = null
-      for (let i = elsRef.current.length - 1; i >= 0; i--) {
-        if (hitEl(elsRef.current[i], pos.x, pos.y, ctx)) { found = elsRef.current[i].id; break }
-      }
-      if (found) {
-        let nextSel: string[]
-        if (e.shiftKey) {
-          nextSel = selIdsRef.current.has(found)
-            ? Array.from(selIdsRef.current).filter(id => id !== found)
-            : [...selIdsRef.current, found]
-        } else if (selIdsRef.current.has(found)) {
-          nextSel = Array.from(selIdsRef.current)   // clicked an already-selected element → group move, keep selection as-is
-        } else {
-          nextSel = [found]
-        }
-        setSelectedIds(nextSel)
-        selIdsRef.current = new Set(nextSel)
-        if (!e.shiftKey || nextSel.includes(found)) {
-          drawingRef.current = true
-          const items = elsRef.current.filter(el => nextSel.includes(el.id)).map(el => ({
-            id: el.id, ox: el.x, oy: el.y, ox2: el.x2, oy2: el.y2, pts: el.points?.map(p => ({ ...p })),
-          }))
-          moveRef.current = { mx: pos.x, my: pos.y, items }
-        }
-      } else if (!e.shiftKey) {
-        setSelectedIds([])
-        marqueeRef.current = { sx: pos.x, sy: pos.y, ex: pos.x, ey: pos.y, additive: false, active: false, origSel: [] }
-        drawingRef.current = true
-      } else {
-        marqueeRef.current = { sx: pos.x, sy: pos.y, ex: pos.x, ey: pos.y, additive: true, active: false, origSel: Array.from(selIdsRef.current) }
-        drawingRef.current = true
-      }
-      render(); return
-    }
-    if (toolRef.current === 'fill') {
-      const canvas = canvasRef.current!
-      const ctx = canvas.getContext('2d')!
-      const r = canvas.getBoundingClientRect()
-      const kx = canvas.width / r.width, ky = canvas.height / r.height
-      const px = Math.min(canvas.width - 1, Math.max(0, Math.round((e.clientX - r.left) * kx)))
-      const py = Math.min(canvas.height - 1, Math.max(0, Math.round((e.clientY - r.top) * ky)))
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      const filledData = applyFloodFill(imageData, px, py, colorRef.current)
-      ctx.putImageData(filledData, 0, 0)
-      const fillUrl = canvas.toDataURL()
-      const fillEl: DrawElement = {
-        id: uid(), type: 'fill', fillImageUrl: fillUrl,
-        x: 0, y: 0, x2: canvas.width, y2: canvas.height,
-        color: colorRef.current, strokeWidth: 0, opacity: 100, filled: true,
-        // Pan/zoom active right now, so render() can redraw this raster
-        // snapshot at the correct logical position/scale later instead of
-        // always stamping it back at a fixed screen position (s. DrawElement
-        // in types/index.ts for why this only applies to 'fill').
-        fillPanX: panRef.current.x, fillPanY: panRef.current.y, fillScale: scaleRef.current,
-      }
-      const img = new Image()
-      img.src = fillUrl
-      fillImgCacheRef.current.set(fillEl.id, img)
-      elsRef.current = [...elsRef.current, fillEl]
-      pushHist(elsRef.current); save(); render()
-      return
-    }
-    if (toolRef.current === 'eraser') {
-      const ctx = canvasRef.current!.getContext('2d')!
-      const before = elsRef.current.length
-      elsRef.current = elsRef.current.filter(el => !hitEl(el, pos.x, pos.y, ctx))
-      if (elsRef.current.length !== before) { pushHist(elsRef.current); render(); save() }
-      drawingRef.current = true; return
-    }
-    if (toolRef.current === 'text') {
-      const r = canvasRef.current!.getBoundingClientRect()
-      setTextPos({ cx: pos.x, cy: pos.y, sx: e.clientX - r.left, sy: e.clientY - r.top })
-      setTextVal(''); return
-    }
-    drawingRef.current = true
-    curRef.current = {
-      id: uid(),
-      type: toolRef.current === 'pen' ? 'freedraw' : toolRef.current as DrawElement['type'],
-      x: pos.x, y: pos.y, x2: pos.x, y2: pos.y,
-      points: toolRef.current === 'pen' ? [pos] : undefined,
-      color: colorRef.current, strokeWidth: swRef.current, opacity: opacRef.current, filled: filledRef.current,
-      brushType: toolRef.current === 'pen' ? brushTypeRef.current : undefined,
-      // These were only ever being applied via applyToSelection() (restyling
-      // an EXISTING shape) — a newly drawn shape never picked up the current
-      // fill/stroke-style/corner defaults at all, so "Fill style" appeared
-      // to do nothing until you went back and reselected what you'd just
-      // drawn. Every new shape needs to start with the current defaults too.
-      bgColor: bgColorRef.current,
-      fillStyle: fillStyleRef.current,
-      strokeStyle: strokeDashRef.current,
-      roundCorners: toolRef.current === 'rect' ? roundCornersRef.current : undefined,
-    }
-    render()
-  }
-
-  function onMouseMove(e: React.MouseEvent<HTMLCanvasElement>) {
-    if (toolRef.current === 'pen') {
-      cursorPtRef.current = toCanvas(e.clientX, e.clientY)
-    }
-    if (panningRef.current) {
-      panRef.current = { x: panStartRef.current.ox + e.clientX - panStartRef.current.mx, y: panStartRef.current.oy + e.clientY - panStartRef.current.my }
-      render(); renderCursor(); return
-    }
-    if (!drawingRef.current) { if (toolRef.current === 'pen') renderCursor(); return }
-    const pos = toCanvas(e.clientX, e.clientY)
-
-    if (toolRef.current === 'select' && resizeRef.current) {
-      const { id, handle, orig, origBox, anchor } = resizeRef.current
-      if (handle === 'start' || handle === 'end') {
-        let ex = pos.x, ey = pos.y
-        if (e.shiftKey) {
-          const dx = ex - anchor.x, dy = ey - anchor.y
-          const snapAngle = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4)
-          const dist = Math.hypot(dx, dy)
-          ex = anchor.x + dist * Math.cos(snapAngle); ey = anchor.y + dist * Math.sin(snapAngle)
-        }
-        elsRef.current = elsRef.current.map(el => el.id !== id ? el : (handle === 'start' ? { ...el, x: ex, y: ey } : { ...el, x2: ex, y2: ey }))
-        render(); return
-      }
-      let { x1, y1, x2, y2 } = origBox
-      if (handle === 'nw' || handle === 'n' || handle === 'ne') y1 = pos.y
-      if (handle === 'sw' || handle === 's' || handle === 'se') y2 = pos.y
-      if (handle === 'nw' || handle === 'w' || handle === 'sw') x1 = pos.x
-      if (handle === 'ne' || handle === 'e' || handle === 'se') x2 = pos.x
-      const isCorner = handle === 'nw' || handle === 'ne' || handle === 'sw' || handle === 'se'
-      if (e.shiftKey && isCorner) {
-        const origW = origBox.x2 - origBox.x1 || 1, origH = origBox.y2 - origBox.y1 || 1
-        const ratio = origW / origH
-        const newW = x2 - x1, newH = y2 - y1
-        if (Math.abs(newW) > Math.abs(newH) * ratio) {
-          const targetH = Math.sign(newH || 1) * Math.abs(newW) / ratio
-          if (handle === 'nw' || handle === 'ne') y1 = y2 - targetH; else y2 = y1 + targetH
-        } else {
-          const targetW = Math.sign(newW || 1) * Math.abs(newH) * ratio
-          if (handle === 'nw' || handle === 'sw') x1 = x2 - targetW; else x2 = x1 + targetW
-        }
-      }
-      elsRef.current = elsRef.current.map(el => {
-        if (el.id !== id) return el
-        if (orig.type === 'freedraw') {
-          const scaleX = (x2 - x1) / (origBox.x2 - origBox.x1 || 1), scaleY = (y2 - y1) / (origBox.y2 - origBox.y1 || 1)
-          return { ...el, x: x1, y: y1, x2, y2, points: orig.points?.map(p => ({ x: x1 + (p.x - origBox.x1) * scaleX, y: y1 + (p.y - origBox.y1) * scaleY })) }
-        }
-        if (orig.type === 'text') {
-          const scaleX = (x2 - x1) / (origBox.x2 - origBox.x1 || 1), scaleY = (y2 - y1) / (origBox.y2 - origBox.y1 || 1)
-          const avg = (Math.abs(scaleX) + Math.abs(scaleY)) / 2
-          return { ...el, x: x1, y: y1, x2, y2, fontSize: Math.max(6, Math.round((orig.fontSize ?? 16) * avg)) }
-        }
-        return { ...el, x: x1, y: y1, x2, y2 }
-      })
-      render(); return
-    }
-    if (toolRef.current === 'select' && marqueeRef.current) {
-      const mq = marqueeRef.current
-      mq.ex = pos.x; mq.ey = pos.y
-      if (!mq.active && Math.hypot(mq.ex - mq.sx, mq.ey - mq.sy) > 4 / scaleRef.current) mq.active = true
-      if (mq.active) {
-        const x1 = Math.min(mq.sx, mq.ex), y1 = Math.min(mq.sy, mq.ey)
-        const x2 = Math.max(mq.sx, mq.ex), y2 = Math.max(mq.sy, mq.ey)
-        const hitIds = elsRef.current.filter(el => {
-          if (el.type === 'fill') return false
-          const ex1 = Math.min(el.x, el.x2), ey1 = Math.min(el.y, el.y2)
-          const ex2 = Math.max(el.x, el.x2), ey2 = Math.max(el.y, el.y2)
-          return ex2 >= x1 && ex1 <= x2 && ey2 >= y1 && ey1 <= y2
-        }).map(el => el.id)
-        const next = mq.additive ? Array.from(new Set([...mq.origSel, ...hitIds])) : hitIds
-        setSelectedIds(next); selIdsRef.current = new Set(next)
-      }
-      render(); return
-    }
-    if (toolRef.current === 'select' && moveRef.current) {
-      const dx = pos.x - moveRef.current.mx, dy = pos.y - moveRef.current.my
-      const map = new Map(moveRef.current.items.map(it => [it.id, it]))
-      elsRef.current = elsRef.current.map(el => {
-        const it = map.get(el.id); if (!it) return el
-        return { ...el, x: it.ox + dx, y: it.oy + dy, x2: it.ox2 + dx, y2: it.oy2 + dy, points: it.pts?.map(p => ({ x: p.x + dx, y: p.y + dy })) }
-      })
-      render(); return
-    }
-    if (toolRef.current === 'eraser') {
-      const ctx = canvasRef.current!.getContext('2d')!
-      const before = elsRef.current.length
-      elsRef.current = elsRef.current.filter(el => !hitEl(el, pos.x, pos.y, ctx))
-      if (elsRef.current.length !== before) render(); return
-    }
-    const el = curRef.current; if (!el) return
-    if (el.type === 'freedraw') {
-      el.points = [...(el.points ?? []), pos]
-      const xs = el.points.map(p => p.x), ys = el.points.map(p => p.y)
-      el.x = Math.min(...xs); el.y = Math.min(...ys); el.x2 = Math.max(...xs); el.y2 = Math.max(...ys)
-    } else if (e.shiftKey && (el.type === 'line' || el.type === 'arrow')) {
-      // Snap to 0° / 45° / 90° increments when Shift held
-      const dx = pos.x - el.x, dy = pos.y - el.y
-      const snapAngle = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4)
-      const dist = Math.hypot(dx, dy)
-      el.x2 = el.x + dist * Math.cos(snapAngle)
-      el.y2 = el.y + dist * Math.sin(snapAngle)
-    } else {
-      const sq = e.shiftKey && (el.type === 'rect' || el.type === 'ellipse')
-      const dx = pos.x - el.x, dy = pos.y - el.y
-      el.x2 = sq ? el.x + Math.sign(dx) * Math.max(Math.abs(dx), Math.abs(dy)) : pos.x
-      el.y2 = sq ? el.y + Math.sign(dy) * Math.max(Math.abs(dx), Math.abs(dy)) : pos.y
-    }
-    render(); renderCursor()
-  }
-
-  function onMouseUp() {
-    if (panningRef.current) { panningRef.current = false; saveView(); return }
-    if (toolRef.current === 'select') {
-      if (resizeRef.current) { pushHist(elsRef.current); save(); resizeRef.current = null; drawingRef.current = false; return }
-      if (marqueeRef.current) { marqueeRef.current = null; drawingRef.current = false; render(); return }
-      if (moveRef.current) { pushHist(elsRef.current); save() }
-      moveRef.current = null; drawingRef.current = false; return
-    }
-    if (toolRef.current === 'eraser') { pushHist(elsRef.current); save(); drawingRef.current = false; return }
-    const el = curRef.current
-    if (el) {
-      const ok = el.type === 'freedraw' ? (el.points?.length ?? 0) > 1 : Math.abs(el.x2 - el.x) > 2 || Math.abs(el.y2 - el.y) > 2
-      if (ok) { elsRef.current = [...elsRef.current, el]; pushHist(elsRef.current); save() }
-    }
-    curRef.current = null; drawingRef.current = false; render()
-  }
-
-  function onWheel(e: React.WheelEvent<HTMLCanvasElement>) {
-    e.preventDefault()
-    e.stopPropagation()   // keep scroll/zoom inside the widget, don't pan the board
-    const r = canvasRef.current!.getBoundingClientRect()
-    const mx = e.clientX - r.left, my = e.clientY - r.top
-    if (e.ctrlKey || e.metaKey) {
-      const f = e.deltaY < 0 ? 1.1 : 0.9
-      const ns = Math.max(0.1, Math.min(10, scaleRef.current * f))
-      panRef.current = { x: mx - (mx - panRef.current.x) * (ns / scaleRef.current), y: my - (my - panRef.current.y) * (ns / scaleRef.current) }
-      scaleRef.current = ns; setZoomPct(Math.round(ns * 100))
-    } else {
-      panRef.current = { x: panRef.current.x - e.deltaX, y: panRef.current.y - e.deltaY }
-    }
-    render(); saveView()
-  }
-
-  // Right-click menu — follows the same ad-hoc shape TableWidget.tsx already
-  // uses for its own per-cell context menu (local {x,y} state → a
-  // position:fixed div → its own outside-click/Escape close effect below):
-  // no shared context-menu component exists elsewhere in the app to reuse.
-  function onContextMenu(e: React.MouseEvent<HTMLCanvasElement>) {
-    e.preventDefault()
-    if (toolRef.current !== 'select') setTool('select')
-    const pos = toCanvas(e.clientX, e.clientY)
-    const ctx = canvasRef.current!.getContext('2d')!
-    let found: string | null = null
-    for (let i = elsRef.current.length - 1; i >= 0; i--) {
-      if (hitEl(elsRef.current[i], pos.x, pos.y, ctx)) { found = elsRef.current[i].id; break }
-    }
-    if (found && !selIdsRef.current.has(found)) {
-      setSelectedIds([found]); selIdsRef.current = new Set([found])
-    } else if (!found) {
-      setSelectedIds([]); selIdsRef.current = new Set()
-    }
-    setCtxMenu({ x: e.clientX, y: e.clientY, hasTarget: !!found })
-    render()
-  }
-
-  // ── Text commit ───────────────────────────────────────────────────────────
-
-  function commitText() {
-    const pos = textPosRef.current
-    const val = textValRef.current.trim()
-    if (pos && val) {
-      const fs = fontSizeRef.current
-      const ctx = canvasRef.current?.getContext('2d')
-      let textW = 100
-      if (ctx) {
-        ctx.save()
-        ctx.font = `${fs}px sans-serif`
-        textW = ctx.measureText(val).width / scaleRef.current
-        ctx.restore()
-      }
-      elsRef.current = [...elsRef.current, {
-        id: uid(), type: 'text',
-        x: pos.cx, y: pos.cy,
-        x2: pos.cx + textW, y2: pos.cy + fs,
-        color: colorRef.current, strokeWidth: swRef.current,
-        opacity: opacRef.current, filled: false, text: val, fontSize: fs,
-      }]
-      pushHist(elsRef.current); render(); save()
-    }
-    setTextPos(null); setTextVal('')
-  }
-  commitTextRef.current = commitText
-
-  useEffect(() => {
-    if (!textPos) return
-    let handler: ((e: MouseEvent) => void) | null = null
-    const timer = setTimeout(() => {
-      handler = (e: MouseEvent) => {
-        if ((e.target as HTMLElement).dataset.textInput) return
-        commitTextRef.current()
-      }
-      document.addEventListener('mousedown', handler)
-    }, 100)
-    return () => {
-      clearTimeout(timer)
-      if (handler) document.removeEventListener('mousedown', handler)
-    }
-  }, [!!textPos]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Export as PNG ─────────────────────────────────────────────────────────
-
-  function exportPng() {
-    const canvas = canvasRef.current; if (!canvas) return
-    const a = document.createElement('a')
-    a.href = canvas.toDataURL('image/png')
-    a.download = `${t('drawing')}.png`
-    a.click()
-  }
-
-  function clearAll() {
-    elsRef.current = []; curRef.current = null; setSelectedIds([])
-    pushHist(elsRef.current); render(); save()
-  }
-
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
-
-  const isShape = SHAPE_TOOLS.includes(tool)
-  const cursor  = tool === 'pen' ? 'none' : tool === 'select' ? 'default' : tool === 'eraser' ? 'cell' : tool === 'text' ? 'text' : tool === 'fill' ? 'crosshair' : 'crosshair'
-
-  function tb(active: boolean) {
-    return { ...BTN, background: active ? 'var(--accent)' : 'var(--surface2)', color: active ? 'var(--on-accent, white)' : 'var(--text2)' }
-  }
-
-  // ── Format panels ─────────────────────────────────────────────────────────
-
-  const liveSwPx = pctToSw(strokePct)
-
-  const activeBrushLabel = BRUSH_DEFS.find(b => b.id === brushType)?.label ?? brushType
-
-  // Inlined directly (not a nested component): PenPanel/FormatPanel are each
-  // used exactly once and hold no state of their own — every value they
-  // show comes from this component's own state/closures. A nested
-  // component defined in the render body would get a new type identity on
-  // every render (remount instead of update); since there's no separate
-  // component here at all, that concern doesn't apply.
-  const penPanel = (
-    <div style={{ background: 'var(--popover-bg)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid var(--border)', borderRadius: 10, padding: 10, width: 220, boxShadow: '0 6px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', gap: 10 }}
-      onPointerDown={e => e.stopPropagation()}>
-
-      {/* ── Brush type selector ── */}
-      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Brush type')}</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {BRUSH_DEFS.map(b => (
-          <button key={b.id} onClick={() => { setBrushType(b.id); applyToSelection(el => el.type === 'freedraw' ? { brushType: b.id } : {}) }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '4px 8px', borderRadius: 7, cursor: 'pointer',
-              border: '1px solid var(--border)',
-              background: brushType === b.id ? 'var(--accent)' : 'var(--surface2)',
-              color: brushType === b.id ? 'var(--on-accent, white)' : 'var(--text2)',
-            }}>
-            <div style={{ flex: 1, minWidth: 0 }}>{b.preview}</div>
-            <span style={{ fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>{t(b.label)}</span>
-          </button>
-        ))}
-      </div>
-
-      <div style={{ height: 1, background: 'var(--border)' }} />
-
-      {/* ── Stroke style ── */}
-      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Stroke style')}</div>
-      <div style={{ display: 'flex', gap: 5 }}>
-        {(['solid', 'dashed', 'dotted'] as const).map(s => (
-          <button key={s} title={t(STROKE_STYLE_LABELS[s])} onClick={() => { setStrokeDash(s); applyToSelection({ strokeStyle: s }) }}
-            style={{ ...BTN, flex: 1, background: strokeDash === s ? 'var(--accent)' : 'var(--surface2)', color: strokeDash === s ? 'var(--on-accent, white)' : 'var(--text2)' }}>
-            {s === 'solid' ? <IcoStrokeSolid /> : s === 'dashed' ? <IcoStrokeDashed /> : <IcoStrokeDotted />}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ height: 1, background: 'var(--border)' }} />
-
-      {/* ── Stroke width ── */}
-      <div>
-        <Slider label={t('Stroke width')} value={strokePct}
-          onChange={v => { setStrokePct(v); liveApplyToSelection({ strokeWidth: pctToSw(v) }) }}
-          onCommit={commitSelectionEdit} />
-        <div style={{ marginTop: 6, height: 28, background: 'var(--surface2)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--border)' }}>
-          <div style={{ width: '80%', height: Math.max(1, liveSwPx), background: color, opacity: opacityPct / 100, borderRadius: 999, transition: 'height 0.1s' }} />
-        </div>
-      </div>
-      <div style={{ height: 1, background: 'var(--border)' }} />
-      <div>
-        <Slider label={t('Opacity')} value={opacityPct}
-          onChange={v => { setOpacityPct(v); liveApplyToSelection({ opacity: v }) }}
-          onCommit={commitSelectionEdit} />
-        <div style={{ marginTop: 6, height: 28, borderRadius: 6, border: '1px solid var(--border)', overflow: 'hidden', background: 'repeating-conic-gradient(#ccc 0% 25%, white 0% 50%) 0 0 / 10px 10px' }}>
-          <div style={{ width: '100%', height: '100%', background: color, opacity: opacityPct / 100, transition: 'opacity 0.1s' }} />
-        </div>
-      </div>
-    </div>
-  )
-
-  const formatPanel = (
-    <div style={{ background: 'var(--popover-bg)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid var(--border)', borderRadius: 10, padding: 10, width: 210, boxShadow: '0 6px 24px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', gap: 8 }}
-      onPointerDown={e => e.stopPropagation()}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Shapes')}</div>
-      <div style={{ display: 'flex', gap: 5 }}>
-        {(Object.entries(SHAPE_LABELS) as [ShapeTool, string][]).map(([st, label]) => (
-          <button key={st} title={t(label)} onClick={() => { setTool(st); setShowFormat(false) }}
-            style={{ ...BTN, flex: 1, background: tool === st ? 'var(--accent)' : 'var(--surface2)', color: tool === st ? 'var(--on-accent, white)' : 'var(--text2)' }}>
-            {SHAPE_ICONS[st]}
-          </button>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 5 }}>
-        <button onClick={() => {
-          const v = !filled; setFilled(v)
-          // Also (re-)apply the currently-shown fill style/color when turning
-          // fill ON — otherwise an existing shape with no fillStyle of its
-          // own falls back to the legacy plain look regardless of which
-          // style button is highlighted here, which reads as "fill style
-          // does nothing".
-          applyToSelection(v ? { filled: v, fillStyle, bgColor } : { filled: v })
-        }}
-          style={{ ...BTN, flex: 1, width: 'auto', padding: '0 8px', gap: 5, fontSize: 10, fontWeight: 600, background: filled ? 'var(--accent)' : 'var(--surface2)', color: filled ? 'var(--on-accent, white)' : 'var(--text2)' }}>
-          <svg width="12" height="12" viewBox="0 0 16 16" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="12" height="12" rx="1.5"/></svg>
-          {t('Fill on/off')}
-        </button>
-        <button title={t('Rounded corners (rectangle)')} onClick={() => { const v = !roundCorners; setRoundCorners(v); applyToSelection(el => el.type === 'rect' ? { roundCorners: v } : {}) }}
-          style={{ ...BTN, background: roundCorners ? 'var(--accent)' : 'var(--surface2)', color: roundCorners ? 'var(--on-accent, white)' : 'var(--text2)' }}>
-          <IcoRoundCorner />
-        </button>
-      </div>
-
-      {filled && (<>
-        <div style={{ height: 1, background: 'var(--border)' }} />
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Fill style')}</div>
-        <div style={{ display: 'flex', gap: 5 }}>
-          {(['hachure', 'cross-hatch', 'solid'] as const).map(fs => (
-            <button key={fs} title={t(FILL_STYLE_LABELS[fs])} onClick={() => { setFillStyleState(fs); applyToSelection({ fillStyle: fs }) }}
-              style={{ ...BTN, flex: 1, background: fillStyle === fs ? 'var(--accent)' : 'var(--surface2)', color: fillStyle === fs ? 'var(--on-accent, white)' : 'var(--text2)' }}>
-              {fs === 'hachure' ? <IcoFillHachure /> : fs === 'cross-hatch' ? <IcoFillCrossHatch /> : <IcoFillSolid />}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text2)' }}>{t('Fill color')}</span>
-          <ColorSwatch value={bgColor ?? color} onChange={v => { setBgColor(v); applyToSelection({ bgColor: v }) }}
-            trigger={onClick => (
-              <button onClick={onClick} title={t('Fill color')}
-                style={{ width: 22, height: 22, borderRadius: 5, background: bgColor ?? color, border: '1px solid var(--border)', cursor: 'pointer', marginLeft: 'auto' }} />
-            )}
-          />
-        </div>
-      </>)}
-    </div>
-  )
-
-  // ── JSX ───────────────────────────────────────────────────────────────────
-
-  return (
-    <div ref={widgetRootRef}
-      style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 4, overflow: 'hidden' }}
-      onPointerDown={e => { e.stopPropagation(); isWidgetActiveRef.current = true }}
-      onWheel={e => { if (isWidgetActiveRef.current) { e.stopPropagation() } }}>
-
-      {/* ── Toolbar — nur im Bearbeitungsmodus, im Ansichtsmodus rein lesend ── */}
-      {isEdit && (
-      <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap', position: 'relative' }}>
-
-        {/* Select */}
-        <button title={t('Select')} onClick={() => { setTool('select'); setSelectedIds([]); render() }} style={tb(tool === 'select')}>
-          <IcoSelect />
-        </button>
-
-        {/* Pen + options ▾ */}
-        <div ref={penGroupRef} style={{ position: 'relative', display: 'flex', gap: 0 }}>
-          <button title={`${t('Freehand')} — ${t(activeBrushLabel)}`}
-            onClick={() => { setTool('pen'); setShowPenOpts(false); setShowFormat(false); setShowColors(false) }}
-            style={{ ...tb(tool === 'pen'), borderRadius: '6px 0 0 6px', borderRight: 'none' }}>
-            <IcoPen />
-          </button>
-          <button title={t('Pen options')} onClick={() => { setShowPenOpts(s => !s); setShowFormat(false); setShowColors(false) }}
-            style={{ ...tb(showPenOpts), borderRadius: '0 6px 6px 0', width: 14, padding: 0 }}>
-            <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><path d="M1 2l3 4 3-4z"/></svg>
-          </button>
-          <PortalPopover open={showPenOpts} anchorRef={penGroupRef} onClose={() => setShowPenOpts(false)}>
-            {penPanel}
-          </PortalPopover>
-        </div>
-
-        {/* Shapes ▾ */}
-        <div ref={formatGroupRef} style={{ position: 'relative' }}>
-          <button title={t('Shapes (Shift+drag: snap to angle)')} onClick={() => { setShowFormat(s => !s); setShowPenOpts(false); setShowColors(false) }}
-            style={{ ...tb(isShape || showFormat), gap: 3, width: 'auto', padding: '0 6px' }}>
-            {isShape ? SHAPE_ICONS[tool as ShapeTool] : <IcoShapes />}
-            <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><path d="M1 2l3 4 3-4z"/></svg>
-          </button>
-          <PortalPopover open={showFormat} anchorRef={formatGroupRef} onClose={() => setShowFormat(false)}>
-            {formatPanel}
-          </PortalPopover>
-        </div>
-
-        {/* Text */}
-        <button title={t('Text')} onClick={() => setTool('text')} style={tb(tool === 'text')}>
-          <IcoText />
-        </button>
-
-        {/* Font size — only shown when text tool is active */}
-        {tool === 'text' && (
-          <Dropdown
-            value={String(fontSize)}
-            onChange={v => setFontSize(+v)}
-            title={t('Font size')}
-            buttonStyle={{ fontSize: 11, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 5, padding: '2px 4px', height: 28 }}
-            options={[10, 12, 14, 16, 20, 24, 32, 48].map(s => ({ value: String(s), label: `${s}px` }))}
-          />
-        )}
-
-        {/* Eraser */}
-        <button title={t('Eraser')} onClick={() => setTool('eraser')} style={tb(tool === 'eraser')}>
-          <IcoEraser />
-        </button>
-
-        {/* Fill bucket */}
-        <button title={t('Fill bucket (fill area with color)')} onClick={() => setTool('fill')} style={tb(tool === 'fill')}>
-          <IcoBucket />
-        </button>
-
-        <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 1px' }} />
-
-        {/* Color */}
-        <div ref={colorGroupRef} style={{ position: 'relative' }}>
-          <button title={t('Color')} onClick={() => { setShowColors(s => !s); setShowFormat(false); setShowPenOpts(false) }}
-            style={{ ...BTN, background: color, border: showColors ? '2px solid var(--accent)' : '2px solid rgba(0,0,0,0.4)' }} />
-          <PortalPopover open={showColors} anchorRef={colorGroupRef} onClose={() => setShowColors(false)}>
-            <div style={{ background: 'var(--popover-bg)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid var(--border)', borderRadius: 8, padding: 6, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}
-              onPointerDown={e => e.stopPropagation()}>
-              {COLORS.map(c => (
-                <button key={c} onClick={() => { setColor(c); setShowColors(false); applyToSelection({ color: c }) }}
-                  title={`${t('Color')} ${c}`}
-                  style={{ width: 24, height: 24, borderRadius: 5, background: c, border: c === color ? '2px solid var(--accent)' : '1px solid rgba(0,0,0,0.25)', cursor: 'pointer' }} />
-              ))}
-              <ColorSwatch value={color} onChange={v => { setColor(v); setShowColors(false); applyToSelection({ color: v }) }}
-                trigger={(onClick) => (
-                  <div onClick={onClick} title={t('Custom color')} style={{
-                    width: 24, height: 24, borderRadius: 5, cursor: 'pointer',
-                    background: 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)',
-                    border: '1px solid var(--border)',
-                  }} />
-                )}
-              />
-            </div>
-          </PortalPopover>
-        </div>
-
-        {/* Canvas background toggle — cycles white → grid → dark */}
-        <button
-          title={`${t('Background')}: ${t(BG_LABELS[canvasBg])} — ${t('click to switch')}`}
-          onClick={() => {
-            setCanvasBg(b => BG_CYCLE[(BG_CYCLE.indexOf(b) + 1) % BG_CYCLE.length])
-            requestAnimationFrame(render)
-          }}
-          style={{ ...BTN, gap: 3, width: 'auto', padding: '0 5px', fontSize: 9, fontWeight: 700 }}
-        >
-          <IcoGrid />
-          <span style={{ fontSize: 8, letterSpacing: -0.2 }}>{t(BG_LABELS[canvasBg]).slice(0, 3)}</span>
-        </button>
-
-        {/* Layer order — only meaningful with a selection */}
-        {selectedIds.length > 0 && (<>
-          <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 1px' }} />
-          <button title={t('Bring to front')} onClick={() => reorderSelection('front')} style={BTN}><IcoToFront /></button>
-          <button title={t('Bring forward')} onClick={() => reorderSelection('forward')} style={BTN}><IcoForward /></button>
-          <button title={t('Send backward')} onClick={() => reorderSelection('backward')} style={BTN}><IcoBackward /></button>
-          <button title={t('Send to back')} onClick={() => reorderSelection('back')} style={BTN}><IcoToBack /></button>
-        </>)}
-
-        <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 1px', marginLeft: 'auto' }} />
-
-        {/* Undo / Redo */}
-        <button title={t('Undo (Ctrl+Z)')} onClick={undo} style={BTN}><IcoUndo /></button>
-        <button title={t('Redo (Ctrl+Y)')} onClick={redo} style={BTN}><IcoRedo /></button>
-
-        {/* Export PNG */}
-        <button title={t('Export as PNG')} onClick={exportPng} style={BTN}><IcoDownload /></button>
-
-        {/* Clear */}
-        <button title={t('Clear all')} onClick={clearAll} style={{ ...BTN, color: '#ef4444' }}><IcoTrash /></button>
-      </div>
-      )}
-
-      {/* ── Canvas ── */}
-      <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', borderRadius: 6, border: '1px solid var(--border)' }}
-        onClick={isEdit ? () => { setShowColors(false); setShowFormat(false); setShowPenOpts(false) } : undefined}>
-        <canvas
-          ref={canvasRef}
-          style={{ display: 'block', cursor: isEdit ? cursor : 'default' }}
-          onMouseDown={isEdit ? onMouseDown : undefined}
-          onMouseMove={isEdit ? onMouseMove : undefined}
-          onMouseUp={isEdit ? onMouseUp : undefined}
-          onMouseLeave={isEdit ? () => { onMouseUp(); cursorPtRef.current = null; renderCursor() } : undefined}
-          onWheel={isEdit ? onWheel : undefined}
-          onContextMenu={isEdit ? onContextMenu : undefined}
-        />
-        <canvas
-          ref={cursorCanvasRef}
-          style={{ display: 'block', position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
-        />
-
-        {/* Zoom-HUD — schwebt über dem Canvas statt in der Werkzeugleiste
-            oben (die schon mit Werkzeugen/Farbe/Verlauf/Undo/Export voll ist),
-            gleiches Muster wie das Zoom-HUD des Boards (InfiniteCanvas.tsx). */}
-        {isEdit && (
-          <div
-            style={{
-              position: 'absolute', bottom: 8, right: 8, zIndex: 5,
-              display: 'flex', alignItems: 'center', gap: 2,
-              background: 'color-mix(in srgb, var(--surface) 88%, transparent)',
-              backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-              border: '1px solid var(--border)', borderRadius: 9,
-              boxShadow: '0 4px 14px rgba(0,0,0,0.22)',
-              padding: '3px 4px',
-            }}
-            onPointerDown={e => e.stopPropagation()}
-          >
-            <button title={t('Zoom out')} onClick={() => zoomBy(1 / 1.15)} style={HUD_BTN}>−</button>
-            <button title={t('Reset zoom (Ctrl+0)')} onClick={resetZoom}
-              style={{ ...HUD_BTN, width: 'auto', padding: '0 6px', fontSize: 10.5, fontWeight: 700 }}>
-              {zoomPct}%
-            </button>
-            <button title={t('Zoom in')} onClick={() => zoomBy(1.15)} style={HUD_BTN}>+</button>
-            <div style={{ width: 1, height: 16, background: 'var(--border)', margin: '0 1px' }} />
-            <button title={t('Zoom to fit (Shift+1)')} onClick={zoomToFit} style={HUD_BTN}><IcoZoomFit /></button>
-          </div>
-        )}
-
-        {ctxMenu && createPortal(
-          <div
-            style={{
-              position: 'fixed', left: ctxMenu.x, top: ctxMenu.y, zIndex: 50,
-              background: 'var(--popover-bg)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-              border: '1px solid var(--border)', borderRadius: 9, padding: 4,
-              boxShadow: '0 8px 28px rgba(0,0,0,0.28)', display: 'flex', flexDirection: 'column', gap: 1, minWidth: 168,
-            }}
-            onPointerDown={e => e.stopPropagation()}
-          >
-            {([
-              ...(ctxMenu.hasTarget ? [
-                { icon: <IcoDuplicate />, label: 'Duplicate', key: 'Ctrl+D', fn: duplicateSelection },
-                { icon: <IcoCopy />,      label: 'Copy',      key: 'Ctrl+C', fn: copySelection },
-              ] : []),
-              ...(!ctxMenu.hasTarget && clipboardRef.current.length ? [
-                { icon: <IcoPaste />, label: 'Paste', key: 'Ctrl+V', fn: pasteClipboard },
-              ] : []),
-              ...(ctxMenu.hasTarget ? [
-                { icon: <IcoTrash />,     label: 'Delete',        key: 'Del',  fn: deleteSelection },
-                { icon: <IcoToFront />,   label: 'Bring to front', fn: () => reorderSelection('front') },
-                { icon: <IcoForward />,   label: 'Bring forward',  fn: () => reorderSelection('forward') },
-                { icon: <IcoBackward />,  label: 'Send backward',  fn: () => reorderSelection('backward') },
-                { icon: <IcoToBack />,    label: 'Send to back',   fn: () => reorderSelection('back') },
-              ] : []),
-            ] as { icon: React.ReactNode; label: string; key?: string; fn: () => void }[]).map(item => (
-              <button key={item.label} onClick={() => { item.fn(); setCtxMenu(null) }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6,
-                  border: 'none', background: 'none', color: 'var(--text1)', cursor: 'pointer', fontSize: 11.5,
-                  textAlign: 'left', width: '100%',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
-              >
-                <span style={{ color: 'var(--text2)', display: 'flex', flexShrink: 0 }}>{item.icon}</span>
-                <span style={{ flex: 1 }}>{t(item.label)}</span>
-                {item.key && <span style={{ fontSize: 9.5, color: 'var(--text3)' }}>{item.key}</span>}
-              </button>
-            ))}
-          </div>,
-          document.body
-        )}
-
-        {textPos && (
-          <input
-            autoFocus
-            data-text-input="true"
-            value={textVal}
-            placeholder={t('Text… ↵ Enter')}
-            onChange={e => setTextVal(e.target.value)}
-            onKeyDown={e => {
-              e.stopPropagation()
-              if (e.key === 'Enter') { e.preventDefault(); commitText() }
-              if (e.key === 'Escape') { setTextPos(null); setTextVal('') }
-            }}
-            style={{
-              position: 'absolute',
-              left: textPos.sx,
-              top: textPos.sy - Math.round(fontSize * scaleRef.current * 0.8),
-              fontSize: fontSize * scaleRef.current,
-              fontFamily: 'sans-serif',
-              background: 'rgba(59,130,246,0.08)',
-              border: 'none',
-              outline: '1.5px dashed #3b82f6',
-              borderRadius: 3,
-              color,
-              minWidth: 100,
-              padding: '1px 4px',
-              zIndex: 10,
-            }}
-          />
-        )}
-      </div>
-    </div>
-  )
 }

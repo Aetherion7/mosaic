@@ -334,9 +334,15 @@ export interface SpreadsheetData {
 // ─── Drawboard ────────────────────────────────────────────────────────────────
 export interface DrawPoint { x: number; y: number }
 
+export type DrawShapeType =
+  | 'rect' | 'ellipse' | 'triangle' | 'diamond' | 'hexagon' | 'parallelogram'
+  | 'cylinder' | 'document' | 'cloud' | 'note' | 'callout' | 'process' | 'star'
+export type DrawArrowHead = 'none' | 'arrow' | 'open' | 'diamond' | 'circle'
+export type DrawEdgeStyle = 'straight' | 'orthogonal' | 'curved'
+
 export interface DrawElement {
   id: string
-  type: 'freedraw' | 'rect' | 'ellipse' | 'triangle' | 'line' | 'arrow' | 'text' | 'fill'
+  type: 'freedraw' | DrawShapeType | 'line' | 'arrow' | 'text' | 'fill'
   x: number; y: number; x2: number; y2: number
   points?: DrawPoint[]
   color: string
@@ -369,6 +375,28 @@ export interface DrawElement {
   strokeStyle?: 'solid' | 'dashed' | 'dotted'
   // rect only; undefined/false = sharp corners (today's only option).
   roundCorners?: boolean
+  // Text inside a shape / along a line or arrow (draw.io-style label).
+  label?: string
+  // Label color; undefined = `color`. Text elements always use `color`.
+  fontColor?: string
+  fontFamily?: 'sans' | 'serif' | 'mono' | 'hand'
+  bold?: boolean
+  italic?: boolean
+  textAlign?: 'left' | 'center' | 'right'
+  // Text elements saved before this existed stored `y` as the alphabetic
+  // baseline; true = `y` is the top edge (multi-line layout).
+  textTop?: boolean
+  shadow?: boolean
+  locked?: boolean
+  groupId?: string
+  // line/arrow only: bound shapes — the endpoint follows that shape around
+  // (its stored x/y or x2/y2 is then only a fallback).
+  startId?: string
+  endId?: string
+  edgeStyle?: DrawEdgeStyle
+  // undefined = 'none', except an 'arrow' element's end, which defaults to 'arrow'.
+  startArrow?: DrawArrowHead
+  endArrow?: DrawArrowHead
 }
 
 export interface DrawboardData {
@@ -393,6 +421,19 @@ export interface DrawboardData {
   fillStyle?:    string
   strokeStyle?:  string
   roundCorners?: boolean
+  shapeKind?:    string
+  shadow?:       boolean
+  edgeStyle?:    DrawEdgeStyle
+  startArrow?:   DrawArrowHead
+  endArrow?:     DrawArrowHead
+  fontSize?:     number
+  fontFamily?:   'sans' | 'serif' | 'mono' | 'hand'
+  bold?:         boolean
+  italic?:       boolean
+  fontColor?:    string
+  snapToGrid?:   boolean
+  guides?:       boolean
+  formatOpen?:   boolean
 }
 
 export interface HtmlWidgetData {

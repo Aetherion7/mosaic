@@ -107,9 +107,17 @@ function BoardShortcuts() {
       <KbdRow keys={['Delete']} action={t('Clear cell')} />
 
       <SectionTitle>{t('Drawboard widget')}</SectionTitle>
-      <KbdRow keys={['Ctrl', '0']} action={t('Reset zoom')} />
+      <KbdRow keys={['V', 'P', 'R', 'O', 'D', 'L', 'A', 'T', 'X', 'B']} action={t('Select · pen · rectangle · ellipse · diamond · line · arrow · text · eraser · fill')} />
+      <KbdRow keys={[t('Double-click'), 'Enter']} action={t('Edit text / label')} />
       <KbdRow keys={['Delete']} action={t('Delete selected element')} />
-      <KbdRow keys={['Alt', t('Drag')]} action={t('Pan canvas')} />
+      <KbdRow keys={['Ctrl', 'Delete']} action={t('Delete with connected lines')} />
+      <KbdRow keys={['Ctrl', 'D']} action={t('Duplicate')} />
+      <KbdRow keys={['Ctrl', 'G']} action={t('Group / ungroup')} />
+      <KbdRow keys={['Ctrl', 'L']} action={t('Lock')} />
+      <KbdRow keys={['↑', '↓', '←', '→']} action={t('Move selection (Shift: by grid size)')} />
+      <KbdRow keys={['Ctrl', '0']} action={t('Reset zoom')} />
+      <KbdRow keys={['Shift', '1']} action={t('Zoom to fit')} />
+      <KbdRow keys={['Space', t('Drag')]} action={t('Pan canvas')} />
       <KbdRow keys={['Ctrl', t('Scroll')]} action={t('Zoom')} last />
     </div>
   )
