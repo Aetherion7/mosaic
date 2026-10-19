@@ -9,7 +9,7 @@ import {
   IcoToFront, IcoToBack, IcoForward, IcoBackward, IcoAlignLeft, IcoAlignCenter, IcoAlignRight,
   IcoAlignTop, IcoAlignMiddle, IcoAlignBottom, IcoDistH, IcoDistV, IcoGroup, IcoUngroup, IcoLock,
   IcoUnlock, IcoDuplicate, IcoTrash, IcoEdgeStraight, IcoEdgeOrtho, IcoEdgeCurved, IcoBold, IcoItalic,
-  IcoTextLeft, IcoTextCenter, IcoTextRight, IcoClose, IcoEditText, ArrowHeadPreview,
+  IcoTextLeft, IcoTextCenter, IcoTextRight, IcoClose, ArrowHeadPreview,
 } from './icons'
 
 export type CanvasBg = 'white' | 'grid' | 'dark'
@@ -50,7 +50,13 @@ export interface FormatPanelProps {
   commitLive: () => void
   diagram: { canvasBg: CanvasBg; snap: boolean; guides: boolean; count: number }
   setDiagram: (patch: Partial<{ canvasBg: CanvasBg; snap: boolean; guides: boolean }>) => void
-  arrange: { units: number; canGroup: boolean; canUngroup: boolean; allLocked: boolean; geometry: Box | null; canEditText: boolean }
+  arrange: { units: number; canGroup: boolean; canUngroup: boolean; allLocked: boolean; geometry: Box | null }
+  // What the panel is editing right now ("Rectangle", "3 elements", "New shapes"…).
+  subject: string
+  // Text of the single selected shape/line/text element, editable in place.
+  content: { value: string; placeholder: string } | null
+  setContent: (v: string) => void
+  commitContent: () => void
   actions: {
     reorder: (dir: 'front' | 'back' | 'forward' | 'backward') => void
     align: (kind: AlignKind) => void
@@ -61,7 +67,6 @@ export interface FormatPanelProps {
     duplicate: () => void
     remove: () => void
     setGeometry: (b: Box) => void
-    editText: () => void
   }
   onClose: () => void
 }
@@ -181,6 +186,11 @@ function NumField({ label, value, onCommit, disabled }: { label: string; value: 
   )
 }
 
+export const PALETTE = [
+  '#111827', '#6b7280', '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4',
+  '#3b82f6', '#8b5cf6', '#ec4899', '#a16207', '#e5e7eb', '#ffffff',
+]
+
 const ARROW_HEADS: DrawArrowHead[] = ['none', 'arrow', 'open', 'diamond', 'circle']
 const HEAD_LABELS: Record<DrawArrowHead, string> = { none: 'None', arrow: 'Arrow', open: 'Open arrow', diamond: 'Diamond', circle: 'Circle' }
 const FONT_LABELS: Record<FontFamily, string> = { sans: 'Sans-serif', serif: 'Serif', mono: 'Monospace', hand: 'Handwritten' }
@@ -199,7 +209,20 @@ export function StyleSections({ t, style: s, setStyle, commitLive, kinds }: {
   return (<>
     {showStroke && (
       <Section title={t('Line')}>
-        <Row label={t('Color')}><Swatch value={s.color} onChange={v => setStyle({ color: v })} title={t('Line color')} /></Row>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+          {PALETTE.map(c => (
+            <button key={c} type="button" title={c} onClick={() => setStyle({ color: c })}
+              style={{
+                aspectRatio: '1', borderRadius: 5, background: c, cursor: 'pointer', padding: 0,
+                border: s.color.toLowerCase() === c ? '2px solid var(--accent)' : '1px solid rgba(127,127,127,0.35)',
+              }} />
+          ))}
+          <ColorSwatch value={s.color} onChange={v => setStyle({ color: v })}
+            trigger={onClick => (
+              <button type="button" onClick={onClick} title={t('Custom color')}
+                style={{ aspectRatio: '1', borderRadius: 5, cursor: 'pointer', padding: 0, border: '1px solid var(--border)', background: 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)' }} />
+            )} />
+        </div>
         <Slider label={t('Width')} value={s.strokePct} min={1} unit="%"
           onChange={v => setStyle({ strokePct: v }, true)} onCommit={commitLive} />
         <Row label={t('Pattern')}>
@@ -260,14 +283,14 @@ export function StyleSections({ t, style: s, setStyle, commitLive, kinds }: {
 
 // ─── Panel ────────────────────────────────────────────────────────────────────
 
-type Tab = 'diagram' | 'style' | 'text' | 'arrange'
+type Tab = 'canvas' | 'style' | 'text' | 'arrange'
 
 export function FormatPanel(p: FormatPanelProps) {
   const { t, style: s, setStyle, kinds } = p
-  const tabs: Tab[] = p.hasSelection ? ['style', 'text', 'arrange'] : ['diagram', 'style']
+  const tabs: Tab[] = p.hasSelection ? ['style', 'text', 'arrange'] : ['style', 'canvas']
   const [tabPick, setTabPick] = useState<Tab>('style')
   const tab = tabs.includes(tabPick) ? tabPick : tabs[0]
-  const TAB_LABELS: Record<Tab, string> = { diagram: 'Diagram', style: 'Style', text: 'Text', arrange: 'Arrange' }
+  const TAB_LABELS: Record<Tab, string> = { canvas: 'Canvas', style: 'Style', text: 'Text', arrange: 'Arrange' }
   const showText = kinds.text || kinds.shape || kinds.edge
 
   return (
@@ -282,6 +305,13 @@ export function FormatPanel(p: FormatPanelProps) {
         border: '1px solid var(--border)', borderRadius: 10,
         boxShadow: '0 6px 22px rgba(0,0,0,0.22)', overflow: 'hidden',
       }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 6px 0 11px', flexShrink: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, color: 'var(--text1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={p.subject}>
+          {p.subject}
+        </div>
+        <button type="button" title={t('Close')} onClick={p.onClose}
+          style={{ ...ICON_BTN, width: 22, height: 22, border: 'none', background: 'transparent' }}><IcoClose /></button>
+      </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: 6, flexShrink: 0 }}>
         <div style={{ display: 'flex', flex: 1, gap: 2, background: 'var(--surface2)', borderRadius: 7, padding: 2, border: '1px solid var(--border)' }}>
           {tabs.map(tb => (
@@ -296,12 +326,10 @@ export function FormatPanel(p: FormatPanelProps) {
             </button>
           ))}
         </div>
-        <button type="button" title={t('Close')} onClick={p.onClose}
-          style={{ ...ICON_BTN, width: 22, height: 22, border: 'none', background: 'transparent' }}><IcoClose /></button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
-        {tab === 'diagram' && (<>
+        {tab === 'canvas' && (<>
           <Section title={t('Background')}>
             <div style={{ display: 'flex', gap: 3 }}>
               {(['white', 'grid', 'dark'] as CanvasBg[]).map(bg => (
@@ -323,16 +351,13 @@ export function FormatPanel(p: FormatPanelProps) {
             <Row label={t('Alignment guides')}><MiniToggle value={p.diagram.guides} onChange={v => p.setDiagram({ guides: v })} label={t('Alignment guides')} /></Row>
             <div style={{ fontSize: 10, color: 'var(--text3)', lineHeight: 1.4 }}>{t('Hold Alt while dragging to place freely.')}</div>
           </Section>
-          <Section title={t('Diagram')}>
+          <Section title={t('Drawing')}>
             <div style={{ fontSize: 11, color: 'var(--text2)' }}>{p.diagram.count} {t(p.diagram.count === 1 ? 'element' : 'elements')}</div>
             <div style={{ fontSize: 10, color: 'var(--text3)', lineHeight: 1.4 }}>{t('Select an element to edit its style, text and arrangement.')}</div>
           </Section>
         </>)}
 
         {tab === 'style' && (<>
-          {!p.hasSelection && (
-            <div style={{ padding: '2px 10px 8px', fontSize: 10, color: 'var(--text3)', lineHeight: 1.4 }}>{t('Defaults for new elements')}</div>
-          )}
           <StyleSections t={t} style={s} setStyle={setStyle} commitLive={p.commitLive} kinds={kinds} />
         </>)}
 
@@ -340,6 +365,18 @@ export function FormatPanel(p: FormatPanelProps) {
           {!showText ? (
             <div style={{ padding: 12, fontSize: 11, color: 'var(--text3)' }}>{t('Freehand strokes have no text.')}</div>
           ) : (<>
+            {p.content && (
+              <Section title={t('Content')}>
+                <textarea value={p.content.value} placeholder={p.content.placeholder} rows={3}
+                  onChange={e => p.setContent(e.target.value)} onBlur={p.commitContent}
+                  onKeyDown={e => e.stopPropagation()}
+                  style={{
+                    width: '100%', resize: 'vertical', minHeight: 54, fontSize: 12, lineHeight: 1.4, fontFamily: 'inherit',
+                    background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 8px',
+                    color: 'var(--text1)', outline: 'none',
+                  }} />
+              </Section>
+            )}
             <Section title={t('Font')}>
               <Dropdown value={s.fontFamily} onChange={v => setStyle({ fontFamily: v as FontFamily })} title={t('Font')}
                 buttonStyle={{ width: '100%' }}
@@ -364,14 +401,6 @@ export function FormatPanel(p: FormatPanelProps) {
                   onChange={v => setStyle({ fontColor: v })} title={t('Font color')} />
               </Row>
             </Section>
-            {p.arrange.canEditText && (
-              <div style={{ padding: '0 10px 10px' }}>
-                <button type="button" onClick={p.actions.editText}
-                  style={{ ...ICON_BTN, width: '100%', gap: 6, fontSize: 11, fontWeight: 600, height: 28 }}>
-                  <IcoEditText />{t('Edit text')}
-                </button>
-              </div>
-            )}
           </>)}
         </>)}
 

@@ -9,7 +9,17 @@ const I = ({ children, size = 15, strokeWidth = '1.6' }: { children: React.React
   </svg>
 )
 
-export const IcoSelect   = () => <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l10 5.5-5 1-2.5 5.5z"/></svg>
+export const IcoSelect   = () => (
+  <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round">
+    <path d="M3.5 2.2l9.2 5.6-4 .9 2.3 4.3-1.6.8-2.3-4.3-3 2.9z"/>
+  </svg>
+)
+export const IcoHand     = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/>
+    <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-6-2.4l-3.6-3.6a2 2 0 0 1 2.8-2.8L6 15"/>
+  </svg>
+)
 export const IcoPen      = () => <I><path d="M11 2l3 3-8 8-3.5.5.5-3.5z"/><line x1="9.5" y1="3.5" x2="12.5" y2="6.5"/></I>
 export const IcoText     = () => <I strokeWidth="1.8"><line x1="2" y1="4" x2="14" y2="4"/><line x1="8" y1="4" x2="8" y2="14"/></I>
 export const IcoEraser   = () => (
@@ -24,8 +34,8 @@ export const IcoBucket   = () => (
     <path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z" fill="currentColor"/>
   </svg>
 )
-export const IcoLine     = () => <I><line x1="2" y1="14" x2="14" y2="2"/></I>
-export const IcoArrow    = () => <I><line x1="2" y1="14" x2="14" y2="2"/><path d="M14 2l-4.5 1.5 3 3z" fill="currentColor" stroke="none"/></I>
+export const IcoLine     = () => <I strokeWidth="1.7"><line x1="3" y1="13" x2="13" y2="3"/><circle cx="3" cy="13" r="1.3" fill="currentColor"/><circle cx="13" cy="3" r="1.3" fill="currentColor"/></I>
+export const IcoArrow    = () => <I strokeWidth="1.7"><line x1="3" y1="13" x2="12.5" y2="3.5"/><polyline points="6.5 3 13 3 13 9.5"/></I>
 export const IcoUndo     = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>

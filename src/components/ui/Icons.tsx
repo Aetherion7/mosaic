@@ -246,8 +246,10 @@ export function IconTable({ size, strokeWidth }: P) {
 
 export function IconDraw({ size, strokeWidth }: P) {
   return <Ic size={size} strokeWidth={strokeWidth}>
-    <rect x="1.5" y="1.5" width="13" height="13" rx="2"/>
-    <path d="M4 10 Q6 5.5 8.5 8 Q10.5 10 12.5 6"/>
+    {/* Rectangle + triangle + a free pen stroke: shapes AND sketching */}
+    <rect x="1.5" y="1.75" width="5.5" height="5" rx="0.8"/>
+    <path d="M11.75 1.5 L14.75 6.75 L8.75 6.75 Z"/>
+    <path d="M1.75 13.25 C3.25 9.25 5.25 9.25 6.5 11.75 S10.5 14.75 14.25 10"/>
   </Ic>
 }
 export function IconMap({ size, strokeWidth }: P) {
