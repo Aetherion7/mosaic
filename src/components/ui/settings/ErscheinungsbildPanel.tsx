@@ -12,7 +12,6 @@ import ThemeEditorModal from './ThemeEditorModal'
 
 export default function ErscheinungsbildPanel() {
   const headerStyle    = useSettings(s => s.headerStyle)
-  const islandRoundness = useSettings(s => s.islandRoundness ?? 100)
   const animations     = useSettings(s => s.animations)
   const showMinimap    = useSettings(s => s.showMinimap)
   const setSetting     = useSettings(s => s.setSetting)
@@ -59,30 +58,6 @@ export default function ErscheinungsbildPanel() {
         />
       </div>
 
-      {headerStyle === 'island' && (
-        <div style={{ marginTop: 14, padding: '12px 14px', borderRadius: 12, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
-            <div>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text1)' }}>{t('Island rounding')}</div>
-              <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>{t('From square corners to fully round pills')}</div>
-            </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>
-              {islandRoundness >= 100 ? t('Round') : islandRoundness === 0 ? t('Square') : `${islandRoundness}%`}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 14, height: 14, borderRadius: 2, border: '1.5px solid var(--text3)', flexShrink: 0 }} />
-            <input
-              id="island-roundness"
-              type="range" min={0} max={100} step={5} value={islandRoundness}
-              onChange={e => setSetting({ islandRoundness: Number(e.target.value) })}
-              aria-label={t('Island rounding')}
-              style={{ flex: 1, accentColor: 'var(--accent)' }}
-            />
-            <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1.5px solid var(--text3)', flexShrink: 0 }} />
-          </div>
-        </div>
-      )}
 
       <SectionTitle>{t('Board')}</SectionTitle>
       <Row
@@ -116,7 +91,6 @@ export default function ErscheinungsbildPanel() {
           // stillschweigend geleert hat.
           setSetting({
             headerStyle:   'island',
-            islandRoundness: 100,
             programFont:   'inter',
           })
         }}

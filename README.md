@@ -26,7 +26,7 @@ No account. No server. Your data stays on your device.
 
 ---
 
-<img src="docs/screenshots/board.png" alt="The same mosaic board shown across four different themes, split diagonally: timer, agenda, calendar, weather, clock, map, sleep, water, table, reader, note and quicklinks widgets" width="100%">
+<img src="docs/screenshots/board.png" alt="A mosaic board in the Deep Ocean theme with calendar, habit tracker, clock, weather, note, chart and water widgets" width="100%">
 
 ## What is mosaic?
 
@@ -153,14 +153,14 @@ the file back out of a terminal every time. The `.deb` install gets this the nor
 </td>
 <td width="50%">
 
-<img src="docs/screenshots/home.png" alt="Board overview with a folder and multiple boards" width="100%">
+<img src="docs/screenshots/home.jpg" alt="Board overview with a folder, multiple boards and the ambient background" width="100%">
 
 </td>
 </tr>
 <tr>
 <td width="50%">
 
-<img src="docs/screenshots/themes.png" alt="Theme picker with 20 themes, plus background and grid pattern options" width="100%">
+<img src="docs/screenshots/themes.png" alt="Theme picker with 20 themes, plus background and grid pattern options, open on a Deep Ocean board" width="100%">
 
 </td>
 <td width="50%">

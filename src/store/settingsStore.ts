@@ -59,7 +59,6 @@ export interface AppSettings {
   animations:             boolean
   showMinimap:            boolean
   headerStyle:            'default' | 'island'
-  islandRoundness:        number   // Island-Leiste: 0 = eckig … 100 = ganz rund (Pillen)
   programFont:            string   // Schrift der gesamten Oberfläche (Startseite, Einstellungen, Boards ohne eigene Board-Schrift)
   disabledWidgetTypes:    string[]
   customThemes:           CustomTheme[]
@@ -82,7 +81,8 @@ export interface AppSettings {
   // Look der Board-Übersicht (Startseite) — unabhängig von den Themes der
   // einzelnen Boards. 'system' folgt prefers-color-scheme des Geräts live.
   homeThemeMode:          'dark' | 'light' | 'system'
-  homeAmbient:            boolean  // animierter Website-Hintergrund auf der Übersicht (Aura + Kachel-Spur)
+  homeAmbient:            boolean  // animierter Website-Hintergrund (Aura) auf der Übersicht
+  homeAmbientTiles:       boolean  // dazu: Mosaik-Kacheln, die um den Mauszeiger aufleuchten
   folders:                string[]                 // Existierende Ordner der Board-Übersicht (auch leere)
   folderColors:           Record<string, string>   // Ordnerfarben der Board-Übersicht (Name → Hex)
   hasSeenTutorial:        boolean
@@ -123,7 +123,6 @@ export const useSettings = create<SettingsStore>()(
       animations:             true,
       showMinimap:            true,
       headerStyle:            'island',
-      islandRoundness:        100,
       programFont:            'inter',
       disabledWidgetTypes:    [],
       customThemes:           [],
@@ -141,6 +140,7 @@ export const useSettings = create<SettingsStore>()(
       defaultThemeId:         'dark',
       homeThemeMode:          'system',
       homeAmbient:            false,
+      homeAmbientTiles:       true,
       folders:                [],
       folderColors:           {},
       hasSeenTutorial:        false,

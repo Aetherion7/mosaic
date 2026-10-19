@@ -30,12 +30,12 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .home-aura i { animation: none; } }
 `
 
-export function HomeAmbient({ mode, motion }: { mode: 'dark' | 'light'; motion: boolean }) {
+export function HomeAmbient({ mode, motion, tiles: tilesOn }: { mode: 'dark' | 'light'; motion: boolean; tiles: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     const c = canvasRef.current
-    if (!c || !motion) return
+    if (!c || !motion || !tilesOn) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     if (!window.matchMedia('(hover: hover)').matches) return
     const ctx = c.getContext('2d')
@@ -119,7 +119,7 @@ export function HomeAmbient({ mode, motion }: { mode: 'dark' | 'light'; motion: 
       cancelAnimationFrame(raf)
       ctx.clearRect(0, 0, W, H)
     }
-  }, [mode, motion])
+  }, [mode, motion, tilesOn])
 
   const orbs = ORBS[mode]
   return (

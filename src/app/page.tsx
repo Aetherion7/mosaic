@@ -750,6 +750,7 @@ export default function HomePage() {
   // in einem eigenen localStorage-Key.
   const homeThemeMode = useSettings(s => s.homeThemeMode)
   const homeAmbient = useSettings(s => s.homeAmbient)
+  const homeAmbientTiles = useSettings(s => s.homeAmbientTiles)
   const appAnimations = useSettings(s => s.animations)
   const [systemPrefersDark, setSystemPrefersDark] = useState(true)
   useEffect(() => {
@@ -1088,7 +1089,7 @@ export default function HomePage() {
     {/* isolation: own stacking context, so the ambient layer (z-index -1)
         paints above this background but below all content. */}
     <div style={{ width: '100vw', height: '100vh', overflow: 'auto', background: 'var(--bg)', position: 'relative', isolation: 'isolate' }}>
-      {homeAmbient && <HomeAmbient mode={uiMode} motion={appAnimations} />}
+      {homeAmbient && <HomeAmbient mode={uiMode} motion={appAnimations} tiles={homeAmbientTiles} />}
       {/* ── Kopfzeile ── */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '20px 36px 0' }}>
         <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>

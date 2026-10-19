@@ -75,6 +75,13 @@ export default function UeberPanel() {
 
       <SectionTitle>{t('Project')}</SectionTitle>
       <LinkRow
+        href="https://aetherion7.github.io/mosaic/"
+        label={t('mosaic website')}
+        sub="aetherion7.github.io/mosaic"
+        // eslint-disable-next-line @next/next/no-img-element
+        icon={<img src="/mosaiclogo-blue.png" alt="" style={{ width: 18, height: 18, borderRadius: '50%', display: 'block' }} />}
+      />
+      <LinkRow
         href="https://github.com/Aetherion7/mosaic"
         label={t('Source code on GitHub')}
         sub={t('Report bugs, request features, or contribute')}
