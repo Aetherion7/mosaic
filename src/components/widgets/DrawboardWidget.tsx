@@ -1620,7 +1620,6 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
   const canUngroup = selectedEls.some(el => el.groupId && !el.locked)
   const canEditText = !!singleSel && !singleSel.locked && singleSel.type !== 'freedraw'
   const cursor = tool === 'pen' ? 'none' : tool === 'select' ? 'default' : tool === 'hand' ? 'grab' : tool === 'eraser' ? 'cell' : tool === 'text' ? 'text' : 'crosshair'
-  const panelW = 212 + 16
   const togglePop = (p: NonNullable<typeof popover>) => setPopover(cur => cur === p ? null : p)
 
   const typeLabel = (el: DrawElement) =>
@@ -1811,6 +1810,9 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
 
       {isEdit && (
         <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
+          {/* Properties panel toggle sits above the panel itself (left). */}
+          <button type="button" title={t('Properties (colors, text, arrange)')} onClick={() => { panelRevealedRef.current = true; setFormatOpen(o => !o) }} style={tb(formatOpen)}><IcoFormat /></button>
+          {sep}
           {/* Navigate */}
           <button type="button" title={`${t('Select')} (V)`} onClick={() => { setTool('select'); render() }} style={tb(tool === 'select')}><IcoSelect /></button>
           <button type="button" title={`${t('Hand (pan)')} (H)`} onClick={() => { setTool('hand'); setSelection([]) }} style={tb(tool === 'hand')}><IcoHand /></button>
@@ -1855,8 +1857,6 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
 
           <button type="button" title={t('Undo (Ctrl+Z)')} onClick={undo} style={BTN}><IcoUndo /></button>
           <button type="button" title={t('Redo (Ctrl+Y)')} onClick={redo} style={BTN}><IcoRedo /></button>
-          {sep}
-          <button type="button" title={t('Properties (colors, text, arrange)')} onClick={() => setFormatOpen(o => !o)} style={tb(formatOpen)}><IcoFormat /></button>
           <div ref={moreGroupRef}>
             <button type="button" title={t('More')} onClick={() => togglePop('more')} style={tb(popover === 'more')}><IcoMore /></button>
             <PortalPopover open={popover === 'more'} anchorRef={moreGroupRef} onClose={() => setPopover(null)}>{morePanel}</PortalPopover>
@@ -1905,14 +1905,13 @@ export default function DrawboardWidget({ widget }: { widget: Widget }) {
               group: groupSelection, ungroup: ungroupSelection, toggleLock, duplicate: duplicateSelection,
               remove: () => deleteSelection(), setGeometry,
             }}
-            onClose={() => { panelRevealedRef.current = true; setFormatOpen(false) }}
           />
         )}
 
         {isEdit && (
           <div
             style={{
-              position: 'absolute', bottom: 8, right: formatOpen ? panelW : 8, zIndex: 5,
+              position: 'absolute', bottom: 8, right: 8, zIndex: 5,
               display: 'flex', alignItems: 'center', gap: 2,
               background: 'color-mix(in srgb, var(--surface) 88%, transparent)',
               backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',

@@ -27,7 +27,7 @@ describe('getWeekDates', () => {
     for (let i = 1; i < 7; i++) {
       const prev = new Date(week[i - 1] + 'T00:00:00')
       const cur  = new Date(week[i] + 'T00:00:00')
-      expect((cur.getTime() - prev.getTime()) / 86400000).toBe(1)
+      expect(Math.round((cur.getTime() - prev.getTime()) / 86400000)).toBe(1)
     }
     expect(week).toContain(todayStr())
   })
@@ -35,7 +35,8 @@ describe('getWeekDates', () => {
   it('offset verschiebt um ganze Wochen', () => {
     const thisMon = new Date(getWeekDates(0)[0] + 'T00:00:00')
     const nextMon = new Date(getWeekDates(1)[0] + 'T00:00:00')
-    expect((nextMon.getTime() - thisMon.getTime()) / 86400000).toBe(7)
+    // Math.round: a week spanning a DST switch is 7 days ± 1 hour
+    expect(Math.round((nextMon.getTime() - thisMon.getTime()) / 86400000)).toBe(7)
   })
 })
 

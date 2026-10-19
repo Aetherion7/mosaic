@@ -9,7 +9,7 @@ import {
   IcoToFront, IcoToBack, IcoForward, IcoBackward, IcoAlignLeft, IcoAlignCenter, IcoAlignRight,
   IcoAlignTop, IcoAlignMiddle, IcoAlignBottom, IcoDistH, IcoDistV, IcoGroup, IcoUngroup, IcoLock,
   IcoUnlock, IcoDuplicate, IcoTrash, IcoEdgeStraight, IcoEdgeOrtho, IcoEdgeCurved, IcoBold, IcoItalic,
-  IcoTextLeft, IcoTextCenter, IcoTextRight, IcoClose, ArrowHeadPreview,
+  IcoTextLeft, IcoTextCenter, IcoTextRight, ArrowHeadPreview,
 } from './icons'
 
 export type CanvasBg = 'white' | 'grid' | 'dark'
@@ -68,16 +68,17 @@ export interface FormatPanelProps {
     remove: () => void
     setGeometry: (b: Box) => void
   }
-  onClose: () => void
 }
 
 // ─── Small building blocks ────────────────────────────────────────────────────
+
+export const PANEL_WIDTH = 184
 
 const LABEL: React.CSSProperties = { fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em' }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 7, padding: '9px 10px', borderTop: '1px solid var(--border)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '7px 9px', borderTop: '1px solid var(--border)' }}>
       <div style={LABEL}>{title}</div>
       {children}
     </div>
@@ -86,15 +87,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, minHeight: 22 }}>
-      <span style={{ fontSize: 11, color: 'var(--text2)', whiteSpace: 'nowrap' }}>{label}</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, minHeight: 20 }}>
+      <span style={{ fontSize: 10.5, color: 'var(--text2)', whiteSpace: 'nowrap' }}>{label}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>{children}</div>
     </div>
   )
 }
 
 const ICON_BTN: React.CSSProperties = {
-  width: 26, height: 24, borderRadius: 6, border: '1px solid var(--border)',
+  width: 23, height: 22, borderRadius: 6, border: '1px solid var(--border)',
   background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0,
 }
@@ -298,26 +299,24 @@ export function FormatPanel(p: FormatPanelProps) {
       onPointerDown={e => e.stopPropagation()}
       onWheel={e => e.stopPropagation()}
       style={{
-        position: 'absolute', top: 8, right: 8, bottom: 8, width: 212, zIndex: 6,
+        position: 'absolute', top: 8, left: 8, bottom: 8, width: PANEL_WIDTH, zIndex: 6,
         display: 'flex', flexDirection: 'column',
         background: 'color-mix(in srgb, var(--surface) 92%, transparent)',
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         border: '1px solid var(--border)', borderRadius: 10,
         boxShadow: '0 6px 22px rgba(0,0,0,0.22)', overflow: 'hidden',
       }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 6px 0 11px', flexShrink: 0 }}>
-        <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, color: 'var(--text1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={p.subject}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 9px 0', flexShrink: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontWeight: 700, color: 'var(--text1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={p.subject}>
           {p.subject}
         </div>
-        <button type="button" title={t('Close')} onClick={p.onClose}
-          style={{ ...ICON_BTN, width: 22, height: 22, border: 'none', background: 'transparent' }}><IcoClose /></button>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: 6, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 6px', flexShrink: 0 }}>
         <div style={{ display: 'flex', flex: 1, gap: 2, background: 'var(--surface2)', borderRadius: 7, padding: 2, border: '1px solid var(--border)' }}>
           {tabs.map(tb => (
             <button key={tb} type="button" onClick={() => setTabPick(tb)}
               style={{
-                flex: 1, fontSize: 10.5, fontWeight: 700, padding: '4px 0', borderRadius: 5, border: 'none', cursor: 'pointer',
+                flex: 1, fontSize: 10, fontWeight: 700, padding: '3px 0', borderRadius: 5, border: 'none', cursor: 'pointer',
                 background: tab === tb ? 'var(--surface)' : 'transparent',
                 color: tab === tb ? 'var(--text1)' : 'var(--text3)',
                 boxShadow: tab === tb ? '0 1px 3px rgba(0,0,0,0.18)' : 'none',
