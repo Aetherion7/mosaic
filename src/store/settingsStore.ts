@@ -82,6 +82,7 @@ export interface AppSettings {
   // Look der Board-Übersicht (Startseite) — unabhängig von den Themes der
   // einzelnen Boards. 'system' folgt prefers-color-scheme des Geräts live.
   homeThemeMode:          'dark' | 'light' | 'system'
+  homeAmbient:            boolean  // animierter Website-Hintergrund auf der Übersicht (Aura + Kachel-Spur)
   folders:                string[]                 // Existierende Ordner der Board-Übersicht (auch leere)
   folderColors:           Record<string, string>   // Ordnerfarben der Board-Übersicht (Name → Hex)
   hasSeenTutorial:        boolean
@@ -139,6 +140,7 @@ export const useSettings = create<SettingsStore>()(
       lastThemeId:            null,
       defaultThemeId:         'dark',
       homeThemeMode:          'system',
+      homeAmbient:            false,
       folders:                [],
       folderColors:           {},
       hasSeenTutorial:        false,

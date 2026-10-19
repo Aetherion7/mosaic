@@ -945,6 +945,8 @@ export const de: Record<string, string> = {
   'Redo (Ctrl+Y)': 'Wiederholen (Ctrl+Y)',
   'Reset zoom (Ctrl+0)': 'Zoom zurücksetzen (Ctrl+0)',
   'Export as PNG': 'Als PNG exportieren',
+  'Ambient background': 'Ambient-Hintergrund',
+  'Slowly drifting glow and mosaic tiles that light up around the cursor — like on the website': 'Langsam wandernder Lichtschimmer und Mosaik-Kacheln, die um den Mauszeiger aufleuchten — wie auf der Website',
   'Hand (pan)': 'Hand (verschieben)',
   'Line / arrow': 'Linie / Pfeil',
   'Properties (colors, text, arrange)': 'Eigenschaften (Farben, Text, Anordnen)',

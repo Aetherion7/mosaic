@@ -14,6 +14,7 @@ import { useSettings } from '@/store/settingsStore'
 import { getTheme } from '@/lib/themes'
 import { defaultWidget } from '@/lib/defaults'
 import { collectBlobRefs, pruneBlobs } from '@/lib/blobStore'
+import { HomeAmbient } from '@/components/ui/HomeAmbient'
 import { buildFullBackupPayload, buildBoardBackupPayload, downloadJson, boardExportFilename, fullBackupFilename } from '@/lib/backup'
 import SettingsModal from '@/components/ui/SettingsModal'
 import HomeTutorialTour from '@/components/ui/HomeTutorialTour'
@@ -748,6 +749,8 @@ export default function HomePage() {
   // unter Einstellungen → Erscheinungsbild; liegt im settingsStore, nicht mehr
   // in einem eigenen localStorage-Key.
   const homeThemeMode = useSettings(s => s.homeThemeMode)
+  const homeAmbient = useSettings(s => s.homeAmbient)
+  const appAnimations = useSettings(s => s.animations)
   const [systemPrefersDark, setSystemPrefersDark] = useState(true)
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
@@ -1082,7 +1085,10 @@ export default function HomePage() {
 
   return (
     <DndContext sensors={dndSensors} onDragStart={handleDragStart} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onDragCancel={() => { setDraggingBoardId(null); dragRotateRaw.set(DRAG_REST_ROTATE) }}>
-    <div style={{ width: '100vw', height: '100vh', overflow: 'auto', background: 'var(--bg)' }}>
+    {/* isolation: own stacking context, so the ambient layer (z-index -1)
+        paints above this background but below all content. */}
+    <div style={{ width: '100vw', height: '100vh', overflow: 'auto', background: 'var(--bg)', position: 'relative', isolation: 'isolate' }}>
+      {homeAmbient && <HomeAmbient mode={uiMode} motion={appAnimations} />}
       {/* ── Kopfzeile ── */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '20px 36px 0' }}>
         <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>

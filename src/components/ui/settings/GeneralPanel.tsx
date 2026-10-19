@@ -26,6 +26,7 @@ const THEME_MODES: { id: ThemeMode; label: string }[] = [
 // "normalen" (board-internen) Einstellungen, die hier komplett wegfallen.
 export default function GeneralPanel({ onClose, home }: { onClose: () => void; home?: boolean }) {
   const homeThemeMode = useSettings(s => s.homeThemeMode)
+  const homeAmbient = useSettings(s => s.homeAmbient)
   const language = useSettings(s => s.language)
   const showKbdHints = useSettings(s => s.showKbdHints)
   const launchAtLogin = useSettings(s => s.launchAtLogin)
@@ -47,6 +48,15 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
           desc={t('Light or dark look for the board overview page — independent of each board\'s own theme.')}
           control={<ThemeModeSelect value={homeThemeMode} onChange={v => setSetting({ homeThemeMode: v })} />}
         />
+
+        <div style={{ marginTop: 20 }}>
+          <Row
+            label={t('Ambient background')}
+            desc={t('Slowly drifting glow and mosaic tiles that light up around the cursor — like on the website')}
+            value={homeAmbient}
+            onChange={v => setSetting({ homeAmbient: v })}
+          />
+        </div>
 
         <div style={{ marginTop: 20 }}>
           <SettingItem
