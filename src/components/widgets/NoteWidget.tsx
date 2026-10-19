@@ -32,6 +32,8 @@ import {
   getFontCss, FONT_SIZES, useInjectBuiltinGoogleFonts, MiniSelect,
 } from './shared/TextStyleToolbar'
 import type { Widget, NotePdfLink } from '@/types'
+import { NoteImage, insertImageFiles } from './note/NoteImage'
+import { NoteOutline } from './note/NoteOutline'
 
 const lowlight = createLowlight(common)
 
@@ -434,6 +436,7 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
     TableCell,
     PreventTabEscape,
     PdfRef.configure({ onNavigate: (r, b, p) => navigateRef.current(r, b, p) }),
+    NoteImage,
   ])
 
   const editor = useEditor({
@@ -451,6 +454,11 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
   })
 
   editorRef.current = editor
+
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [hasOutline, setHasOutline] = useState(false)
+  const columns = Math.max(1, Math.min(4, Number(d.columns) || 1))
 
   // Current selection's color (or the stored mark at the cursor if the
   // selection is collapsed) — undefined means "no color mark here", not black.
@@ -594,6 +602,30 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
               <AlignIcon align={align} />
             </ToolBtn>
           ))}
+
+          <Divider />
+
+          {/* Split view: the note flows across 2–4 columns side by side
+              (newspaper-style, no pages — it keeps growing downward). The
+              chosen count is a maximum: a narrow widget shows fewer. */}
+          <MiniSelect
+            value={columns}
+            onChange={v => patch({ columns: Number(v) })}
+            title={t('Columns (split view)')}
+            options={[1, 2, 3, 4].map(n => ({ value: n, label: n === 1 ? t('1 column') : `${n} ${t('columns')}` }))}
+          />
+
+          <ToolBtn active={false} onClick={() => fileInputRef.current?.click()} title={t('Insert image')}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </ToolBtn>
+          <input ref={fileInputRef} type="file" accept="image/*" multiple hidden
+            onChange={e => {
+              const files = Array.from(e.target.files ?? [])
+              e.target.value = ''
+              if (editor && files.length) void insertImageFiles(editor, files)
+            }} />
 
           <Divider />
 
@@ -761,12 +793,20 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
         </div>
       )}
 
-      <div
-        onPointerDown={e => e.stopPropagation()}
-        className="note-md-wrap"
-        style={{ flex: 1, overflow: 'auto', minHeight: 0, ...noteStyleVars } as React.CSSProperties}
-      >
-        <EditorContent editor={editor} />
+      <div style={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex' }}>
+        <div
+          ref={scrollRef}
+          onPointerDown={e => e.stopPropagation()}
+          className="note-md-wrap"
+          data-cols={columns > 1 ? columns : undefined}
+          style={{
+            flex: 1, overflow: 'auto', minHeight: 0, minWidth: 0, marginRight: hasOutline ? 16 : 0,
+            ...noteStyleVars, '--note-cols': columns,
+          } as React.CSSProperties}
+        >
+          <EditorContent editor={editor} />
+        </div>
+        <NoteOutline editor={editor} scrollRef={scrollRef} t={t} onPresence={setHasOutline} />
       </div>
 
       <style>{CSS}</style>
@@ -775,6 +815,27 @@ export default function NoteWidget({ widget }: { widget: Widget }) {
 }
 
 const CSS = `
+/* Split view: up to --note-cols columns, each at least 170px wide, balanced
+   so the note simply grows downward instead of paginating. */
+.note-md-wrap[data-cols] .ProseMirror {
+  columns: 170px var(--note-cols);
+  column-gap: 22px;
+  column-rule: 1px solid var(--border);
+}
+.note-md-wrap[data-cols] .ProseMirror :is(pre, table, blockquote, li, .note-img) { break-inside: avoid; }
+.note-md-wrap[data-cols] .ProseMirror :is(h1, h2, h3) { break-after: avoid; }
+.note-md-wrap .ProseMirror :is(h1, h2, h3) { transition: background 0.3s; border-radius: 4px; }
+.note-md-wrap .ProseMirror .note-heading-flash { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.note-md-wrap .note-img { position: relative; max-width: 100%; margin: 6px 0; line-height: 0; }
+.note-md-wrap .note-img img { width: 100%; height: auto; border-radius: 6px; display: block; }
+.note-md-wrap .note-img.selected img { outline: 2px solid var(--accent); outline-offset: 2px; }
+.note-md-wrap .note-img.missing { min-height: 40px; border: 1px dashed var(--border); border-radius: 6px; }
+.note-md-wrap .note-img-handle {
+  position: absolute; right: -4px; bottom: -4px; width: 12px; height: 12px; border-radius: 3px;
+  background: var(--accent); border: 2px solid var(--surface); cursor: nwse-resize; opacity: 0; transition: opacity 0.12s;
+}
+.note-md-wrap .ProseMirror[contenteditable="true"] .note-img:hover .note-img-handle,
+.note-md-wrap .ProseMirror[contenteditable="true"] .note-img.selected .note-img-handle { opacity: 1; }
 .note-md-wrap .ProseMirror {
   outline: none;
   min-height: 100%;

@@ -945,6 +945,12 @@ export const de: Record<string, string> = {
   'Redo (Ctrl+Y)': 'Wiederholen (Ctrl+Y)',
   'Reset zoom (Ctrl+0)': 'Zoom zurücksetzen (Ctrl+0)',
   'Export as PNG': 'Als PNG exportieren',
+  // Notiz: Bilder, Spaltenansicht, Gliederung
+  'Insert image': 'Bild einfügen',
+  'Columns (split view)': 'Spalten (geteilte Ansicht)',
+  '1 column': '1 Spalte',
+  'columns': 'Spalten',
+  'Outline': 'Gliederung',
   // Zeichenbrett: draw.io-artige Diagramm-Funktionen
   'Text…': 'Text…',
   'Connector': 'Verbinder',

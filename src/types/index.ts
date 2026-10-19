@@ -72,6 +72,8 @@ export interface NoteData {
   lineHeight?:      number
   textAlign?:       'left' | 'center' | 'right'
   noBg?:            boolean
+  // Split view: 1–4 balanced columns (max — fewer when the widget is narrow).
+  columns?:         number
 }
 
 // Hochgeladene Alarmtöne — nur die idb-blob://-Referenz wird gespeichert

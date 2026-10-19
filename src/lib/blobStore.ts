@@ -116,10 +116,14 @@ export function useBlobUrl(src?: string | null): string | null {
 
 // ─── Export / Import / Aufräumen ──────────────────────────────────────────────
 
-// Alle idb-blob://-Referenzen in einem JSON-serialisierbaren Objekt einsammeln
+// Alle idb-blob://-Referenzen in einem JSON-serialisierbaren Objekt einsammeln —
+// auch solche, die mitten in einem Text stehen (Bilder im Notiz-Markdown),
+// sonst würde pruneBlobs() sie beim nächsten Start als verwaist löschen.
+const EMBEDDED_REF = /idb-blob:\/\/[A-Za-z0-9_-]+/g
 export function collectBlobRefs(obj: unknown, out: Set<string> = new Set()): Set<string> {
   if (typeof obj === 'string') {
-    if (obj.startsWith(BLOB_PREFIX)) out.add(obj)
+    if (obj.startsWith(BLOB_PREFIX) && !/\s/.test(obj)) out.add(obj)
+    else if (obj.includes(BLOB_PREFIX)) for (const m of obj.matchAll(EMBEDDED_REF)) out.add(m[0])
   } else if (Array.isArray(obj)) {
     for (const v of obj) collectBlobRefs(v, out)
   } else if (obj && typeof obj === 'object') {
