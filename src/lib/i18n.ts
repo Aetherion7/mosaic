@@ -32,6 +32,7 @@ export const de: Record<string, string> = {
   'Default': 'Standard',
   'Continuous bar with background and divider line': 'Durchgehende Leiste mit Hintergrund und Trennlinie',
   'Island': 'Island',
+  'Full bar': 'Durchgehende Leiste',
   'Floating pills, open space between groups': 'Schwebende Blasen, freier Raum zwischen den Gruppen',
   'General': 'Allgemein',
   'German': 'Deutsch',

@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useUIStore } from '@/store/uiStore'
-import { TileContent, TYPE_LABELS, buildStyle, widgetTypeIcon, ISLAND } from './TileWrapper'
+import { TileContent, TYPE_LABELS, buildStyle, widgetTypeIcon, ISLAND, islandRadius } from './TileWrapper'
 import WidgetErrorBoundary from './WidgetErrorBoundary'
 import { useT } from '@/hooks/useT'
 import { GRID_ROW_H, GRID_GAP, INFINITE_COL_W, GRID_COLS } from '@/lib/constants'
@@ -65,19 +65,47 @@ export default function FocusOverlay() {
     return () => window.removeEventListener('keydown', fn, true)
   }, [focusedId, setFocused])
 
-  // Verfügbarer Platz pro Widget: allein bis 1200 px breit, zu zweit teilen
-  // sich beide eine breitere Fläche (jeweils die Hälfte abzüglich Abstand).
+  const isInfinite = useBoardStore(s => (selectBoard(s)?.layoutMode ?? 'infinite') === 'infinite')
+
+  // Echte Inhaltsgröße jedes Widgets AUF DEM BOARD messen (dieselbe Content-Box,
+  // die TileWrapper an TileContent übergibt) — dadurch bekommt der Fokus-Modus
+  // exakt dasselbe Format (z. B. dieselbe Spaltenzahl bei responsiven Rastern
+  // wie den Quicklinks) und vergrößert es nur gleichmäßig, statt dem Inhalt
+  // eine größere Box zu geben, in der er sich neu/anders anordnet.
+  const idsKey = widgets.map(w => w.id).join('|')
+  const [measured, setMeasured] = useState<Record<string, { w: number; h: number }>>({})
+  useLayoutEffect(() => {
+    const zoom = isInfinite ? useUIStore.getState().canvasView.zoom : 1
+    const next: Record<string, { w: number; h: number }> = {}
+    for (const id of idsKey ? idsKey.split('|') : []) {
+      const el = document.querySelector(`[data-widget-tile="${id}"] [data-widget-content]`)
+      if (el instanceof HTMLElement) {
+        const r = el.getBoundingClientRect()
+        next[id] = { w: r.width / zoom, h: r.height / zoom }
+      }
+    }
+    setMeasured(next)
+  }, [idsKey, isInfinite])
+
   const n = widgets.length
-  const slot = viewport && n > 0 ? {
-    maxW: n === 1
-      ? Math.min(1200, viewport.w * 0.92)
-      : (Math.min(1640, viewport.w * 0.95) - PAIR_GAP) / 2,
-    maxContentH: Math.min(860, viewport.h * 0.9) - HEADER_H,
-  } : null
+  // EIN gemeinsamer Skalierungsfaktor für alle Widgets im Fokus — zwei Widgets
+  // behalten so exakt ihr Größenverhältnis vom Board, statt jeweils einzeln
+  // auf ihre Bildschirmhälfte aufgeblasen zu werden.
+  const layout = useMemo(() => {
+    if (!viewport || n === 0) return null
+    const naturals = widgets.map(w => measured[w.id]
+      ?? approxNaturalContent(w.pos.colSpan, w.pos.rowSpan, isInfinite, viewport.w))
+    const maxTotalW = (n === 1 ? Math.min(1200, viewport.w * 0.92) : Math.min(1640, viewport.w * 0.95)) - PAIR_GAP * (n - 1)
+    const maxContentH = Math.min(860, viewport.h * 0.9) - HEADER_H
+    const sumW = naturals.reduce((a, x) => a + x.w, 0)
+    const maxH = Math.max(...naturals.map(x => x.h))
+    const scale = Math.min(MAX_ZOOM, maxTotalW / sumW, maxContentH / maxH)
+    return { naturals, scale }
+  }, [widgets, measured, viewport, n, isInfinite])
 
   return (
     <AnimatePresence>
-      {n > 0 && slot && (
+      {n > 0 && layout && (
         <motion.div
           key="focus-overlay"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -91,7 +119,7 @@ export default function FocusOverlay() {
           onClick={e => { if (e.target === e.currentTarget) setFocused(null) }}
         >
           {widgets.map((w, i) => (
-            <FocusCard key={w.id} widget={w} maxW={slot.maxW} maxContentH={slot.maxContentH}
+            <FocusCard key={w.id} widget={w} natural={layout.naturals[i]} scale={layout.scale}
               showClose={i === n - 1} onClose={() => setFocused(null)} />
           ))}
         </motion.div>
@@ -100,48 +128,17 @@ export default function FocusOverlay() {
   )
 }
 
-function FocusCard({ widget, maxW, maxContentH, showClose, onClose }: {
-  widget: Widget; maxW: number; maxContentH: number; showClose: boolean; onClose: () => void
+function FocusCard({ widget, natural, scale, showClose, onClose }: {
+  widget: Widget; natural: { w: number; h: number }; scale: number; showClose: boolean; onClose: () => void
 }) {
   const t = useT()
-  const isInfinite = useBoardStore(s => (selectBoard(s)?.layoutMode ?? 'infinite') === 'infinite')
-  const [vw, setVw] = useState(() => (typeof window === 'undefined' ? 1200 : window.innerWidth))
-  useEffect(() => {
-    const fn = () => setVw(window.innerWidth)
-    window.addEventListener('resize', fn)
-    return () => window.removeEventListener('resize', fn)
-  }, [])
-
-  // Echte Inhaltsgröße des Widgets AUF DEM BOARD messen (dieselbe Content-Box,
-  // die TileWrapper an TileContent übergibt) — dadurch bekommt der Fokus-Modus
-  // exakt dasselbe Format (z. B. dieselbe Spaltenzahl bei responsiven Rastern
-  // wie den Quicklinks) und vergrößert es nur gleichmäßig, statt dem Inhalt
-  // eine größere Box zu geben, in der er sich neu/anders anordnet.
-  const [naturalContent, setNaturalContent] = useState<{ w: number; h: number } | null>(null)
-  useLayoutEffect(() => {
-    const el = document.querySelector(`[data-widget-tile="${widget.id}"] [data-widget-content]`)
-    if (!(el instanceof HTMLElement)) { setNaturalContent(null); return }
-    const rect = el.getBoundingClientRect()
-    const zoom = isInfinite ? useUIStore.getState().canvasView.zoom : 1
-    setNaturalContent({ w: rect.width / zoom, h: rect.height / zoom })
-  }, [widget.id, isInfinite])
-
-  const layout = useMemo(() => {
-    const natural = naturalContent ?? approxNaturalContent(widget.pos.colSpan, widget.pos.rowSpan, isInfinite, vw)
-    // Ein einziger, gemeinsamer Skalierungsfaktor für Breite UND Höhe — wird
-    // nie pro Achse unabhängig auf eine Mindestgröße hochgezogen, sonst
-    // verzerrt sich der Inhalt (z. B. eine Wasserflasche bei einer sehr
-    // schmalen Karte wurde sonst in die Breite gestreckt, während die Höhe
-    // unverändert blieb).
-    const scale = Math.min(MAX_ZOOM, maxW / natural.w, maxContentH / natural.h)
-    return {
-      cardWidth:  Math.round(natural.w * scale),
-      cardHeight: Math.round(natural.h * scale + HEADER_H),
-      naturalW:   natural.w,
-      naturalH:   natural.h,
-      scale,
-    }
-  }, [widget.pos.colSpan, widget.pos.rowSpan, naturalContent, isInfinite, vw, maxW, maxContentH])
+  const layout = {
+    cardWidth:  Math.round(natural.w * scale),
+    cardHeight: Math.round(natural.h * scale + HEADER_H),
+    naturalW:   natural.w,
+    naturalH:   natural.h,
+    scale,
+  }
 
   // Dieselbe "rahmenlos" Bedingung wie im TileWrapper auf dem Board — steuert
   // dort, ob Hintergrund/Rahmen des Widgets ausgeblendet werden.
@@ -178,20 +175,21 @@ function FocusCard({ widget, maxW, maxContentH, showClose, onClose }: {
     >
       {/* Kopfzeile wie im Widget (Insel links), plus Schließen rechts */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 8px 4px', flexShrink: 0, height: HEADER_H, boxSizing: 'border-box' }}>
-        <div style={{ ...ISLAND, height: 26 }}>
+        <div style={{ ...ISLAND, height: 26, borderRadius: islandRadius(widget.style.cornerRadii?.[0] ?? widget.style.borderRadius) }}>
           <span style={{ opacity: 0.7, color: 'var(--text2)', display: 'flex' }}>{widgetTypeIcon(widget)}</span>
           <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {t(TYPE_LABELS[widget.type])}
           </span>
         </div>
         {showClose && (
-          <div style={{ ...ISLAND, height: 26, marginLeft: 'auto', padding: '0 2px 0 10px', gap: 8 }}>
+          <div style={{ ...ISLAND, height: 26, marginLeft: 'auto', padding: '0 2px 0 10px', gap: 8, borderRadius: islandRadius(widget.style.cornerRadii?.[1] ?? widget.style.borderRadius) }}>
             <span style={{ fontSize: 10.5, color: 'var(--text3)', whiteSpace: 'nowrap' }}>{t('Esc to close')}</span>
             <button
               onClick={onClose}
               title={t('Close focus mode')} aria-label={t('Close focus mode')}
               style={{
-                width: 20, height: 20, borderRadius: 999, border: 'none',
+                width: 20, height: 20, border: 'none',
+                borderRadius: islandRadius(widget.style.cornerRadii?.[1] ?? widget.style.borderRadius) >= 12 ? 999 : Math.max(0, islandRadius(widget.style.cornerRadii?.[1] ?? widget.style.borderRadius) - 2),
                 background: 'color-mix(in srgb, var(--text1) 9%, transparent)', color: 'var(--text2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
               }}
