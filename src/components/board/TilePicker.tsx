@@ -128,6 +128,13 @@ export default function TilePicker() {
   useEffect(() => { if (!isOpen) { setSearch(''); setCat('all') } }, [isOpen])
   useEffect(() => { scrollRef.current?.scrollTo({ top: 0 }) }, [cat, search])
   useFocusTrap(desktopRef, isOpen)
+  // Die Fokusfalle setzt den Fokus auf den ersten Knopf (Bereich "Alle") —
+  // danach direkt ins Suchfeld, damit man sofort tippen kann.
+  useEffect(() => {
+    if (!isOpen) return
+    const id = requestAnimationFrame(() => desktopRef.current?.querySelector<HTMLInputElement>('input')?.focus())
+    return () => cancelAnimationFrame(id)
+  }, [isOpen])
 
   const allTiles = TILES.filter(tile => !disabledTypes.includes(tile.type))
   const q = search.trim().toLowerCase()

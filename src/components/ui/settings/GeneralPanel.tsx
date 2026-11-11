@@ -69,7 +69,7 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
           </div>
         )}
 
-        <div style={{ marginTop: 20 }}>
+        <div>
           <SettingItem
             label={t('Language')}
             desc={t('Switches every label, button and message in the app')}
@@ -80,11 +80,11 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
         {/* FontSection zeigt hier (ohne offenes Board) nur die Programm-
             Schrift — der Board-Schrift-Teil rendert nur, wenn ein Board offen
             ist, s. Kommentar dort. */}
-        <div style={{ marginTop: 20 }}>
+        <div>
           <FontSection showBoardFont={false} />
         </div>
 
-        <div style={{ marginTop: 20 }}>
+        <div>
           <Row
             label={t('Keyboard shortcut hints')}
             desc={t('Shows shortcuts like [N] in the header')}
@@ -151,7 +151,7 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
         desc={t('Switches every label, button and message in the app')}
         control={<LanguageSelect value={language} onChange={lng => setSetting({ language: lng })} />}
       />
-      <div style={{ marginTop: 20 }}>
+      <div>
         <Row
           label={t('Keyboard shortcut hints')}
           desc={t('Shows shortcuts like [E] in the header')}

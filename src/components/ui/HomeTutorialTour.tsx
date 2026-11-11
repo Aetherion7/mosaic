@@ -168,7 +168,7 @@ export default function HomeTutorialTour({
         )}
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em' }}>
-            {t('STEP')} {idx + 1} / {STEPS.length}
+            {t('Step')} {idx + 1} / {STEPS.length}
           </div>
           <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text1)', lineHeight: 1.25 }}>
             {t(step.title)}
