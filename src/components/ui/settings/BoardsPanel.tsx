@@ -7,7 +7,7 @@ import { THEMES, resolveCustomTheme } from '@/lib/themes'
 import { TYPE_ICONS, TYPE_LABELS } from '@/components/board/TileWrapper'
 import WidgetLayoutPreview from '@/components/ui/WidgetLayoutPreview'
 import { useT } from '@/hooks/useT'
-import { SectionTitle, SettingItem } from './shared'
+import { SectionTitle, SettingItem, tileStyle, pillBtn, XIcon, POPOVER_SHADOW } from './shared'
 
 // ── Boards & Vorlagen (v. a. für die Board-Übersicht) ─────────────────────────
 
@@ -62,12 +62,11 @@ export default function BoardsPanel() {
           {t('The trash is empty. Deleted boards stay here for 30 days and can be restored (section at the bottom of the board overview).')}
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, ...tileStyle(true), padding: '10px 12px' }}>
           <div style={{
             width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-            background: 'color-mix(in srgb, var(--danger) 14%, var(--surface))',
-            border: '1px solid color-mix(in srgb, var(--danger) 32%, transparent)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger)',
+            background: 'var(--surface)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)',
           }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
@@ -82,22 +81,17 @@ export default function BoardsPanel() {
           {emptyConfirm ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
               <button onClick={() => setEmptyConfirm(false)}
-                style={{ fontSize: 11, padding: '5px 10px', borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
+                style={{ ...pillBtn('ghost'), fontSize: 11.5, padding: '5px 12px' }}>
                 {t('Cancel')}
               </button>
               <button onClick={() => { emptyTrash(); setEmptyConfirm(false) }}
-                style={{ fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 999, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer' }}>
+                style={{ ...pillBtn('dangerSolid'), fontSize: 11.5, padding: '5px 12px' }}>
                 {t('Yes, empty it')}
               </button>
             </div>
           ) : (
             <button onClick={() => setEmptyConfirm(true)} title={t('Empty trash')}
-              style={{
-                flexShrink: 0, padding: '4px 12px', borderRadius: 999,
-                border: '1px solid color-mix(in srgb, var(--danger) 40%, transparent)',
-                background: 'none', color: 'var(--danger)', cursor: 'pointer',
-                fontSize: 11, fontWeight: 600,
-              }}>
+              style={{ ...pillBtn('danger'), flexShrink: 0, fontSize: 11.5, padding: '5px 12px' }}>
               {t('Empty trash')}
             </button>
           )}
@@ -150,7 +144,7 @@ function ThemeSelect({ options, value, onChange }: {
         onClick={() => setOpen(o => !o)}
         style={{
           display: 'flex', alignItems: 'center', gap: 8, maxWidth: 190,
-          padding: '5px 9px', borderRadius: 8,
+          padding: '6px 12px', borderRadius: 999,
           border: `1px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
           background: 'var(--surface2)', cursor: 'pointer', textAlign: 'left',
           transition: 'border-color 0.12s',
@@ -173,8 +167,8 @@ function ThemeSelect({ options, value, onChange }: {
           // Deckend auch bei transparentem --surface (Crystal-Glass-Theme)
           background: 'var(--popover-bg)',
           backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid var(--border)', borderRadius: 10,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+          border: '1px solid var(--border)', borderRadius: 14, padding: 4,
+          boxShadow: POPOVER_SHADOW,
         }}>
           {options.map(o => {
             const active = o.id === value
@@ -184,14 +178,14 @@ function ThemeSelect({ options, value, onChange }: {
                 onClick={() => { onChange(o.id); setOpen(false) }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                  padding: '7px 10px', border: 'none', cursor: 'pointer', textAlign: 'left',
+                  padding: '7px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', textAlign: 'left',
                   background: active ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'transparent',
                 }}
                 onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface2)' }}
                 onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
               >
                 <ThemeSwatch cssVars={o.cssVars} />
-                <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--accent)' : 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: active ? 600 : 500, color: active ? 'var(--accent)' : 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {o.name}
                 </span>
                 {active && (
@@ -217,11 +211,11 @@ function TemplateRow({ tpl, onRemove }: { tpl: CustomTemplate; onRemove: () => v
   const [open, setOpen] = useState(false)
 
   return (
-    <div style={{ borderRadius: 9, background: 'var(--surface2)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+    <div style={{ borderRadius: 14, background: 'color-mix(in srgb, var(--surface2) 70%, transparent)', overflow: 'hidden' }}>
       <div
         onClick={() => setOpen(o => !o)}
         role="button" tabIndex={0}
-        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', cursor: 'pointer' }}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px 9px 14px', cursor: 'pointer' }}
       >
         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
           style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
@@ -233,18 +227,18 @@ function TemplateRow({ tpl, onRemove }: { tpl: CustomTemplate; onRemove: () => v
         <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.name}</span>
         <span style={{ fontSize: 10, color: 'var(--text3)', flexShrink: 0 }}>{tpl.widgets.length} {tpl.widgets.length !== 1 ? t('Widgets') : t('Widget')}</span>
         <button onClick={e => { e.stopPropagation(); onRemove() }} title={t('Remove template')}
-          style={{ width: 20, height: 20, borderRadius: 6, border: 'none', background: 'none', color: 'var(--text3)', fontSize: 13, lineHeight: 1, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
+          style={{ width: 24, height: 24, borderRadius: 999, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><XIcon size={9} /></button>
       </div>
 
       {open && (
-        <div style={{ display: 'flex', gap: 14, padding: '0 10px 10px', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', gap: 14, padding: '0 14px 12px', alignItems: 'flex-start' }}>
           {/* Dieselbe Vorschau-Komponente wie die Board-Karten-Thumbnails auf
               der Startseite (WidgetLayoutPreview) — identischer Randabstand,
               Lücken zwischen den Kacheln und Skalierung, nur mit den
               gespeicherten Vorlagen-Positionen statt einem echten Board. */}
           <div style={{
             width: 160, height: 110, flexShrink: 0, position: 'relative',
-            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden',
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden',
           }}>
             <WidgetLayoutPreview items={tpl.widgets} accent="var(--accent)" />
           </div>

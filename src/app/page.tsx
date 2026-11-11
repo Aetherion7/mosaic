@@ -44,21 +44,123 @@ const HOME_UI: Record<'dark' | 'light', Record<string, string>> = {
   },
 }
 
-// Kachelmaße der Board-Übersicht — kleiner als früher (280 px), damit mehr
-// Boards nebeneinander passen; Haupt- und Ordnerraster nutzen dieselben Werte.
-const CARD_MIN = 180
-const CARD_GAP = 14
+// Kachelmaße der Board-Übersicht — mittelgroß (früher 280, dann 180 px):
+// größer und besser lesbar, aber bei 1280 px passen links noch drei und in
+// einer Ordner-Kachel noch zwei Karten nebeneinander (bei 220 wäre es dort
+// nur noch eine). Haupt- und Ordnerraster nutzen dieselben Werte.
+const CARD_MIN = 204
+const CARD_GAP = 16
+const CARD_PREVIEW_H = 112
 
 const FOLDER_COLORS = ['#7c6fe8', '#5b8fff', '#4ecdc4', '#5fd68a', '#f5c04b', '#f58b4b', '#ef5b6e', '#e46bd8', '#8a93a8']
+
+// ── Gemeinsame Stile (Designprinzipien, KONZEPT.md § 6) ──────────────────────
+// Popover/Menüs: Radius 16, weicher Tiefenschatten, Einträge als runde Zeilen
+// mit tonalem Hover — keine Trennlinien zwischen den Einträgen.
+const POPOVER_SHADOW = '0 10px 32px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)'
+const MODAL_SHADOW   = '0 32px 80px color-mix(in srgb, var(--shadow-color, #000) 55%, transparent)'
+const TONAL          = 'color-mix(in srgb, var(--surface2) 70%, transparent)'
+const HOVER_TONE     = 'color-mix(in srgb, var(--text1) 6%, transparent)'
+const DANGER_TINT    = 'color-mix(in srgb, var(--danger) 16%, transparent)'
+
+const popoverStyle: React.CSSProperties = {
+  background: 'var(--popover-bg)',
+  backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+  border: '1px solid var(--border)',
+  borderRadius: 16, padding: 6, boxSizing: 'border-box',
+  boxShadow: POPOVER_SHADOW,
+}
+
+// Kleine Überschrift in Popovers — Satzschreibung statt Versal-Label
+const popoverHeading: React.CSSProperties = {
+  fontSize: 12.5, fontWeight: 600, color: 'var(--text3)', padding: '6px 10px 6px',
+}
+
+function menuRowStyle(danger?: boolean): React.CSSProperties {
+  return {
+    display: 'flex', alignItems: 'center', gap: 10,
+    width: '100%', minHeight: 34, padding: '0 10px', boxSizing: 'border-box', textAlign: 'left',
+    border: 'none', borderRadius: 10, cursor: 'pointer',
+    background: 'transparent',
+    color: danger ? 'var(--danger)' : 'var(--text1)',
+    fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap',
+    transition: 'background 0.1s',
+  }
+}
+const rowHover = (danger?: boolean) => ({
+  onMouseEnter: (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.background = danger ? 'color-mix(in srgb, var(--danger) 12%, transparent)' : HOVER_TONE },
+  onMouseLeave: (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.background = 'transparent' },
+})
+
+// Modal-Hülle (Dialoge, Papierkorb): Radius 22, großer weicher Schatten
+const modalStyle: React.CSSProperties = {
+  background: 'var(--popover-bg)',
+  backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
+  border: '1px solid var(--border)',
+  borderRadius: 22, boxShadow: MODAL_SHADOW,
+  boxSizing: 'border-box',
+}
+const backdropStyle: React.CSSProperties = {
+  position: 'fixed', inset: 0, zIndex: 2000,
+  background: 'rgba(0,0,0,0.5)',
+  backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+}
+const modalTitle: React.CSSProperties = { fontSize: 16, fontWeight: 650, color: 'var(--text1)' }
+
+// Pillen-Knöpfe für Dialoge — eine Höhe, eine Form
+function pillBtn(kind: 'accent' | 'danger' | 'danger-soft' | 'ghost'): React.CSSProperties {
+  return {
+    height: 36, padding: '0 18px', borderRadius: 999, flexShrink: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+    fontSize: 13, fontWeight: kind === 'ghost' ? 500 : 600, cursor: 'pointer',
+    border: kind === 'ghost' ? '1px solid var(--border)' : 'none',
+    background: kind === 'accent' ? 'var(--accent)'
+      : kind === 'danger' ? 'var(--danger)'
+      : kind === 'danger-soft' ? DANGER_TINT
+      : 'transparent',
+    color: kind === 'accent' ? 'var(--on-accent, white)'
+      : kind === 'danger' ? 'white'
+      : kind === 'danger-soft' ? 'var(--danger)'
+      : 'var(--text2)',
+  }
+}
+
+const inputStyle: React.CSSProperties = {
+  fontSize: 14, height: 42, padding: '0 14px', borderRadius: 12, boxSizing: 'border-box',
+  border: '1px solid var(--border)', background: 'var(--surface2)',
+  color: 'var(--text1)', outline: 'none',
+}
+
+// Runder Schließen-Knopf mit SVG-X (wie im Theme-Panel)
+function CloseBtn({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button onClick={onClick} aria-label={label} title={label} style={{
+      width: 28, height: 28, borderRadius: '50%', flexShrink: 0, padding: 0,
+      border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)',
+      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <XIcon size={10} />
+    </button>
+  )
+}
+
+function XIcon({ size = 10 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
+      <line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" />
+    </svg>
+  )
+}
 
 // Gleiches Muster wie TopBar.tsx's kbdBadgeStyle — eigene Konstante hier, da
 // TopBar sie nicht exportiert und die Board-Auswahl ein komplett anderes
 // Shortcut-Set (keyboardShortcutsHome) mit eigenen Badges braucht.
 const kbdBadgeStyle: React.CSSProperties = {
   position: 'absolute', top: -6, right: -4,
-  fontSize: 8, fontWeight: 700, color: 'var(--text3)',
+  fontSize: 9, fontWeight: 700, color: 'var(--text3)',
   background: 'var(--surface2)', border: '1px solid var(--border)',
-  borderRadius: 4, padding: '1px 3px', pointerEvents: 'none',
+  borderRadius: 5, padding: '2px 4px', pointerEvents: 'none',
   lineHeight: 1,
 }
 
@@ -175,35 +277,25 @@ function DragPreviewCard({ board, rotate }: { board: Board | undefined; rotate: 
   if (!board) return null
   return (
     <motion.div style={{
-      width: 200, borderRadius: 18, boxSizing: 'border-box',
+      width: 240, borderRadius: 18, boxSizing: 'border-box',
       border: '2px solid var(--accent)',
       // Nur noch der weiche Tiefenschatten hier — der Akzentring läuft als
       // echter Border statt als zweiter box-shadow-Layer. Zwei box-shadows auf
       // einer rotierten, abgerundeten Box konnten in Chromium eine winzige
       // Subpixel-Naht an der Rundung erzeugen (die "Lücke" im Rahmen).
-      boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+      boxShadow: MODAL_SHADOW,
       cursor: 'grabbing', scale: 1.04, rotate,
     }}>
-      <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ height: 96, position: 'relative', ...bgPreview(board) }}>
+      <div style={{ borderRadius: 16, overflow: 'hidden' }}>
+        <div style={{ height: CARD_PREVIEW_H, position: 'relative', ...bgPreview(board) }}>
           <BoardMiniMap board={board} />
-          {board.pinned && (
-            <div style={{
-              position: 'absolute', top: 10, left: 10,
-              width: 22, height: 22, borderRadius: 7,
-              background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <PinIcon filled />
-            </div>
-          )}
+          {board.pinned && <PinBadge />}
         </div>
-        <div style={{ padding: '9px 12px', background: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ padding: '12px 14px', background: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {board.name}
           </span>
-          <span style={{ fontSize: 11, color: 'var(--text3)', flexShrink: 0 }} suppressHydrationWarning>
+          <span style={{ fontSize: 12, color: 'var(--text3)', flexShrink: 0 }} suppressHydrationWarning>
             {timeAgo(board.lastEdited, t)}
           </span>
         </div>
@@ -261,40 +353,48 @@ function FolderSection({
         ref={setNodeRef}
         style={{
           width: '100%',
-          paddingTop: collapsed ? 7 : 12,
-          paddingBottom: collapsed ? 7 : 18,
-          // Radius bleibt konstant — bei der flachen Leiste klemmt CSS ihn
-          // automatisch auf die halbe Höhe (= Pillenform), ohne Ecken-Springen
+          paddingTop: collapsed ? 9 : 12,
+          paddingBottom: collapsed ? 9 : 18,
+          // Radius bleibt konstant (Karten-Radius) — kein Ecken-Springen
+          // zwischen auf- und zugeklapptem Zustand
           borderRadius: 18,
           maxWidth: '100%', boxSizing: 'border-box',
           // overflow bleibt sichtbar, damit das ⋯-Menü auch aus der
           // zugeklappten Leiste herausragen kann — das Höhen-Clipping
           // übernimmt das innere Raster-Element selbst
-          paddingLeft: 16, paddingRight: 16, overflow: 'visible',
-          border: `1.5px solid color-mix(in srgb, ${color} ${isOver ? 65 : (collapsed ? 45 : 40)}%, var(--border))`,
-          background: `color-mix(in srgb, ${color} ${isOver ? 15 : (collapsed ? 10 : 6)}%, var(--surface))`,
-          boxShadow: isOver ? `0 0 0 3px color-mix(in srgb, ${color} 25%, transparent)` : 'none',
+          paddingLeft: 14, paddingRight: 10, overflow: 'visible',
+          // Tonale Fläche in der Ordnerfarbe statt kräftigem Rahmen; beim
+          // Darüberziehen ein innerer Ring (kein Glühen nach außen)
+          border: `1px solid color-mix(in srgb, ${color} ${isOver ? 60 : 28}%, var(--border))`,
+          background: `color-mix(in srgb, ${color} ${isOver ? 14 : (collapsed ? 8 : 5)}%, var(--surface))`,
+          boxShadow: isOver ? `inset 0 0 0 1px color-mix(in srgb, ${color} 60%, transparent)` : 'none',
           transition: `padding-top ${dur}s ${easeCss}, padding-bottom ${dur}s ${easeCss}, background 0.2s, border-color 0.2s, box-shadow 0.2s`,
         }}
       >
         {/* Kopfzeile — in beiden Zuständen identisch aufgebaut */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 30 }}>
           <button
             onClick={onToggleFolder} aria-expanded={!collapsed}
             style={{
-              display: 'flex', alignItems: 'center', gap: 9, background: 'none', border: 'none',
-              cursor: 'pointer', color: 'var(--text2)', padding: 0, flex: 1, minWidth: 0, textAlign: 'left',
+              display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none',
+              cursor: 'pointer', color: 'var(--text1)', padding: '4px 0', flex: 1, minWidth: 0, textAlign: 'left',
             }}
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
               style={{ transform: collapsed ? 'none' : 'rotate(90deg)', transition: 'transform 0.22s', flexShrink: 0 }}>
               <polyline points="9 6 15 12 9 18" />
             </svg>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            </svg>
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{folder}</span>
-            <span style={{ fontSize: 11, color: 'var(--text3)' }}>
+            <span style={{
+              width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: `color-mix(in srgb, ${color} 18%, transparent)`,
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              </svg>
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 650, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{folder}</span>
+            <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text3)', flexShrink: 0 }}>
               {list.length === 0 ? t('Empty') : `${list.length} ${list.length !== 1 ? t('Boards') : t('Board')}`}
             </span>
           </button>
@@ -303,37 +403,39 @@ function FolderSection({
               onClick={e => { e.stopPropagation(); onToggleMenu() }}
               title={t('Folder actions')} aria-label={`${t('Folder actions for')} ${folder}`} aria-haspopup="menu"
               style={{
-                width: 22, height: 22, borderRadius: 7, cursor: 'pointer', padding: 0,
+                width: 30, height: 30, borderRadius: '50%', cursor: 'pointer', padding: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: menuOpen ? `color-mix(in srgb, ${color} 18%, var(--surface))` : 'none',
-                border: 'none', color: 'var(--text2)',
+                background: menuOpen ? `color-mix(in srgb, ${color} 18%, var(--surface))` : 'transparent',
+                border: 'none', color: 'var(--text2)', transition: 'background 0.12s',
               }}
+              onMouseEnter={e => { if (!menuOpen) e.currentTarget.style.background = HOVER_TONE }}
+              onMouseLeave={e => { if (!menuOpen) e.currentTarget.style.background = 'transparent' }}
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                 <circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>
               </svg>
             </button>
             {menuOpen && (
               <div role="menu" style={{
+                ...popoverStyle,
                 position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 150,
-                minWidth: 200, overflow: 'hidden', padding: '10px 0 4px',
-                background: 'var(--popover-bg)',
-                backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-                border: '1px solid var(--border)',
-                borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
+                minWidth: 220,
               }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.07em', textTransform: 'uppercase', padding: '0 12px 7px' }}>
-                  {t('Folder color')}
-                </div>
-                <div style={{ display: 'flex', gap: 6, padding: '0 12px 10px', flexWrap: 'wrap' }}>
+                <div style={popoverHeading}>{t('Folder color')}</div>
+                <div style={{
+                  display: 'flex', gap: 7, padding: 10, margin: '0 2px 6px', flexWrap: 'wrap',
+                  borderRadius: 12, background: TONAL,
+                }}>
                   {FOLDER_COLORS.map(c => (
                     <button key={c}
                       onClick={e => { e.stopPropagation(); onSetColor(c) }}
                       title={c} aria-label={`${t('Color')} ${c}`}
                       style={{
-                        width: 18, height: 18, borderRadius: '50%', cursor: 'pointer', padding: 0,
-                        background: c,
-                        border: c === color ? '2px solid var(--text1)' : '2px solid transparent',
+                        width: 22, height: 22, borderRadius: '50%', cursor: 'pointer', padding: 0,
+                        background: c, border: 'none',
+                        // Auswahl als Ring mit Abstand (wie Theme-Karten), kein Rahmen
+                        boxShadow: c === color ? `0 0 0 2px var(--popover-bg), 0 0 0 4px ${c}` : 'none',
+                        transition: 'box-shadow 0.12s',
                       }}
                     />
                   ))}
@@ -345,20 +447,10 @@ function FolderSection({
                 ]).map(item => (
                   <button key={item.label} role="menuitem"
                     onClick={e => { e.stopPropagation(); item.action() }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 9,
-                      width: '100%', padding: '7px 12px', textAlign: 'left',
-                      border: 'none', cursor: 'pointer',
-                      borderTop: '1px solid color-mix(in srgb, var(--border) 50%, transparent)',
-                      background: 'transparent',
-                      color: item.danger ? 'var(--danger)' : 'var(--text1)',
-                      fontSize: 11.5, fontWeight: 500, whiteSpace: 'nowrap',
-                      transition: 'background 0.1s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = item.danger ? 'color-mix(in srgb, var(--danger) 10%, transparent)' : 'color-mix(in srgb, var(--text1) 5%, transparent)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                    style={menuRowStyle(item.danger)}
+                    {...rowHover(item.danger)}
                   >
-                    <span style={{ display: 'flex', flexShrink: 0, opacity: 0.75 }}>{item.icon}</span>
+                    <span style={{ display: 'flex', flexShrink: 0, opacity: 0.8 }}>{item.icon}</span>
                     {item.label}
                   </button>
                 ))}
@@ -387,14 +479,15 @@ function FolderSection({
             >
               {list.length === 0 ? (
                 <div style={{
-                  marginTop: 14, padding: '20px 8px', textAlign: 'center', borderRadius: 12,
-                  border: `1.5px dashed color-mix(in srgb, ${color} 35%, var(--border))`,
-                  color: 'var(--text3)', fontSize: 12,
+                  marginTop: 12, padding: '22px 12px', textAlign: 'center', borderRadius: 14,
+                  border: `1.5px dashed color-mix(in srgb, ${color} 30%, var(--border))`,
+                  background: `color-mix(in srgb, ${color} 4%, transparent)`,
+                  color: 'var(--text3)', fontSize: 13, lineHeight: 1.5,
                 }}>
                   {t('This folder is empty — drag a board here.')}
                 </div>
               ) : (
-                <div style={{ paddingTop: 14, display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_MIN}px, 1fr))`, gap: CARD_GAP }}>
+                <div style={{ paddingTop: 12, paddingRight: 4, display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_MIN}px, 1fr))`, gap: CARD_GAP }}>
                   {list.map(renderBoardCard)}
                 </div>
               )}
@@ -427,50 +520,56 @@ function LastBoardBar({ board, animations, onOpen }: { board: Board; animations:
       initial={animations ? { opacity: 0, y: 10 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: animations ? 0.22 : 0 }}
-      style={{ padding: '18px 36px 0' }}
+      style={{ padding: '22px 40px 0' }}
     >
       <div style={{
-        display: 'flex', alignItems: 'stretch', gap: 18, flexWrap: 'wrap',
-        padding: 12, borderRadius: 18,
+        display: 'flex', alignItems: 'stretch', gap: 22, flexWrap: 'wrap',
+        padding: 14, borderRadius: 22,
         background: 'var(--surface)', border: '1px solid var(--border)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
+        boxShadow: '0 8px 28px color-mix(in srgb, var(--shadow-color, #000) 22%, transparent)',
       }}>
-        <Link href={`/board/${board.id}`} style={{ flexShrink: 0, width: 200, height: 112, borderRadius: 12, overflow: 'hidden', position: 'relative', display: 'block', ...bgPreview(board) }}>
+        <Link href={`/board/${board.id}`} aria-label={board.name} style={{ flexShrink: 0, width: 248, height: 140, borderRadius: 16, overflow: 'hidden', position: 'relative', display: 'block', ...bgPreview(board) }}>
           <BoardMiniMap board={board} />
         </Link>
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, minWidth: 160, flex: '1 1 200px' }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, minWidth: 180, flex: '1 1 220px' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>
             {t('Last opened')}
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--text1)', lineHeight: 1.15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {board.name}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 2 }}>
             <button onClick={onOpen} style={{
-              display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 999, border: 'none',
-              background: 'var(--accent)', color: 'var(--on-accent, white)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 7, height: 38, padding: '0 20px', borderRadius: 999, border: 'none',
+              background: 'var(--accent)', color: 'var(--on-accent, white)', fontSize: 13.5, fontWeight: 650, cursor: 'pointer',
             }}>
               {t('Continue')}
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
             </button>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {types.slice(0, 8).map(type => (
-                <span key={type} title={t(TYPE_LABELS[type] ?? type)} style={{
-                  width: 24, height: 24, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text2)',
-                }}>{TYPE_ICONS[type]}</span>
-              ))}
-            </div>
+            {types.length > 0 && (
+              // Widget-Typen als eine getönte Insel statt einzelner Kästchen
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 2, height: 38, padding: '0 6px', borderRadius: 999,
+                background: TONAL, border: '1px solid var(--border)', boxSizing: 'border-box',
+              }}>
+                {types.slice(0, 8).map(type => (
+                  <span key={type} title={t(TYPE_LABELS[type] ?? type)} style={{
+                    width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'var(--text2)',
+                  }}>{TYPE_ICONS[type]}</span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(3, minmax(90px, auto))', gap: 6, alignContent: 'center',
+          display: 'grid', gridTemplateColumns: 'repeat(3, minmax(104px, auto))', gap: 8, alignContent: 'center',
           flex: '0 1 auto', marginLeft: 'auto',
         }}>
           {facts.map(f => (
-            <div key={f.label} style={{ padding: '6px 10px', borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border)', minWidth: 0 }}>
-              <div style={{ fontSize: 8, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{f.label}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text1)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>{f.value}</div>
+            <div key={f.label} style={{ padding: '9px 12px', borderRadius: 14, background: TONAL, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text3)' }}>{f.label}</div>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text1)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 150 }}>{f.value}</div>
             </div>
           ))}
         </div>
@@ -505,7 +604,7 @@ function BoardMenuButton({
       const menu = menuRef.current
       if (!triggerEl || !menu) return
       const r = triggerEl.getBoundingClientRect()
-      const mw = menu.offsetWidth || 190
+      const mw = menu.offsetWidth || 210
       const mh = menu.offsetHeight || 220
       const M = 8
       let x = r.right - mw
@@ -544,30 +643,23 @@ function BoardMenuButton({
           ref={menuRef}
           onMouseDown={e => e.stopPropagation()}
           style={{
+            ...popoverStyle,
             position: 'fixed', left: pos.x, top: pos.y, zIndex: 3000,
             visibility: ready ? 'visible' : 'hidden',
-            minWidth: 190, overflow: 'hidden',
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
+            minWidth: 210,
           }}
         >
-          {items.map((item, i) => (
+          {items.map(item => (
             <button key={item.label}
               onClick={e => { e.stopPropagation(); e.preventDefault(); onClose(); item.action() }}
               style={{
-                display: 'flex', alignItems: 'center', gap: 9,
-                width: '100%', padding: '7px 12px', textAlign: 'left',
-                border: 'none', cursor: 'pointer',
-                borderTop: i > 0 ? '1px solid color-mix(in srgb, var(--border) 50%, transparent)' : 'none',
-                background: 'transparent',
-                color: item.danger ? 'var(--danger)' : 'var(--text1)',
-                fontSize: 11.5, fontWeight: 500, whiteSpace: 'nowrap',
-                transition: 'background 0.1s',
+                ...menuRowStyle(item.danger),
+                // Zerstörende Aktion mit etwas Luft vom Rest abgesetzt
+                marginTop: item.danger ? 4 : 0,
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = item.danger ? 'color-mix(in srgb, var(--danger) 10%, transparent)' : 'color-mix(in srgb, var(--text1) 5%, transparent)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              {...rowHover(item.danger)}
             >
-              <span style={{ display: 'flex', flexShrink: 0, opacity: 0.75 }}>{item.icon}</span>
+              <span style={{ display: 'flex', flexShrink: 0, opacity: 0.8 }}>{item.icon}</span>
               {item.label}
             </button>
           ))}
@@ -1008,28 +1100,18 @@ export default function HomePage() {
                 transition={{ duration: 0.15 }}
                 style={{
                   borderRadius: 18,
-                  boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+                  boxShadow: '0 6px 22px color-mix(in srgb, var(--shadow-color, #000) 26%, transparent)',
                   cursor: 'pointer',
                 }}
               >
-                <div style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid var(--border)' }}>
                   {/* Vorschau: echte Mini-Map auf dem echten Board-Hintergrund */}
-                  <div style={{ height: 96, position: 'relative', ...bgPreview(board) }}>
+                  <div style={{ height: CARD_PREVIEW_H, position: 'relative', ...bgPreview(board) }}>
                     <BoardMiniMap board={board} />
-                    {board.pinned && (
-                      <div style={{
-                        position: 'absolute', top: 10, left: 10,
-                        width: 22, height: 22, borderRadius: 7,
-                        background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <PinIcon filled />
-                      </div>
-                    )}
+                    {board.pinned && <PinBadge />}
                   </div>
                   {/* Fußzeile */}
-                  <div style={{ padding: '12px 16px', background: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ padding: '13px 14px 13px 16px', background: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 10, minHeight: 48, boxSizing: 'border-box' }}>
                     {editingId === board.id ? (
                       <input
                         autoFocus
@@ -1040,8 +1122,9 @@ export default function HomePage() {
                         onKeyDown={e => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingId(null) }}
                         onClick={e => e.preventDefault()}
                         style={{
-                          flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--text1)',
-                          background: 'var(--surface2)', borderRadius: 6, padding: '2px 6px',
+                          flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600, color: 'var(--text1)',
+                          background: 'var(--surface2)', border: '1px solid var(--accent)', outline: 'none',
+                          borderRadius: 8, padding: '3px 8px',
                         }}
                       />
                     ) : (
@@ -1052,7 +1135,7 @@ export default function HomePage() {
                         {board.name}
                       </span>
                     )}
-                    <span style={{ fontSize: 10, color: 'var(--text3)', flexShrink: 0 }} suppressHydrationWarning>
+                    <span style={{ fontSize: 12, color: 'var(--text3)', flexShrink: 0 }} suppressHydrationWarning>
                       {timeAgo(board.lastEdited, t)}
                     </span>
                   </div>
@@ -1061,7 +1144,7 @@ export default function HomePage() {
             </Link>
 
             {/* Karten-Aktionen: Pin + Kontextmenü */}
-            <div className="delete-btn" style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 4, ...(menuFor === board.id ? { opacity: 1 } : {}) }}>
+            <div className="delete-btn" style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 6, ...(menuFor === board.id ? { opacity: 1 } : {}) }}>
               <CardBtn title={board.pinned ? t('Unpin board') : t('Pin board')} onClick={() => togglePinBoard(board.id)}>
                 <PinIcon filled={!!board.pinned} />
               </CardBtn>
@@ -1091,27 +1174,28 @@ export default function HomePage() {
     <div style={{ width: '100vw', height: '100vh', overflow: 'auto', background: 'var(--bg)', position: 'relative', isolation: 'isolate' }}>
       {homeAmbient && <HomeAmbient mode={uiMode} motion={appAnimations} tiles={homeAmbientTiles} />}
       {/* ── Kopfzeile ── */}
-      <div style={{ display: 'flex', alignItems: 'center', padding: '20px 36px 0' }}>
-        <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', padding: '22px 40px 0' }}>
+        <div style={{ width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mosaiclogo-blue.png" alt="mosaic" width={32} height={32} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <img src="/mosaiclogo-blue.png" alt="mosaic" width={34} height={34} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         </div>
-        <span style={{ fontSize: 28, fontWeight: 400, color: 'var(--text1)', marginLeft: 10, fontFamily: 'Guavine, sans-serif', lineHeight: 1 }}>mosaic</span>
+        <span style={{ fontSize: 30, fontWeight: 400, color: 'var(--text1)', marginLeft: 11, fontFamily: 'Guavine, sans-serif', lineHeight: 1 }}>mosaic</span>
 
         <div style={{ marginLeft: 'auto', position: 'relative', display: 'flex', alignItems: 'center' }}>
           <button
             onClick={() => setSettingsOpen(o => !o)}
             title={`${t('Settings')} [${homeShortcuts.settings}]`}
+            aria-label={t('Settings')}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: 34, height: 34, borderRadius: '50%',
+              width: 38, height: 38, borderRadius: '50%',
               border: `1px solid ${settingsOpen ? 'var(--accent)' : 'var(--border)'}`,
               background: settingsOpen ? 'color-mix(in srgb, var(--accent) 12%, var(--surface))' : 'var(--surface)',
               color: settingsOpen ? 'var(--accent)' : 'var(--text2)',
               cursor: 'pointer', transition: 'all 0.15s',
             }}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="3"/>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
@@ -1122,7 +1206,7 @@ export default function HomePage() {
 
       {/* ── Info-Leiste + Vorschau-Modus ── */}
       {hydrated && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '18px 36px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '20px 40px 0' }}>
           <div ref={boardsListRef} style={{ position: 'relative' }}>
             <StatChip
               label={`${boards.length} ${boards.length !== 1 ? t('Boards') : t('Board')}`}
@@ -1131,21 +1215,18 @@ export default function HomePage() {
             />
             {boardsListOpen && boards.length > 0 && (
               <div style={{
-                position: 'absolute', left: 0, top: 'calc(100% + 6px)', zIndex: 100,
-                minWidth: 200, maxWidth: 280, padding: '8px 0',
-                background: 'var(--popover-bg)',
-                backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-                border: '1px solid var(--border)',
-                borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
+                ...popoverStyle,
+                position: 'absolute', left: 0, top: 'calc(100% + 8px)', zIndex: 100,
+                minWidth: 230, maxWidth: 320,
               }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.07em', textTransform: 'uppercase', padding: '0 12px 6px' }}>
+                <div style={popoverHeading}>
                   {t('All boards')}
                 </div>
-                <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+                <div style={{ maxHeight: 280, overflowY: 'auto' }}>
                   {sorted.map(b => (
-                    <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 12px', fontSize: 11.5 }}>
+                    <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 32, padding: '0 10px', borderRadius: 10, fontSize: 13 }}>
                       {b.pinned && (
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="var(--accent)" stroke="none" style={{ flexShrink: 0 }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="var(--accent)" stroke="none" style={{ flexShrink: 0 }}>
                           <path d="M12 2l2.5 6.5L21 11l-5.5 4L17 22l-5-3.5L7 22l1.5-7L3 11l6.5-2.5z"/>
                         </svg>
                       )}
@@ -1164,19 +1245,16 @@ export default function HomePage() {
             />
             {widgetsListOpen && widgetTypeList.length > 0 && (
               <div style={{
-                position: 'absolute', left: 0, top: 'calc(100% + 6px)', zIndex: 100,
-                minWidth: 190, padding: '8px 0',
-                background: 'var(--popover-bg)',
-                backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-                border: '1px solid var(--border)',
-                borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
+                ...popoverStyle,
+                position: 'absolute', left: 0, top: 'calc(100% + 8px)', zIndex: 100,
+                minWidth: 230,
               }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.07em', textTransform: 'uppercase', padding: '0 12px 6px' }}>
+                <div style={popoverHeading}>
                   {t('Widget types')}
                 </div>
-                <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+                <div style={{ maxHeight: 280, overflowY: 'auto' }}>
                   {widgetTypeList.map(([type, count]) => (
-                    <div key={type} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 12px', fontSize: 11.5 }}>
+                    <div key={type} style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 32, padding: '0 10px', borderRadius: 10, fontSize: 13 }}>
                       <span style={{ display: 'flex', flexShrink: 0, color: 'var(--text2)', opacity: 0.75 }}>{TYPE_ICONS[type]}</span>
                       <span style={{ flex: 1, minWidth: 0, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {t(TYPE_LABELS[type] ?? type)}
@@ -1197,14 +1275,11 @@ export default function HomePage() {
               />
               {storageOpen && (
                 <div style={{
-                  position: 'absolute', left: 0, top: 'calc(100% + 6px)', zIndex: 100,
-                  minWidth: 210, padding: '8px 0',
-                  background: 'var(--popover-bg)',
-                  backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
+                  ...popoverStyle,
+                  position: 'absolute', left: 0, top: 'calc(100% + 8px)', zIndex: 100,
+                  minWidth: 240,
                 }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.07em', textTransform: 'uppercase', padding: '0 12px 6px' }}>
+                  <div style={popoverHeading}>
                     {t('Largest boards')}
                   </div>
                   {[...boards]
@@ -1212,7 +1287,7 @@ export default function HomePage() {
                     .sort((a, z) => z.size - a.size)
                     .slice(0, 4)
                     .map(({ b, size }) => (
-                      <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 12px', fontSize: 11.5 }}>
+                      <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 32, padding: '0 10px', borderRadius: 10, fontSize: 13 }}>
                         <span style={{ flex: 1, minWidth: 0, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
                         <span style={{ color: 'var(--text3)', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
                           {size > 1048576 ? `${(size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(size / 1024))} KB`}
@@ -1236,32 +1311,36 @@ export default function HomePage() {
 
       {/* ── Suche + Sortierung — immer sichtbar, sobald es Boards gibt ── */}
       {hydrated && boards.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '24px 36px 0' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginRight: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '28px 40px 0' }}>
+          <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--text1)', marginRight: 'auto' }}>
             {t('All boards')}
           </div>
           {/* Suche */}
           <div id="tour-search-input" style={{
-            display: 'flex', alignItems: 'center', gap: 7, width: 220,
-            padding: '6px 12px', borderRadius: 20,
+            display: 'flex', alignItems: 'center', gap: 8, width: 260, height: 36, boxSizing: 'border-box',
+            padding: '0 6px 0 14px', borderRadius: 999,
             background: 'var(--surface)', border: '1px solid var(--border)',
           }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input
               ref={searchInputRef}
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder={t('Search boards…')}
-              style={{ flex: 1, minWidth: 0, fontSize: 12, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text1)' }}
+              style={{ flex: 1, minWidth: 0, fontSize: 13.5, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text1)' }}
             />
             {query ? (
-              <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1 }}>×</button>
+              <button onClick={() => setQuery('')} aria-label={t('Clear search')} title={t('Clear search')} style={{
+                width: 26, height: 26, borderRadius: '50%', flexShrink: 0, padding: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'var(--surface2)', border: 'none', color: 'var(--text2)', cursor: 'pointer',
+              }}><XIcon size={9} /></button>
             ) : (
               showKbdHints && (
                 <span style={{
-                  fontSize: 9, fontWeight: 700, color: 'var(--text3)',
+                  fontSize: 10, fontWeight: 700, color: 'var(--text3)', marginRight: 6,
                   background: 'var(--surface2)', border: '1px solid var(--border)',
-                  borderRadius: 4, padding: '1px 4px', lineHeight: 1, flexShrink: 0,
+                  borderRadius: 5, padding: '2px 5px', lineHeight: 1, flexShrink: 0,
                 }}>{homeShortcuts.focusSearch}</span>
               )
             )}
@@ -1272,19 +1351,19 @@ export default function HomePage() {
               onClick={() => setSortOpen(o => !o)}
               title={t('Sort')}
               style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 13px', borderRadius: 20, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 7,
+                height: 36, padding: '0 15px', borderRadius: 999, cursor: 'pointer', boxSizing: 'border-box',
                 border: `1px solid ${sortOpen ? 'var(--accent)' : 'var(--border)'}`,
-                background: sortOpen ? 'color-mix(in srgb, var(--accent) 10%, var(--surface))' : 'var(--surface)',
+                background: sortOpen ? 'color-mix(in srgb, var(--accent) 12%, var(--surface))' : 'var(--surface)',
                 color: sortOpen ? 'var(--accent)' : 'var(--text2)',
-                fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
+                fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="22 3 2 3 10 12.5 10 19 14 21 14 12.5 22 3"/>
               </svg>
               {t(SORT_OPTIONS.find(o => o.id === sortBy)?.label ?? '')}
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
                 style={{ transform: sortOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
                 <polyline points="6,9 12,15 18,9"/>
               </svg>
@@ -1292,32 +1371,25 @@ export default function HomePage() {
 
             {sortOpen && (
               <div style={{
-                position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 100,
-                minWidth: 176, overflow: 'hidden',
-                background: 'var(--popover-bg)',
-                backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-                border: '1px solid var(--border)',
-                borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
+                ...popoverStyle,
+                position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 100,
+                minWidth: 196,
               }}>
-                {SORT_OPTIONS.map((o, i) => {
+                {SORT_OPTIONS.map(o => {
                   const active = sortBy === o.id
                   return (
                     <button key={o.id} onClick={() => { setSortBy(o.id); setSortOpen(false) }} style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      width: '100%', padding: '8px 13px', textAlign: 'left',
-                      border: 'none', cursor: 'pointer',
-                      borderTop: i > 0 ? '1px solid color-mix(in srgb, var(--border) 50%, transparent)' : 'none',
+                      ...menuRowStyle(),
                       background: active ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'transparent',
                       color: active ? 'var(--accent)' : 'var(--text1)',
-                      fontSize: 11.5, fontWeight: active ? 700 : 400, whiteSpace: 'nowrap',
-                      transition: 'background 0.1s',
+                      fontWeight: active ? 650 : 500,
                     }}
-                      onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'color-mix(in srgb, var(--text1) 5%, transparent)' }}
+                      onMouseEnter={e => { if (!active) e.currentTarget.style.background = HOVER_TONE }}
                       onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
                     >
-                      <span style={{ width: 12, display: 'flex', flexShrink: 0 }}>
+                      <span style={{ width: 13, display: 'flex', flexShrink: 0 }}>
                         {active && (
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                         )}
                       </span>
                       {t(o.label)}
@@ -1335,14 +1407,14 @@ export default function HomePage() {
               title={`${t('Add folder')} [${homeShortcuts.newFolder}]`} aria-label={t('Add folder')} aria-haspopup="dialog"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 30, height: 30, borderRadius: '50%', cursor: 'pointer', padding: 0,
+                width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', padding: 0,
                 border: `1px solid ${creatingFolder ? 'var(--accent)' : 'var(--border)'}`,
-                background: creatingFolder ? 'color-mix(in srgb, var(--accent) 10%, var(--surface))' : 'var(--surface)',
+                background: creatingFolder ? 'color-mix(in srgb, var(--accent) 12%, var(--surface))' : 'var(--surface)',
                 color: creatingFolder ? 'var(--accent)' : 'var(--text2)',
                 transition: 'all 0.15s',
               }}
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
                 <path d="M3 6.5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                 <line x1="12" y1="10" x2="12" y2="15"/>
                 <line x1="9.5" y1="12.5" x2="14.5" y2="12.5"/>
@@ -1354,24 +1426,20 @@ export default function HomePage() {
             {creatingFolder && (
               <div
                 onClick={() => setCreatingFolder(false)}
-                style={{
-                  position: 'fixed', inset: 0, zIndex: 1500,
-                  background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
+                style={{ ...backdropStyle, zIndex: 1500 }}
               >
                 <div
                   onClick={e => e.stopPropagation()}
                   role="dialog" aria-modal="true" aria-label={t('New folder')}
                   style={{
-                    width: 'min(420px, 92vw)', padding: '26px 28px',
-                    background: 'var(--popover-bg)',
-                    backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
-                    display: 'flex', flexDirection: 'column', gap: 14,
+                    ...modalStyle,
+                    width: 'min(440px, 92vw)', padding: 22,
+                    display: 'flex', flexDirection: 'column', gap: 16,
                   }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)' }}>{t('New folder')}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                    <span style={modalTitle}>{t('New folder')}</span>
+                    <CloseBtn onClick={() => setCreatingFolder(false)} label={t('Close')} />
+                  </div>
                   <input
                     autoFocus
                     value={newFolderName}
@@ -1379,20 +1447,13 @@ export default function HomePage() {
                     onKeyDown={e => { if (e.key === 'Enter') createFolder(); if (e.key === 'Escape') setCreatingFolder(false) }}
                     placeholder={t('Name…')}
                     maxLength={30}
-                    style={{
-                      fontSize: 14, padding: '10px 13px', borderRadius: 10,
-                      border: '1px solid var(--border)', background: 'var(--surface2)',
-                      color: 'var(--text1)', outline: 'none',
-                    }}
+                    style={inputStyle}
                   />
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                    <button onClick={() => setCreatingFolder(false)}
-                      style={{ padding: '9px 16px', fontSize: 13, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
-                    >{t('Cancel')}</button>
+                    <button onClick={() => setCreatingFolder(false)} style={pillBtn('ghost')}>{t('Cancel')}</button>
                     <button onClick={createFolder} disabled={!newFolderName.trim()}
                       style={{
-                        padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 999, border: 'none',
-                        background: 'var(--accent)', color: 'var(--on-accent, white)',
+                        ...pillBtn('accent'), padding: '0 22px',
                         cursor: newFolderName.trim() ? 'pointer' : 'default', opacity: newFolderName.trim() ? 1 : 0.4,
                       }}
                     >{t('Create')}</button>
@@ -1411,13 +1472,15 @@ export default function HomePage() {
       )}
 
       {/* ── Zweigeteilt: links Boards (Neues Board immer zuerst), rechts Ordner ── */}
-      <div className="home-split" style={{ display: 'flex', alignItems: 'stretch', padding: '18px 36px 60px' }}>
+      <div className="home-split" style={{ display: 'flex', alignItems: 'stretch', padding: '18px 40px 96px' }}>
       <div ref={setUngroupedRef} style={{
         flex: '1 1 0', minWidth: 0, alignContent: 'start',
         display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_MIN}px, 1fr))`, gap: CARD_GAP,
-        borderRadius: ungroupedIsOver && showFolders ? 18 : 0,
-        boxShadow: ungroupedIsOver && showFolders ? 'inset 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent)' : 'none',
-        transition: 'box-shadow 0.2s',
+        borderRadius: 18,
+        // Drop-Zone „aus Ordner nehmen": tonale Akzent-Fläche statt Ring
+        background: ungroupedIsOver && showFolders ? 'color-mix(in srgb, var(--accent) 7%, transparent)' : 'transparent',
+        boxShadow: ungroupedIsOver && showFolders ? 'inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent)' : 'none',
+        transition: 'box-shadow 0.2s, background 0.2s',
       }}>
 
         {/* ── Neues Board ── */}
@@ -1437,12 +1500,16 @@ export default function HomePage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
                 style={{
-                  borderRadius: 18, border: '2px solid var(--accent)',
+                  borderRadius: 18, border: '1px solid color-mix(in srgb, var(--accent) 55%, var(--border))',
                   background: 'var(--surface)', padding: 18,
-                  display: 'flex', flexDirection: 'column', gap: 12,
+                  boxShadow: POPOVER_SHADOW,
+                  display: 'flex', flexDirection: 'column', gap: 14,
                 }}
               >
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)' }}>{t('Create new board')}</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <span style={{ fontSize: 15, fontWeight: 650, color: 'var(--text1)' }}>{t('Create new board')}</span>
+                  <CloseBtn onClick={() => { setCreating(false); setNewName('') }} label={t('Close')} />
+                </div>
                 <input
                   ref={inputRef}
                   autoFocus
@@ -1451,43 +1518,45 @@ export default function HomePage() {
                   onChange={e => setNewName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') { setCreating(false); setNewName('') } }}
                   placeholder={t('Board name…')}
-                  style={{
-                    fontSize: 14, padding: '8px 12px', borderRadius: 10,
-                    border: '1px solid var(--border)', background: 'var(--surface2)',
-                    color: 'var(--text1)',
-                  }}
+                  style={inputStyle}
                 />
                 {/* Vorlagen */}
                 <div>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 6 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>
                     {t('Template')}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {allTemplates.map(tpl => {
                       const active = selectedTpl === tpl.id
                       return (
                         <button key={tpl.id} onClick={() => setSelectedTpl(tpl.id)} style={{
-                          display: 'flex', alignItems: 'center', gap: 9, padding: '7px 11px',
-                          width: '100%', borderRadius: 9, cursor: 'pointer', textAlign: 'left',
-                          minWidth: 0, overflow: 'hidden',
-                          border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
-                          background: active ? 'color-mix(in srgb, var(--accent) 10%, var(--surface2))' : 'var(--surface2)',
-                          transition: 'all 0.12s',
+                          display: 'flex', alignItems: 'center', gap: 10, minHeight: 42, padding: '0 12px',
+                          width: '100%', borderRadius: 12, cursor: 'pointer', textAlign: 'left',
+                          minWidth: 0, overflow: 'hidden', border: 'none',
+                          // Option-Karte wie im Theme-Panel: getönt + innerer Akzentring
+                          background: active ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : TONAL,
+                          boxShadow: active ? 'inset 0 0 0 1.5px var(--accent)' : 'none',
+                          transition: 'background 0.12s, box-shadow 0.12s',
                         }}>
                           <span style={{ color: active ? 'var(--accent)' : 'var(--text3)', display: 'flex', flexShrink: 0 }}>{tpl.icon}</span>
-                          <span style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 700, color: active ? 'var(--accent)' : 'var(--text1)', whiteSpace: 'nowrap' }}>{t(tpl.label)}</span>
-                          <span style={{ flex: 1, minWidth: 0, fontSize: 9.5, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>{t(tpl.desc)}</span>
+                          <span style={{ flexShrink: 0, fontSize: 13, fontWeight: 650, color: active ? 'var(--accent)' : 'var(--text1)', whiteSpace: 'nowrap' }}>{t(tpl.label)}</span>
+                          <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>{t(tpl.desc)}</span>
                           {tpl.custom && (
                             <span
                               role="button"
                               title={t('Remove template')}
+                              aria-label={t('Remove template')}
                               onClick={e => {
                                 e.stopPropagation()
                                 removeCustomTemplate(tpl.id)
                                 if (selectedTpl === tpl.id) setSelectedTpl('empty')
                               }}
-                              style={{ flexShrink: 0, width: 15, height: 15, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', fontSize: 11, lineHeight: 1 }}
-                            >×</span>
+                              style={{
+                                flexShrink: 0, width: 26, height: 26, borderRadius: '50%', marginRight: -4,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text3)', boxSizing: 'border-box',
+                              }}
+                            ><XIcon size={8} /></span>
                           )}
                         </button>
                       )
@@ -1495,20 +1564,8 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={handleCreate}
-                    style={{
-                      flex: 1, padding: '8px', fontSize: 13, fontWeight: 600,
-                      borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
-                    }}
-                  >{t('Create')}</button>
-                  <button
-                    onClick={() => { setCreating(false); setNewName('') }}
-                    style={{
-                      padding: '8px 14px', fontSize: 13, borderRadius: 999,
-                      border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer',
-                    }}
-                  >{t('Cancel')}</button>
+                  <button onClick={handleCreate} style={{ ...pillBtn('accent'), flex: 1 }}>{t('Create')}</button>
+                  <button onClick={() => { setCreating(false); setNewName('') }} style={pillBtn('ghost')}>{t('Cancel')}</button>
                 </div>
               </motion.div>
             ) : (
@@ -1519,24 +1576,32 @@ export default function HomePage() {
                 onClick={() => setCreating(true)}
                 title={`${t('New board')} [${homeShortcuts.newBoard}]`}
                 style={{
-                  width: '100%', height: 134, borderRadius: 18, position: 'relative',
-                  border: '2px dashed rgba(255,255,255,0.12)',
-                  background: 'rgba(255,255,255,0.02)',
-                  color: 'var(--text3)', fontSize: 14, fontWeight: 600,
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  // gleiche Höhe wie eine Board-Karte (Vorschau + Fußzeile)
+                  width: '100%', height: CARD_PREVIEW_H + 50, borderRadius: 18, position: 'relative',
+                  border: '1.5px dashed color-mix(in srgb, var(--text3) 45%, transparent)',
+                  background: TONAL,
+                  color: 'var(--text2)', fontSize: 14, fontWeight: 600,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
                   cursor: 'pointer', transition: 'all 0.15s',
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.borderColor = 'var(--accent)'
                   e.currentTarget.style.color = 'var(--accent)'
+                  e.currentTarget.style.background = 'color-mix(in srgb, var(--accent) 8%, transparent)'
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
-                  e.currentTarget.style.color = 'var(--text3)'
+                  e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text3) 45%, transparent)'
+                  e.currentTarget.style.color = 'var(--text2)'
+                  e.currentTarget.style.background = TONAL
                 }}
               >
                 {showKbdHints && <span style={{ ...kbdBadgeStyle, top: 10, right: 10 }}>{homeShortcuts.newBoard}</span>}
-                <span style={{ fontSize: 28, lineHeight: 1 }}>+</span>
+                <span style={{
+                  width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'color-mix(in srgb, var(--accent) 14%, transparent)', color: 'var(--accent)',
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                </span>
                 <span>{t('New board')}</span>
               </motion.button>
             )}
@@ -1548,22 +1613,26 @@ export default function HomePage() {
 
         {/* Kein Suchtreffer */}
         {hydrated && q && sorted.length === 0 && (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 0', color: 'var(--text3)', fontSize: 13 }}>
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '48px 16px', borderRadius: 18, background: TONAL, color: 'var(--text2)', fontSize: 14 }}>
             {t('No board found for')} “{query}”
           </div>
         )}
       </div>
 
       {hydrated && !q && (<>
-        <div className="home-divider" style={{ width: 1, flexShrink: 0, alignSelf: 'stretch', background: 'var(--border)', margin: '0 28px' }} />
+        {/* Dezente Trennlinie — blendet oben und unten aus statt hart durchzulaufen */}
+        <div className="home-divider" style={{
+          width: 1, flexShrink: 0, alignSelf: 'stretch', margin: '0 32px',
+          background: 'linear-gradient(to bottom, transparent, color-mix(in srgb, var(--border) 80%, transparent) 12%, color-mix(in srgb, var(--border) 80%, transparent) 88%, transparent)',
+        }} />
         <div className="home-folders" style={{ flex: '0 0 40%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--text1)', minHeight: 24, display: 'flex', alignItems: 'center' }}>
             {t('Folders')}
           </div>
           {folderNames.length === 0 ? (
             <div style={{
-              padding: '22px 14px', textAlign: 'center', borderRadius: 12, fontSize: 12, color: 'var(--text3)',
-              border: '1.5px dashed var(--border)',
+              padding: '26px 18px', textAlign: 'center', borderRadius: 16, fontSize: 13, lineHeight: 1.55, color: 'var(--text3)',
+              background: TONAL,
             }}>
               {t('No folders yet — create one with the folder button above, then drag boards into it.')}
             </div>
@@ -1596,7 +1665,7 @@ export default function HomePage() {
       <style>{`
         @media (max-width: 900px) {
           .home-split { flex-direction: column; }
-          .home-divider { width: auto !important; height: 1px; margin: 26px 0 !important; }
+          .home-divider { width: auto !important; height: 1px; margin: 28px 0 !important; background: color-mix(in srgb, var(--border) 70%, transparent) !important; }
           .home-folders { flex: 1 1 auto !important; }
         }
       `}</style>

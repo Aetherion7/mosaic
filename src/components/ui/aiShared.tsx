@@ -67,7 +67,7 @@ export function MessageActions({ text, onRegenerate, light }: { text: string; on
   const btnStyle: React.CSSProperties = {
     width: 20, height: 20, border: 'none', background: 'none', color,
     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    borderRadius: 5, padding: 0, flexShrink: 0,
+    borderRadius: 999, padding: 0, flexShrink: 0,
   }
   async function copy() {
     try {

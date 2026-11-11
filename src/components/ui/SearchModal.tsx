@@ -136,13 +136,17 @@ export default function SearchModal({ onClose }: Props) {
           width: '100%', maxWidth: 560,
           background: 'var(--surface)',
           border: '1px solid var(--border)',
-          borderRadius: 16,
-          boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+          borderRadius: 22,
+          boxShadow: '0 32px 80px color-mix(in srgb, var(--shadow-color, #000) 55%, transparent)',
           overflow: 'hidden',
+          padding: 8,
         }}
       >
-        {/* Search input */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+        {/* Search input — tonale Pille statt Kopfzeile mit Trennlinie */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, height: 44, padding: '0 8px 0 16px',
+          borderRadius: 999, background: 'color-mix(in srgb, var(--surface2) 70%, transparent)',
+        }}>
           <span style={{ color: 'var(--text3)', display: 'flex', alignItems: 'center' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -163,18 +167,22 @@ export default function SearchModal({ onClose }: Props) {
           {query && (
             <button
               onClick={() => setQuery('')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 14, padding: 0 }}
+              style={{
+                width: 24, height: 24, borderRadius: 999, border: '1px solid var(--border)', padding: 0, flexShrink: 0,
+                background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
             >
-              ×
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
             </button>
           )}
-          <span style={{ fontSize: 11, color: 'var(--text3)', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 5, padding: '2px 6px' }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 999, padding: '3px 9px', flexShrink: 0 }}>
             ESC
           </span>
         </div>
 
         {/* Results */}
-        <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+        <div style={{ maxHeight: 360, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, paddingTop: results.length > 0 || query ? 6 : 0 }}>
           {query && results.length === 0 && (
             <div style={{ padding: '24px 20px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>
               {t('No results for')} “{query}”
@@ -187,14 +195,14 @@ export default function SearchModal({ onClose }: Props) {
               onMouseEnter={() => setCursor(i)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 12, width: '100%',
-                padding: '9px 16px', border: 'none', cursor: 'pointer', textAlign: 'left',
-                background: i === cursor ? 'color-mix(in srgb, var(--accent) 10%, var(--surface2))' : 'transparent',
+                padding: '8px 10px', border: 'none', borderRadius: 14, cursor: 'pointer', textAlign: 'left',
+                background: i === cursor ? 'color-mix(in srgb, var(--accent) 12%, var(--surface2))' : 'transparent',
                 transition: 'background 0.1s',
               }}
             >
               <span style={{
                 flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 32, height: 32, borderRadius: 9,
+                width: 32, height: 32, borderRadius: 10,
                 background: 'var(--surface2)', border: '1px solid var(--border)',
                 color: 'var(--text2)',
               }}>

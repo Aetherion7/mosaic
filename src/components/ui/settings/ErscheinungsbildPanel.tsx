@@ -7,7 +7,7 @@ import type { CustomFont } from '@/store/settingsStore'
 import { FONT_OPTIONS, customFontStack, type FontOption } from '@/lib/fonts'
 import { saveBlob, deleteBlob } from '@/lib/blobStore'
 import { useT } from '@/hooks/useT'
-import { SectionTitle, HeaderStyleCard, AddCardButton, Row } from './shared'
+import { SectionTitle, HeaderStyleCard, AddCardButton, Row, tileStyle, pillBtn, XIcon, POPOVER_SHADOW } from './shared'
 import ThemeEditorModal from './ThemeEditorModal'
 
 export default function ErscheinungsbildPanel() {
@@ -19,7 +19,7 @@ export default function ErscheinungsbildPanel() {
   return (
     <div>
       <SectionTitle>{t('Header style')}</SectionTitle>
-      <div style={{ display: 'flex', gap: 12, marginBottom: 4 }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 4 }}>
         <HeaderStyleCard
           active={headerStyle === 'default'}
           label={t('Full bar')}
@@ -94,12 +94,7 @@ export default function ErscheinungsbildPanel() {
             programFont:   'inter',
           })
         }}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '9px 14px', borderRadius: 999, border: '1px solid var(--border)',
-          background: 'var(--surface2)', color: 'var(--text2)',
-          cursor: 'pointer', fontSize: 12, fontWeight: 500,
-        }}
+        style={{ ...pillBtn('ghost'), gap: 8, padding: '8px 14px' }}
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
@@ -128,7 +123,7 @@ function CustomThemesSection() {
         const accent  = ct.cssVars['--accent']  ?? '#8b74f0'
         const accent2 = ct.cssVars['--accent2'] ?? '#5eead4'
         return (
-          <div key={ct.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 9, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+          <div key={ct.id} style={{ display: 'flex', alignItems: 'center', gap: 10, ...tileStyle(true), padding: '9px 10px 9px 14px' }}>
             <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
               {[bg, surface, accent, accent2].map((c, i) => (
                 <div key={i} style={{ width: 12, height: 12, borderRadius: 4, background: c, border: '1px solid rgba(128,128,128,0.35)' }} />
@@ -136,13 +131,13 @@ function CustomThemesSection() {
             </div>
             <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ct.name}</span>
             <button onClick={() => setEditorTarget(ct)} title={t('Edit theme')}
-              style={{ width: 20, height: 20, borderRadius: 6, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              style={{ width: 24, height: 24, borderRadius: 999, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>
               </svg>
             </button>
             <button onClick={() => removeCustomTheme(ct.id)} title={t('Remove theme')}
-              style={{ width: 20, height: 20, borderRadius: 6, border: 'none', background: 'none', color: 'var(--text3)', fontSize: 13, lineHeight: 1, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
+              style={{ width: 24, height: 24, borderRadius: 999, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><XIcon size={9} /></button>
           </div>
         )
       })}
@@ -229,8 +224,8 @@ export function FontSection({ showBoardFont = true }: { showBoardFont?: boolean 
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 4 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, ...tileStyle(true) }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text1)' }}>{t('Program font')}</div>
           <div style={{ fontSize: 10.5, color: 'var(--text3)' }}>{t('Used everywhere — home screen, settings, and every board without its own font')}</div>
@@ -246,10 +241,10 @@ export function FontSection({ showBoardFont = true }: { showBoardFont?: boolean 
         />
         <input ref={fileRef} type="file" accept=".ttf,.otf,.woff,.woff2,font/*" onChange={handleFile} style={{ display: 'none' }} />
       </div>
-      {error && <div style={{ fontSize: 11, color: 'var(--danger)' }}>{error}</div>}
+      {error && <div style={{ fontSize: 11, color: 'var(--danger)', padding: '0 14px' }}>{error}</div>}
 
       {showBoardFont && board && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, ...tileStyle(true) }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text1)' }}>{t('Board font')}</div>
             <div style={{ fontSize: 10.5, color: 'var(--text3)' }}>{t('Overrides the program font, only for this board')}</div>
@@ -305,7 +300,7 @@ function FontSelect({ builtins, custom, value, onChange, onDeleteCustom, onAddCu
         onClick={() => setOpen(o => !o)}
         style={{
           display: 'flex', alignItems: 'center', gap: 8, maxWidth: 190,
-          padding: '5px 9px', borderRadius: 8,
+          padding: '6px 12px 6px 14px', borderRadius: 999,
           border: `1px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
           background: 'var(--surface2)', cursor: 'pointer', textAlign: 'left',
           transition: 'border-color 0.12s',
@@ -329,8 +324,8 @@ function FontSelect({ builtins, custom, value, onChange, onDeleteCustom, onAddCu
           minWidth: 200, maxHeight: 280, overflowY: 'auto',
           background: 'var(--popover-bg)',
           backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid var(--border)', borderRadius: 10,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+          border: '1px solid var(--border)', borderRadius: 14, padding: 4,
+          boxShadow: POPOVER_SHADOW,
         }}>
           {onAddCustom && (
             <button
@@ -338,7 +333,7 @@ function FontSelect({ builtins, custom, value, onChange, onDeleteCustom, onAddCu
               disabled={uploading}
               style={{
                 display: 'flex', alignItems: 'center', gap: 7, width: '100%',
-                padding: '7px 10px', border: 'none', cursor: uploading ? 'default' : 'pointer', textAlign: 'left',
+                padding: '7px 10px', borderRadius: 10, border: 'none', cursor: uploading ? 'default' : 'pointer', textAlign: 'left',
                 background: 'transparent', opacity: uploading ? 0.6 : 1,
               }}
               onMouseEnter={e => { if (!uploading) (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface2)' }}
@@ -366,14 +361,14 @@ function FontSelect({ builtins, custom, value, onChange, onDeleteCustom, onAddCu
               onClick={() => { onChange(null); setOpen(false) }}
               style={{
                 display: 'flex', alignItems: 'center', width: '100%',
-                padding: '7px 10px', border: 'none', cursor: 'pointer', textAlign: 'left',
+                padding: '7px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', textAlign: 'left',
                 background: value === null ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'transparent',
                 borderBottom: '1px solid var(--border)',
               }}
               onMouseEnter={e => { if (value !== null) (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface2)' }}
               onMouseLeave={e => { if (value !== null) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
             >
-              <span style={{ fontSize: 12, fontWeight: value === null ? 700 : 500, color: value === null ? 'var(--accent)' : 'var(--text2)', fontStyle: 'italic' }}>
+              <span style={{ fontSize: 12, fontWeight: value === null ? 600 : 500, color: value === null ? 'var(--accent)' : 'var(--text2)', fontStyle: 'italic' }}>
                 {t('Use program font')}
               </span>
             </button>
@@ -394,13 +389,13 @@ function FontOptionButton({ f, active, onClick, onDelete }: { f: FontOption; act
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center', gap: 6, width: '100%',
-        padding: '7px 10px', cursor: 'pointer', textAlign: 'left',
+        padding: '7px 10px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
         background: active ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'transparent',
       }}
       onMouseEnter={e => { if (!active) (e.currentTarget as HTMLDivElement).style.background = 'var(--surface2)' }}
       onMouseLeave={e => { if (!active) (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
     >
-      <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: active ? 700 : 500, color: active ? 'var(--accent)' : 'var(--text1)', fontFamily: f.stack, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: active ? 600 : 500, color: active ? 'var(--accent)' : 'var(--text1)', fontFamily: f.stack, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {f.label}
       </span>
       {onDelete && (
@@ -408,12 +403,12 @@ function FontOptionButton({ f, active, onClick, onDelete }: { f: FontOption; act
           onClick={e => { e.stopPropagation(); onDelete() }}
           title={t('Remove font')}
           style={{
-            width: 18, height: 18, borderRadius: 5, border: 'none', background: 'none', color: 'var(--text3)',
-            fontSize: 12, lineHeight: 1, cursor: 'pointer', padding: 0, flexShrink: 0,
+            width: 20, height: 20, borderRadius: 999, border: 'none', background: 'none', color: 'var(--text3)',
+            cursor: 'pointer', padding: 0, flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          ×
+          <XIcon size={8} />
         </button>
       )}
     </div>

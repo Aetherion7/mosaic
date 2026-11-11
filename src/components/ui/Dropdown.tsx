@@ -40,7 +40,7 @@ export function Dropdown({
         onClick={() => setOpen(o => !o)}
         style={{
           display: 'flex', alignItems: 'center', gap: 6, minWidth: 0,
-          fontSize: 11, fontWeight: 600, padding: '5px 9px', borderRadius: 7,
+          fontSize: 11, fontWeight: 600, padding: '5px 10px', borderRadius: 999,
           border: `1px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
           background: 'var(--surface2)', color: disabled ? 'var(--text3)' : 'var(--text1)',
           cursor: disabled ? 'default' : 'pointer', textAlign: align,
@@ -61,11 +61,11 @@ export function Dropdown({
 
       <PortalPopover open={open} anchorRef={btnRef} onClose={() => setOpen(false)} width={popoverWidth}>
         <div style={{
-          display: 'flex', flexDirection: 'column', gap: 1, padding: 4, maxHeight: 280, overflowY: 'auto',
+          display: 'flex', flexDirection: 'column', gap: 1, padding: 5, maxHeight: 280, overflowY: 'auto',
           background: 'var(--popover-bg)',
           backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid var(--border)', borderRadius: 10,
-          boxShadow: '0 8px 28px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)',
+          border: '1px solid var(--border)', borderRadius: 16,
+          boxShadow: '0 10px 32px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)',
         }}>
           {options.map(o => {
             const active = o.value === value
@@ -77,9 +77,9 @@ export function Dropdown({
                 onClick={() => { if (o.disabled) return; onChange(o.value); setOpen(false) }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 7, width: '100%',
-                  fontSize: 11, fontWeight: active ? 700 : 500, padding: '6px 9px', borderRadius: 7,
+                  fontSize: 11, fontWeight: active ? 600 : 500, padding: '6px 10px', borderRadius: 10,
                   border: 'none', textAlign: 'left', whiteSpace: 'nowrap',
-                  background: active ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'transparent',
+                  background: active ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'transparent',
                   color: o.disabled ? 'var(--text3)' : active ? 'var(--accent)' : 'var(--text2)',
                   cursor: o.disabled ? 'default' : 'pointer',
                   opacity: o.disabled ? 0.4 : 1,

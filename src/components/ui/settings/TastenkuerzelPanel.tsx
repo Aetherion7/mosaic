@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '@/hooks/useT'
 import { useSettings, DEFAULT_SHORTCUTS, DEFAULT_HOME_SHORTCUTS, type ShortcutAction, type HomeShortcutAction } from '@/store/settingsStore'
-import { SectionTitle, KbdRow } from './shared'
+import { SectionTitle, KbdRow, tileStyle } from './shared'
 
 // Die 6 globalen Single-Key-Shortcuts aus TopBar.tsx sind umbelegbar — nicht
 // Ctrl+Z/Y (feste Konvention) und nicht die Widget-internen Tasten (Tabelle,
@@ -193,13 +193,13 @@ function RebindableKbdRow({ action, keyValue, recording, isDefault, conflict, on
   useEffect(() => { if (recording) btnRef.current?.focus() }, [recording])
 
   return (
-    <div style={{ padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ ...tileStyle(), padding: '9px 14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <span style={{ fontSize: 12, color: 'var(--text2)' }}>{action}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {!isDefault && !recording && (
             <button onClick={onReset} title={t('Reset to default')}
-              style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}>
+              style={{ width: 22, height: 22, borderRadius: 999, background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
               </svg>
@@ -211,8 +211,8 @@ function RebindableKbdRow({ action, keyValue, recording, isDefault, conflict, on
             title={recording ? t('Press any key — Esc to cancel') : t('Click to change')}
             style={{
               fontSize: 11, fontFamily: 'monospace', fontWeight: 700,
-              padding: '2px 9px', borderRadius: 5, cursor: 'pointer',
-              background: recording ? 'color-mix(in srgb, var(--accent) 16%, var(--surface2))' : 'var(--surface2)',
+              padding: '2px 10px', borderRadius: 7, cursor: 'pointer',
+              background: recording ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'var(--surface)',
               border: `1px solid ${recording ? 'var(--accent)' : 'var(--border)'}`,
               color: recording ? 'var(--accent)' : 'var(--text1)',
               minWidth: 26,

@@ -113,9 +113,10 @@ export default function WidgetStylePanel() {
     background: panelBg,
     backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
     border: '1px solid var(--border)',
-    borderRadius: 20, padding: 16,
-    boxShadow: '0 24px 64px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,0.04)',
+    borderRadius: 22, padding: 12,
+    boxShadow: '0 24px 64px color-mix(in srgb, var(--shadow-color, #000) 55%, transparent)',
     maxHeight: 'calc(100vh - 80px)', overflowY: 'auto',
+    display: 'flex', flexDirection: 'column', gap: 8,
   }
 
   return (
@@ -135,14 +136,14 @@ export default function WidgetStylePanel() {
               {bgRemoved && (
                 <div style={{
                   fontSize: 10.5, color: 'var(--text3)', lineHeight: 1.5,
-                  background: 'var(--surface2)', border: '1px solid var(--border)',
-                  borderRadius: 8, padding: '6px 9px', marginBottom: 2,
+                  background: 'color-mix(in srgb, var(--surface) 60%, transparent)',
+                  borderRadius: 10, padding: '6px 10px', marginBottom: 2,
                 }}>
                   {t('This widget\'s own "hide background" option is on, so these have no effect until it\'s switched off.')}
                 </div>
               )}
               {/* Solid / Gradient toggle — gleitende Pille (SlidingTabs) */}
-              <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 50, padding: 2, marginBottom: 10 }}>
+              <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 999, padding: 2, marginBottom: 2 }}>
                 <SlidingTabs
                   options={[
                     { value: 'solid',    label: t('Solid') },
@@ -160,7 +161,7 @@ export default function WidgetStylePanel() {
                 <Row label={t('Color')}>
                   <ColorSwatch value={s.bgColor} onChange={v => set({ bgColor: v })} />
                   <div style={{
-                    flex: 1, height: 24, borderRadius: 7,
+                    flex: 1, height: 24, borderRadius: 999,
                     background: s.bgColor, border: '1px solid var(--border)',
                   }} />
                 </Row>
@@ -170,7 +171,7 @@ export default function WidgetStylePanel() {
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', flex: 1 }}>
                       <ColorSwatch value={g0.startsWith('#') ? g0 : '#16192b'} onChange={v => set({ gradient: [v, g1] })} />
                       <div style={{
-                        flex: 1, height: 24, borderRadius: 7,
+                        flex: 1, height: 24, borderRadius: 999,
                         background: `linear-gradient(to right, ${g0}, ${g1})`,
                         border: '1px solid var(--border)',
                       }} />
@@ -181,8 +182,8 @@ export default function WidgetStylePanel() {
                     <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', flex: 1 }}>
                       {DIR_OPTIONS.map(d => (
                         <button key={d.value} onClick={() => set({ gradientDir: d.value })} style={{
-                          width: 24, height: 24, borderRadius: 6,
-                          border: '1px solid var(--border)',
+                          width: 24, height: 24, borderRadius: 999, padding: 0,
+                          border: 'none',
                           background: s.gradientDir === d.value ? 'var(--accent)' : 'var(--surface2)',
                           color: s.gradientDir === d.value ? 'var(--on-accent, white)' : 'var(--text2)',
                           fontSize: 11, cursor: 'pointer',
@@ -201,14 +202,10 @@ export default function WidgetStylePanel() {
             </Section>
           </div>
 
-          <Divider />
-
           {/* ── Shape ── */}
           <Section label={t('Shape')}>
             <CornerRadiusSection s={s} set={set} t={t} />
           </Section>
-
-          <Divider />
 
           {/* ── Border ── */}
           <Section label={t('Border')}>
@@ -223,24 +220,21 @@ export default function WidgetStylePanel() {
               onChange={v => set({ borderWidth: v })} display={`${s.borderWidth}px`} />
           </Section>
 
-          <Divider />
-
           {/* ── Shadow ── */}
           <Section label={t('Shadow')}>
             <div style={{ display: 'flex', gap: 5 }}>
               {SHADOW_OPTS.map(sh => (
                 <button key={sh} onClick={() => set({ shadow: sh })} style={{
-                  flex: 1, padding: '5px 0', fontSize: 10, fontWeight: 600, borderRadius: 8,
-                  border: `1px solid ${s.shadow === sh ? 'var(--accent)' : 'var(--border)'}`,
-                  background: s.shadow === sh ? 'var(--accent)' : 'var(--surface2)',
-                  color: s.shadow === sh ? 'var(--on-accent, white)' : 'var(--text3)',
+                  flex: 1, height: 26, padding: 0, fontSize: 10.5, fontWeight: 600, borderRadius: 999,
+                  border: 'none',
+                  background: s.shadow === sh ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'var(--surface2)',
+                  boxShadow: s.shadow === sh ? 'inset 0 0 0 1.5px var(--accent)' : 'inset 0 0 0 1px var(--border)',
+                  color: s.shadow === sh ? 'var(--accent)' : 'var(--text2)',
                   cursor: 'pointer', transition: 'all 0.12s',
                 }}>{sh === 'none' ? '—' : sh.toUpperCase()}</button>
               ))}
             </div>
           </Section>
-
-          <Divider />
 
           {/* ── Glow ── */}
           <Section label={t('Glow')}>
@@ -256,7 +250,7 @@ export default function WidgetStylePanel() {
                 })}
                 style={{
                   ...tabBtn(!!s.glowColor),
-                  fontSize: 10, padding: '4px 10px',
+                  fontSize: 10.5, height: 26, padding: '0 12px',
                 }}
               >{s.glowColor ? t('On') : t('Off')}</button>
             </Row>
@@ -275,7 +269,7 @@ export default function WidgetStylePanel() {
 
 function PanelHeader({ title, onClose }: { title: string; onClose: () => void }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingLeft: 2 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 2px 4px 6px' }}>
       <span style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--text1)' }}>
         {title}
       </span>
@@ -292,17 +286,18 @@ function PanelHeader({ title, onClose }: { title: string; onClose: () => void })
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 2 }}>
+    // Tonale Kachel statt Trennlinie — Abschnitte heben sich über die Fläche ab
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 8,
+      background: 'color-mix(in srgb, var(--surface2) 70%, transparent)',
+      borderRadius: 14, padding: '10px 12px 12px',
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 2 }}>
         {label}
       </div>
       {children}
     </div>
   )
-}
-
-function Divider() {
-  return <div style={{ height: 1, background: 'var(--border)', margin: '14px 0' }} />
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -353,9 +348,10 @@ function CornerRadiusSection({ s, set, t }: {
           onClick={() => setOpen(o => !o)}
           title={open ? t('Hide per-corner settings') : t('Show per-corner settings')}
           style={{
-            width: 26, height: 26, borderRadius: 7, flexShrink: 0,
-            border: `1px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
-            background: open ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'var(--surface2)',
+            width: 26, height: 26, borderRadius: 999, flexShrink: 0, padding: 0,
+            border: 'none',
+            background: open ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'var(--surface2)',
+            boxShadow: open ? 'inset 0 0 0 1.5px var(--accent)' : 'inset 0 0 0 1px var(--border)',
             color: open ? 'var(--accent)' : 'var(--text3)',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
@@ -407,7 +403,7 @@ function CornerRadiusEditor({ s, set, t }: {
   const cornerInputStyle = (pos: React.CSSProperties): React.CSSProperties => ({
     position: 'absolute', ...pos,
     width: 34, padding: '2px 3px', fontSize: 10.5, textAlign: 'center',
-    background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6,
+    background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 999,
     color: 'var(--text1)', outline: 'none', MozAppearance: 'textfield',
   })
 
@@ -434,9 +430,10 @@ function CornerRadiusEditor({ s, set, t }: {
           title={linked ? t('Adjust each corner individually') : t('Use one radius for all corners')}
           style={{
             position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            width: 22, height: 22, borderRadius: 6, zIndex: 1,
-            border: `1px solid ${linked ? 'var(--accent)' : 'var(--border)'}`,
+            width: 22, height: 22, borderRadius: 999, zIndex: 1, padding: 0,
+            border: 'none',
             background: linked ? 'color-mix(in srgb, var(--accent) 18%, var(--surface))' : 'var(--surface2)',
+            boxShadow: linked ? 'inset 0 0 0 1.5px var(--accent)' : 'inset 0 0 0 1px var(--border)',
             color: linked ? 'var(--accent)' : 'var(--text3)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
           }}
@@ -471,9 +468,10 @@ function CornerRadiusEditor({ s, set, t }: {
 
 
 const tabBtn = (active: boolean): React.CSSProperties => ({
-  padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 50,
-  border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
-  background: active ? 'var(--accent)' : 'var(--surface2)',
-  color: active ? 'var(--on-accent, white)' : 'var(--text2)',
+  padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 999,
+  border: 'none',
+  background: active ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'var(--surface2)',
+  boxShadow: active ? 'inset 0 0 0 1.5px var(--accent)' : 'inset 0 0 0 1px var(--border)',
+  color: active ? 'var(--accent)' : 'var(--text2)',
   cursor: 'pointer', transition: 'all 0.12s',
 })

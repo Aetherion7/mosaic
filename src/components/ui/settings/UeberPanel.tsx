@@ -1,6 +1,6 @@
 'use client'
 import { useT } from '@/hooks/useT'
-import { SectionTitle } from './shared'
+import { SectionTitle, tileStyle } from './shared'
 
 const TECHNOLOGIES = [
   ['Next.js 16',    'React framework'],
@@ -15,36 +15,28 @@ const TECHNOLOGIES = [
 // Externe Links öffnen in einem echten Tab/Fenster außerhalb der App —
 // im Electron-Build fängt main.js das über setWindowOpenHandler ab und
 // reicht es an den System-Browser weiter, statt es im App-Fenster zu laden.
-// glow: optionale Marken-Tönung (Ko-fi-Orange, Stern-Gold)
-// für die Support-Zeilen — dieselbe Hover-Wirkung wie bei den Spenden-Karten
-// am Ende der Tutorial-Tour. Ohne glow bleibt es beim neutralen Akzent-Hover
+// glow: optionale Marken-Tönung (Ko-fi-Orange, Stern-Gold) für die
+// Support-Zeilen — nur als tonale Fläche, ohne farbigen Glow-Schatten
+// (KONZEPT.md §6). Ohne glow bleibt es beim neutralen Akzent-Hover
 // (Project-Sektion oben: Quellcode/Issue-Link).
 function LinkRow({ href, icon, label, sub, glow }: { href: string; icon: React.ReactNode; label?: string; sub: string; glow?: string }) {
-  const restStyle = glow
-    ? { background: `color-mix(in srgb, ${glow} 10%, var(--surface2))`, borderColor: `color-mix(in srgb, ${glow} 35%, var(--border))`, boxShadow: `0 2px 10px color-mix(in srgb, ${glow} 12%, transparent)`, transform: 'none' }
-    : { background: 'var(--surface2)', borderColor: 'var(--border)', boxShadow: 'none', transform: 'none' }
-  const hoverStyle = glow
-    ? { background: `color-mix(in srgb, ${glow} 20%, var(--surface2))`, borderColor: `color-mix(in srgb, ${glow} 60%, var(--border))`, boxShadow: `0 6px 16px color-mix(in srgb, ${glow} 25%, transparent)`, transform: 'translateY(-1px)' }
-    : { background: 'color-mix(in srgb, var(--accent) 8%, var(--surface2))', borderColor: 'var(--border)', boxShadow: 'none', transform: 'none' }
+  const restBg = glow
+    ? `color-mix(in srgb, ${glow} 12%, transparent)`
+    : 'color-mix(in srgb, var(--surface2) 70%, transparent)'
+  const hoverBg = glow
+    ? `color-mix(in srgb, ${glow} 20%, transparent)`
+    : 'color-mix(in srgb, var(--accent) 10%, var(--surface2))'
   return (
     <a
       href={href} target="_blank" rel="noopener noreferrer"
       style={{
-        display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 9,
-        border: `1px solid ${restStyle.borderColor}`, background: restStyle.background, textDecoration: 'none',
-        marginBottom: 6, boxShadow: restStyle.boxShadow, transform: restStyle.transform,
-        transition: 'background 0.15s, border-color 0.15s, transform 0.15s, box-shadow 0.15s',
+        display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 14,
+        background: restBg, textDecoration: 'none',
+        marginBottom: 6,
+        transition: 'background 0.15s',
       }}
-      onMouseEnter={e => {
-        const el = e.currentTarget as HTMLAnchorElement
-        el.style.background = hoverStyle.background; el.style.borderColor = hoverStyle.borderColor
-        el.style.boxShadow = hoverStyle.boxShadow; el.style.transform = hoverStyle.transform
-      }}
-      onMouseLeave={e => {
-        const el = e.currentTarget as HTMLAnchorElement
-        el.style.background = restStyle.background; el.style.borderColor = restStyle.borderColor
-        el.style.boxShadow = restStyle.boxShadow; el.style.transform = restStyle.transform
-      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = hoverBg }}
+      onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = restBg }}
     >
       <span style={{ color: 'var(--accent)', display: 'flex', flexShrink: 0 }}>{icon}</span>
       <div style={{ minWidth: 0 }}>
@@ -62,7 +54,7 @@ export default function UeberPanel() {
   const t = useT()
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 0 16px', borderBottom: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderRadius: 16, background: 'color-mix(in srgb, var(--surface2) 70%, transparent)', marginTop: 8 }}>
         <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/mosaiclogo.png" alt="mosaic" width={40} height={40} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -116,7 +108,7 @@ export default function UeberPanel() {
 
       <SectionTitle>{t('Technologies')}</SectionTitle>
       {TECHNOLOGIES.map(([name, roleKey], i) => (
-        <div key={name} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: i === TECHNOLOGIES.length - 1 ? 'none' : '1px solid var(--border)', fontSize: 12 }}>
+        <div key={name} style={{ display: 'flex', justifyContent: 'space-between', ...tileStyle(i === TECHNOLOGIES.length - 1), padding: '9px 14px', fontSize: 12 }}>
           <span style={{ fontWeight: 600, color: 'var(--text1)' }}>{name}</span>
           <span style={{ color: 'var(--text3)' }}>{t(roleKey)}</span>
         </div>

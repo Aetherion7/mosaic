@@ -66,42 +66,45 @@ export default function UpdateAvailablePopup() {
         display: 'flex', flexDirection: 'column',
         background: 'var(--popover-bg)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid var(--border)', borderRadius: 18,
-        padding: '22px 26px 20px',
-        boxShadow: '0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent)',
+        border: '1px solid var(--border)', borderRadius: 22,
+        padding: '20px 20px 16px',
+        boxShadow: '0 32px 80px color-mix(in srgb, var(--shadow-color, #000) 55%, transparent)',
       }}>
-        <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text1)', marginBottom: 8 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text1)', marginBottom: 10, padding: '0 4px' }}>
           {t('Update available')} — {info.version}
         </div>
 
         {bullets.length > 0 ? (
-          <ul style={{ margin: '0 0 16px', padding: '0 0 0 18px', fontSize: 13, color: 'var(--text2)', lineHeight: 1.7, overflowY: 'auto' }}>
+          <ul style={{
+            margin: '0 0 16px', padding: '10px 14px 10px 30px', fontSize: 13, color: 'var(--text2)', lineHeight: 1.7, overflowY: 'auto',
+            background: 'color-mix(in srgb, var(--surface2) 70%, transparent)', borderRadius: 14,
+          }}>
             {bullets.map((line, i) => <li key={i}>{line}</li>)}
           </ul>
         ) : (
-          <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.7, marginBottom: 16 }}>
+          <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.7, marginBottom: 16, padding: '0 4px' }}>
             {t('A new version of mosaic is ready to install.')}
           </div>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 2 }}>
           <button onClick={() => setDismissed(true)} style={{
-            fontSize: 11.5, fontWeight: 600, padding: '9px 12px', borderRadius: 9, whiteSpace: 'nowrap', flexShrink: 0,
-            border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer',
+            fontSize: 11.5, fontWeight: 600, height: 34, padding: '0 14px', borderRadius: 999, whiteSpace: 'nowrap', flexShrink: 0,
+            border: '1px solid var(--border)', background: 'transparent', color: 'var(--text2)', cursor: 'pointer',
           }}>
             {t('Cancel')}
           </button>
           <div style={{ display: 'flex', gap: 8, minWidth: 0 }}>
             <a href={info.releaseUrl} target="_blank" rel="noopener noreferrer" style={{
-              fontSize: 11.5, fontWeight: 600, padding: '9px 14px', borderRadius: 999, whiteSpace: 'nowrap', flexShrink: 0,
-              border: '1px solid var(--border)', color: 'var(--text2)', textDecoration: 'none',
+              fontSize: 11.5, fontWeight: 600, height: 34, padding: '0 14px', borderRadius: 999, whiteSpace: 'nowrap', flexShrink: 0,
+              boxSizing: 'border-box', display: 'flex', alignItems: 'center',
+              border: 'none', background: 'var(--surface2)', color: 'var(--text2)', textDecoration: 'none',
             }}>
               {t('View on GitHub')}
             </a>
             <button onClick={installNow} style={{
-              fontSize: 11.5, fontWeight: 700, padding: '9px 18px', borderRadius: 999, whiteSpace: 'nowrap', flexShrink: 0,
+              fontSize: 11.5, fontWeight: 600, height: 34, padding: '0 18px', borderRadius: 999, whiteSpace: 'nowrap', flexShrink: 0,
               border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
-              boxShadow: '0 4px 18px color-mix(in srgb, var(--accent) 45%, transparent)',
             }}>
               {t('Update now')}
             </button>

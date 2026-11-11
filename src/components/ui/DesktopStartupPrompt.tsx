@@ -48,14 +48,14 @@ export default function DesktopStartupPrompt() {
         position: 'relative', width: 440, maxWidth: 'calc(100vw - 24px)',
         background: 'var(--popover-bg)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid var(--border)', borderRadius: 18,
-        padding: '22px 26px 20px',
-        boxShadow: '0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent)',
+        border: '1px solid var(--border)', borderRadius: 22,
+        padding: '20px 20px 16px',
+        boxShadow: '0 32px 80px color-mix(in srgb, var(--shadow-color, #000) 55%, transparent)',
       }}>
-        <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text1)', marginBottom: 8 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text1)', marginBottom: 10, padding: '0 4px' }}>
           {t('Run mosaic in the background?')}
         </div>
-        <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.7, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.7, marginBottom: 14, padding: '0 4px' }}>
           {t('mosaic can start automatically when you log in, and keep running in the background afterward — so calendar reminders still arrive even when the window is closed. Both are optional and can be changed anytime under Settings → General.')}
         </div>
 
@@ -75,15 +75,14 @@ export default function DesktopStartupPrompt() {
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
           <button onClick={() => confirm(false)} style={{
-            fontSize: 12.5, fontWeight: 600, padding: '9px 16px', borderRadius: 9,
-            border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer',
+            fontSize: 12.5, fontWeight: 600, height: 36, padding: '0 16px', borderRadius: 999,
+            border: '1px solid var(--border)', background: 'transparent', color: 'var(--text2)', cursor: 'pointer',
           }}>
             {t('Maybe later')}
           </button>
           <button onClick={() => confirm(true)} style={{
-            fontSize: 13, fontWeight: 700, padding: '9px 22px', borderRadius: 999,
+            fontSize: 13, fontWeight: 600, height: 36, padding: '0 22px', borderRadius: 999,
             border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
-            boxShadow: '0 4px 18px color-mix(in srgb, var(--accent) 45%, transparent)',
           }}>
             {t('Continue')}
           </button>
