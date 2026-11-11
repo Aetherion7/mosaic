@@ -22,7 +22,7 @@ export default function ErscheinungsbildPanel() {
       <div style={{ display: 'flex', gap: 12, marginBottom: 4 }}>
         <HeaderStyleCard
           active={headerStyle === 'default'}
-          label={t('Default')}
+          label={t('Full bar')}
           desc={t('Continuous bar with background and divider line')}
           onClick={() => setSetting({ headerStyle: 'default' })}
           preview={

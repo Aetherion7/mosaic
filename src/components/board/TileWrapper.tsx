@@ -109,6 +109,17 @@ export const ISLAND: React.CSSProperties = {
   boxSizing: 'border-box',
 }
 
+// Radius einer Kopfzeilen-Insel aus der zugehörigen Widget-Ecke: eckiges
+// Widget → eckige Insel, rundes Widget → runde Insel. Ab 12 px ist die 24 px
+// hohe Insel eine volle Pille.
+export function islandRadius(cornerPx: number): number {
+  return Math.max(0, Math.min(12, Math.round(cornerPx * 0.85)))
+}
+// Innere Knöpfe einer Insel: konzentrisch 2 px kleiner (Innenabstand)
+function innerRadius(r: number): number {
+  return r >= 12 ? 999 : Math.max(0, r - 2)
+}
+
 export function buildStyle(s: WidgetStyle, selected: boolean): React.CSSProperties {
   const glow   = s.glowColor && s.glowSize ? `0 0 ${s.glowSize}px ${s.glowColor}` : ''
   // Schattenfarbe kommt aus dem Theme (--shadow-color): dunkle Themes = Schwarz
@@ -765,7 +776,7 @@ function TileWrapperInner({ widget, gridRef }: Props) {
               flexShrink: 0, userSelect: 'none', minWidth: 0,
             }}
           >
-            <div style={ISLAND}>
+            <div style={{ ...ISLAND, borderRadius: islandRadius(widget.style.cornerRadii?.[0] ?? widget.style.borderRadius) }}>
             {mode === 'edit' && !isLocked && <span style={{ opacity: 0.4, color: 'var(--text2)', display:'flex', marginLeft: -2 }}><IconDrag /></span>}
             {mode === 'edit' && isLocked && (
               <span style={{ opacity: 0.5, color: 'var(--accent)', display:'flex', flexShrink: 0 }}>
@@ -837,7 +848,8 @@ function TileWrapperInner({ widget, gridRef }: Props) {
             )}
             </div>
             {mode === 'edit' && isSelected && (
-              <WidgetHeaderActions actions={headerActions} headerRef={headerRef} canvasZoom={canvasZoom} />
+              <WidgetHeaderActions actions={headerActions} headerRef={headerRef} canvasZoom={canvasZoom}
+                radius={islandRadius(widget.style.cornerRadii?.[1] ?? widget.style.borderRadius)} />
             )}
           </div>
         )}
@@ -897,8 +909,9 @@ export default TileWrapper
 // Button, damit sie automatisch mit der jeweils sichtbaren Aktionsmenge
 // (isLocked/hasOtherBoards/aiEnabled…) mitgeht.
 function WidgetHeaderActions({
-  actions, headerRef, canvasZoom,
+  actions, headerRef, canvasZoom, radius,
 }: {
+  radius: number
   actions: HeaderAction[]
   headerRef: React.RefObject<HTMLDivElement | null>
   canvasZoom: number
@@ -947,11 +960,11 @@ function WidgetHeaderActions({
   useEffect(() => { if (collapsed === false) setMenuOpen(false) }, [collapsed])
 
   return (
-    <div style={{ ...ISLAND, position: 'relative', marginLeft: 'auto', padding: 2, gap: 0, flexShrink: 0, cursor: 'default' }} onPointerDown={e => e.stopPropagation()}>
+    <div style={{ ...ISLAND, borderRadius: radius, position: 'relative', marginLeft: 'auto', padding: 2, gap: 0, flexShrink: 0, cursor: 'default' }} onPointerDown={e => e.stopPropagation()}>
       {/* Unsichtbarer Mess-Klon — nie sichtbar, nimmt keinen Platz im Layout ein */}
       <div ref={measureRef} style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none', top: 0, left: 0, display: 'flex', gap, whiteSpace: 'nowrap' }} aria-hidden>
         {actions.map(a => (
-          <IconBtn key={a.key} title={a.title} onClick={() => {}} danger={a.danger} active={a.active}>{a.icon}</IconBtn>
+          <IconBtn key={a.key} r={innerRadius(radius)} title={a.title} onClick={() => {}} danger={a.danger} active={a.active}>{a.icon}</IconBtn>
         ))}
       </div>
 
@@ -962,7 +975,7 @@ function WidgetHeaderActions({
             transition={{ duration: 0.12 }}
             style={{ position: 'relative' }}
           >
-            <IconBtn title={t('More actions')} onClick={() => setMenuOpen(o => !o)} active={menuOpen}>
+            <IconBtn r={innerRadius(radius)} title={t('More actions')} onClick={() => setMenuOpen(o => !o)} active={menuOpen}>
               <svg width={11} height={11} viewBox="0 0 24 24" fill="currentColor" stroke="none">
                 <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
               </svg>
@@ -1010,7 +1023,7 @@ function WidgetHeaderActions({
             style={{ display: 'flex', gap }}
           >
             {actions.map(a => (
-              <IconBtn key={a.key} id={a.id} title={a.title} onClick={a.onClick} danger={a.danger} active={a.active}>{a.icon}</IconBtn>
+              <IconBtn key={a.key} r={innerRadius(radius)} id={a.id} title={a.title} onClick={a.onClick} danger={a.danger} active={a.active}>{a.icon}</IconBtn>
             ))}
           </motion.div>
         )}
@@ -1019,8 +1032,8 @@ function WidgetHeaderActions({
   )
 }
 
-function IconBtn({ children, onClick, title, danger, active, id }: {
-  children: React.ReactNode; onClick: (e: React.MouseEvent) => void; title?: string; danger?: boolean; active?: boolean; id?: string
+function IconBtn({ children, onClick, title, danger, active, id, r = 999 }: {
+  r?: number; children: React.ReactNode; onClick: (e: React.MouseEvent) => void; title?: string; danger?: boolean; active?: boolean; id?: string
 }) {
   return (
     <button
@@ -1031,7 +1044,7 @@ function IconBtn({ children, onClick, title, danger, active, id }: {
       onMouseEnter={e => { if (!active) e.currentTarget.style.background = danger ? 'color-mix(in srgb, var(--danger) 14%, transparent)' : 'color-mix(in srgb, var(--text1) 9%, transparent)' }}
       onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
       style={{
-        width: 22, height: 22, borderRadius: 999, border: 'none', fontSize: 12,
+        width: 22, height: 22, borderRadius: r, border: 'none', fontSize: 12,
         background: active ? 'var(--accent)' : 'transparent',
         color: danger ? 'var(--danger)' : active ? 'var(--on-accent, white)' : 'var(--text2)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
