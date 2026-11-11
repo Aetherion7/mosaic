@@ -11,6 +11,7 @@ export default function MultiSelectBar() {
   const clearMultiSelect   = useUIStore(s => s.clearMultiSelect)
   const setPendingBulkDelete = useUIStore(s => s.setPendingBulkDelete)
   const deleteWidgets      = useBoardStore(s => s.deleteWidgets)
+  const setFocusedPair     = useUIStore(s => s.setFocusedPair)
 
   const count = multiSelectedIds.length
   if (count === 0) return null
@@ -22,6 +23,13 @@ export default function MultiSelectBar() {
     } else {
       setPendingBulkDelete(true)
     }
+  }
+
+  // Genau zwei markierte Widgets → nebeneinander im Fokus-Modus öffnen
+  function focusPair() {
+    const [a, b] = multiSelectedIds
+    clearMultiSelect()
+    setFocusedPair(a, b)
   }
 
   function confirmDelete() {
@@ -40,67 +48,53 @@ export default function MultiSelectBar() {
         transition={{ type: 'spring', stiffness: 420, damping: 36 }}
         style={{
           pointerEvents: 'auto', flexShrink: 0,
-          background: 'color-mix(in srgb, var(--surface) 96%, transparent)',
-          border: '1px solid rgba(239,68,68,0.6)',
-          borderRadius: 14,
-          padding: '10px 14px',
-          display: 'flex', alignItems: 'center', gap: 10,
-          boxShadow: '0 8px 32px rgba(0,0,0,.5), 0 0 0 1px rgba(239,68,68,0.25), 0 0 24px rgba(239,68,68,0.2)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
+          // Insel wie TopBar und Widget-Kopfzeile: eine runde, getönte Pille
+          // ohne farbiges Glühen — Rot nur auf dem Löschen-Knopf selbst.
+          background: 'var(--popover-bg)',
+          border: '1px solid var(--border)',
+          borderRadius: 999,
+          padding: 5,
+          display: 'flex', alignItems: 'center', gap: 6,
+          boxShadow: '0 10px 32px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
           whiteSpace: 'nowrap',
         }}
       >
-        <span style={{ color: '#ef4444', display: 'flex', flexShrink: 0 }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 3h7v7H3zM14 3h7v11h-7zM3 14h7v7H3zM14 18h7v3h-7z"/>
-          </svg>
+        <span style={{
+          display: 'flex', alignItems: 'center', gap: 7, height: 30, padding: '0 12px 0 6px',
+          borderRadius: 999, background: 'color-mix(in srgb, var(--accent) 14%, transparent)',
+        }}>
+          <span style={{
+            minWidth: 20, height: 20, padding: '0 5px', borderRadius: 999, boxSizing: 'border-box',
+            background: 'var(--accent)', color: 'var(--on-accent, white)',
+            fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>{count}</span>
+          <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text1)' }}>
+            {count !== 1 ? t('Widgets') : t('Widget')} {t('selected')}
+          </span>
         </span>
-
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text1)' }}>
-          {count} {count !== 1 ? t('Widgets') : t('Widget')} {t('selected')}
-        </span>
-
-        <div style={{ width: 1, height: 20, background: 'var(--border)', flexShrink: 0 }} />
 
         {pendingBulkDelete ? (
           <>
-            <span style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 500 }}>
+            <span style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 500, padding: '0 4px' }}>
               {count} {count !== 1 ? t('Widgets') : t('Widget')} {t('delete?')}
             </span>
-            <button
-              onClick={confirmDelete}
-              style={{
-                padding: '5px 14px', fontSize: 12, fontWeight: 700,
-                borderRadius: 999, border: 'none',
-                background: 'var(--danger)', color: 'white', cursor: 'pointer',
-                flexShrink: 0,
-              }}
-            >{t('Yes, delete')}</button>
-            <button
-              onClick={() => setPendingBulkDelete(false)}
-              style={{
-                padding: '5px 12px', fontSize: 12,
-                borderRadius: 999, border: '1px solid var(--border)',
-                background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer',
-                flexShrink: 0,
-              }}
-            >{t('Cancel')}</button>
+            <button onClick={confirmDelete} style={pill('danger')}>{t('Yes, delete')}</button>
+            <button onClick={() => setPendingBulkDelete(false)} style={pill('ghost')}>{t('Cancel')}</button>
           </>
         ) : (
           <>
-            <button
-              onClick={handleDeleteClick}
-              style={{
-                padding: '5px 14px', fontSize: 12, fontWeight: 700,
-                borderRadius: 999, border: 'none',
-                background: '#ef4444',
-                color: 'white', cursor: 'pointer', flexShrink: 0,
-                display: 'flex', alignItems: 'center', gap: 6,
-                boxShadow: '0 0 12px rgba(239,68,68,0.6), 0 0 24px rgba(239,68,68,0.3)',
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            {count === 2 && (
+              <button onClick={focusPair} title={t('Show both widgets side by side')} style={pill('accent')}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="5" width="7.5" height="14" rx="2"/><rect x="13.5" y="5" width="7.5" height="14" rx="2"/>
+                </svg>
+                {t('Focus mode')}
+              </button>
+            )}
+            <button onClick={handleDeleteClick} style={pill('danger')}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
               </svg>
               {t('Delete')}
@@ -108,18 +102,27 @@ export default function MultiSelectBar() {
             <button
               onClick={clearMultiSelect}
               title={t('Clear selection') + ' [Esc]'}
-              style={{
-                width: 28, height: 28, borderRadius: 8,
-                border: '1px solid var(--border)',
-                background: 'var(--surface2)', color: 'var(--text3)',
-                fontSize: 16, lineHeight: 1, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >×</button>
+              aria-label={t('Clear selection')}
+              style={{ ...pill('ghost'), width: 30, padding: 0, justifyContent: 'center' }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                <line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" />
+              </svg>
+            </button>
           </>
         )}
       </motion.div>
     </AnimatePresence>
   )
+}
+
+function pill(kind: 'accent' | 'danger' | 'ghost'): React.CSSProperties {
+  return {
+    height: 30, padding: '0 13px', borderRadius: 999, flexShrink: 0,
+    display: 'flex', alignItems: 'center', gap: 6,
+    fontSize: 12, fontWeight: 600, cursor: 'pointer',
+    border: kind === 'ghost' ? '1px solid var(--border)' : 'none',
+    background: kind === 'accent' ? 'var(--accent)' : kind === 'danger' ? 'color-mix(in srgb, var(--danger) 16%, transparent)' : 'transparent',
+    color: kind === 'accent' ? 'var(--on-accent, white)' : kind === 'danger' ? 'var(--danger)' : 'var(--text2)',
+  }
 }

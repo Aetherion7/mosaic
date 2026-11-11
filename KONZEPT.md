@@ -161,6 +161,8 @@ Alltagsnutzung ist der Normalfall, Bearbeiten die Ausnahme.
   ein anderes Board verschieben oder kopieren (behält Größe, sucht freien Platz).
 - **Fokus-Modus**: Doppelklick im Ansichtsmodus öffnet ein Widget als großes
   Overlay (Esc/X schließt); Editoren, Karten und Zeichenfläche sind ausgenommen.
+  Sind im Bearbeiten-Modus genau zwei Widgets markiert (Shift/Strg-Klick), bietet die
+  Auswahl-Leiste „Fokus-Modus“ an: beide Widgets erscheinen nebeneinander.
 
 ---
 
@@ -242,16 +244,34 @@ Die App ist dunkel-first und token-basiert. Themes setzen CSS-Variablen
 (`--bg`, `--surface`, `--surface2`, `--surface3`, `--border`, `--text1..3`, `--accent`,
 `--accent2`, `--danger`, `--success`, `--amber`) auf `document.documentElement`.
 
+**Designprinzipien:**
+
+1. **Inseln statt Leisten.** App-Chrome schwebt als runde Pillen auf der Fläche —
+   TopBar (Island-Modus ist Standard), Widget-Kopfzeile (Name-Insel links,
+   Aktions-Insel rechts, keine Trennlinie darunter), Mehrfachauswahl-Leiste.
+   Inseln sind immer voll rund (`borderRadius: 999`); Vorlage: `ISLAND` in
+   [`TileWrapper.tsx`](src/components/board/TileWrapper.tsx).
+2. **Satzschreibung im Chrome.** Widget-Namen, Panel-Titel und Reiter in normaler
+   Groß-/Kleinschreibung (11–13.5 px, Gewicht 600–650) statt winziger
+   Versal-Labels. Versalien bleiben nur für dichte Datenbeschriftungen in Widgets.
+3. **Tonale Flächen statt Glühen.** Hierarchie über `--surface`/`--surface2` und
+   `color-mix`-Tönungen; keine farbigen Glow-Schatten für Zustände.
+4. **Eine Akzentfarbe, Rot nur für Zerstörendes.** Auswahl und Mehrfachauswahl
+   sind Akzent (Mehrfachauswahl = Akzent-Ring mit weichem Hof); Rot nur auf
+   Löschen-Knöpfen.
+5. **Erst zeigen, dann einstellen.** Einstellungs-Panels beginnen mit einer
+   Live-Vorschau des Ergebnisses und teilen Aufgaben in Reiter (Vorbild:
+   Theme-Panel mit Vorschau → Theme | Hintergrund | Muster).
+
 **Wiederkehrende Muster (verbindlich für neue UI):**
 
 - **Karten:** `background: var(--surface2)`, `border: 1px solid var(--border)`, `borderRadius: 7–10`
-- **Labels:** 8–9 px, `fontWeight: 700`, `textTransform: uppercase`, `letterSpacing: 0.06em`, `--text3`
+- **Labels in Widgets:** 8–9 px, `fontWeight: 700`, `textTransform: uppercase`, `letterSpacing: 0.06em`, `--text3` (nur Datenbeschriftungen, s. Prinzip 2)
 - **Akzent-Pills:** `color-mix(in srgb, var(--accent) 12–15%, transparent)` als Fläche,
   28 %-Mix als Rand, `borderRadius: 20`
 - **Icon-Buttons:** 22 × 22 px, Radius 5–7, Rand `--border`, Fläche `--surface2`
 - **Aktions-Pills:** `borderRadius: 50` (z. B. Reset-Buttons)
-- **TopBar:** Standard ist der Island-Modus. Die Rundung der Inseln ist unter
-  Einstellungen → Erscheinungsbild einstellbar (`islandRoundness` 0 = eckig … 100 = Vollpille).
+- **TopBar:** Standard ist der Island-Modus, Standard-Theme ist Deep Ocean (`ocean`).
 - **Wochencharts:** SVG mit `viewBox` ~260 breit, Y-Ticks 6 px, Navigation
   „← Diese Woche →" zentriert (Muster in Wasser/Schlaf/Aufgabe)
 - **Schreibweise:** Inline-Styles (keine CSS-Frameworks), Icons als eigene

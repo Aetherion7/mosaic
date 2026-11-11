@@ -37,7 +37,7 @@ export default function BoardsPanel() {
         control={
           <ThemeSelect
             options={themeOptions}
-            value={themeOptions.some(th => th.id === defaultThemeId) ? defaultThemeId : 'dark'}
+            value={themeOptions.some(th => th.id === defaultThemeId) ? defaultThemeId : 'ocean'}
             onChange={id => setSetting({ defaultThemeId: id })}
           />
         }
