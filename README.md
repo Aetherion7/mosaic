@@ -26,7 +26,7 @@ No account. No server. Your data stays on your device.
 
 ---
 
-<img src="docs/screenshots/board.png" alt="A mosaic board in the Deep Ocean theme with calendar, habit tracker, clock, weather, note, chart and water widgets" width="100%">
+<img src="docs/screenshots/board.png" alt="A mosaic board in the Deep Ocean theme with calendar, habit tracker, clock, weather, note, chart, water and agenda widgets" width="100%">
 
 ## What is mosaic?
 
@@ -139,6 +139,8 @@ the file back out of a terminal every time. The `.deb` install gets this the nor
 
 ## Features
 
+<img src="docs/screenshots/overview.jpg" alt="An infinite-canvas board zoomed out to show all 17 widget types on a mountain background image" width="100%">
+
 <table>
 <tr>
 <td width="50%">
@@ -153,14 +155,14 @@ the file back out of a terminal every time. The `.deb` install gets this the nor
 </td>
 <td width="50%">
 
-<img src="docs/screenshots/home.jpg" alt="Board overview with a folder, multiple boards and the ambient background" width="100%">
+<img src="docs/screenshots/home.jpg" alt="Board overview with the last-opened board, board cards and two folders" width="100%">
 
 </td>
 </tr>
 <tr>
 <td width="50%">
 
-<img src="docs/screenshots/themes.png" alt="Theme picker with 20 themes, plus background and grid pattern options, open on a Deep Ocean board" width="100%">
+<img src="docs/screenshots/themes.png" alt="Theme panel with a live preview, Theme/Background/Pattern tabs and window-style theme cards, open on a Deep Ocean board" width="100%">
 
 </td>
 <td width="50%">
@@ -168,7 +170,8 @@ the file back out of a terminal every time. The `.deb` install gets this the nor
 **Themes & appearance**
 - 20 built-in themes (dark and light), plus custom themes via JSON
 - Per-widget styling: color, gradient, border, shadow, glow, transparency
-- Two header styles, animation toggle, keyboard-shortcut hints
+- Theme panel with a live preview and Theme / Background / Pattern tabs
+- Two header styles (island or full bar), animation toggle, keyboard-shortcut hints
 
 </td>
 </tr>
@@ -186,6 +189,37 @@ the file back out of a terminal every time. The `.deb` install gets this the nor
 <td width="50%">
 
 <img src="docs/screenshots/ai-assistant.png" alt="Per-widget AI chat open on a calendar widget, with changes scoped to just that widget" width="100%">
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+<img src="docs/screenshots/focus.png" alt="Two widgets, a note and a calendar, open side by side in focus mode at the same size ratio as on the board" width="100%">
+
+</td>
+<td width="50%">
+
+**Focus mode**
+- Double-click any widget to open it large, at its exact board layout
+- Select two widgets (Shift/Ctrl-click) and open them side by side,
+  keeping their size ratio from the board
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Adding widgets**
+- Browse by category: Plan & organize, Notes & reading, Health, Data,
+  World & time, Media & web
+- Large cards with a short description and default size
+- Search as you type, Enter adds the first result
+
+</td>
+<td width="50%">
+
+<img src="docs/screenshots/add-widget.png" alt="The Add widget panel with category navigation on the left and large widget cards grouped by category" width="100%">
 
 </td>
 </tr>

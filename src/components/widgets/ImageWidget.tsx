@@ -19,7 +19,14 @@ export default function ImageWidget({ widget }: { widget: Widget }) {
   // Neue Uploads liegen als Blob in IndexedDB (idb-blob://…), alte DataURLs werden durchgereicht
   const resolvedSrc = useBlobUrl(d.src)
 
-  useEffect(() => { setImgStatus('loading') }, [d.src])
+  const imgRef = useRef<HTMLImageElement>(null)
+  // Bereits geladene (z. B. eingebettete/gecachte) Bilder feuern onLoad u. U.
+  // VOR diesem Effekt — dann würde 'loading' das schon fertige Bild für immer
+  // hinter dem Ladekreis verstecken. Deshalb direkt prüfen, ob es fertig ist.
+  useEffect(() => {
+    const img = imgRef.current
+    setImgStatus(img && img.complete && img.naturalWidth > 0 ? 'ok' : 'loading')
+  }, [d.src, resolvedSrc])
   // '' = Blob-Referenz ließ sich nicht auflösen (z. B. Backup ohne eingebettete Daten)
   useEffect(() => { if (resolvedSrc === '') setImgStatus('error') }, [resolvedSrc])
 
@@ -63,6 +70,7 @@ export default function ImageWidget({ widget }: { widget: Widget }) {
           {!!resolvedSrc && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
+              ref={imgRef}
               src={resolvedSrc} alt={d.alt}
               onLoad={() => setImgStatus('ok')}
               onError={() => setImgStatus('error')}
