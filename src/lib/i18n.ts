@@ -520,6 +520,7 @@ export const de: Record<string, string> = {
     'Hier passt du mosaic an dich an: Header-Stil und Erscheinungsbild, Widgets aktivieren oder ausblenden, eigene Themes hinzufügen, alle Tastenkürzel nachschlagen — und diese Tour jederzeit neu starten.',
   'All set!': 'Fertig!',
   'STEP': 'SCHRITT',
+  'Step': 'Schritt',
   'Skip': 'Überspringen',
   'Back': 'Zurück',
   'Let’s go': 'Los geht’s',

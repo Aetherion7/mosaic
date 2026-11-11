@@ -348,7 +348,7 @@ function FontSelect({ builtins, custom, value, onChange, onDeleteCustom, onAddCu
             </button>
           )}
           {custom.length > 0 && (
-            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 2, marginBottom: 2 }}>
+            <div style={{ paddingBottom: 4, marginBottom: 4 }}>
               {custom.map(f => (
                 <FontOptionButton key={f.id} f={f} active={f.id === value}
                   onClick={() => { onChange(f.id); setOpen(false) }}
@@ -363,7 +363,7 @@ function FontSelect({ builtins, custom, value, onChange, onDeleteCustom, onAddCu
                 display: 'flex', alignItems: 'center', width: '100%',
                 padding: '7px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', textAlign: 'left',
                 background: value === null ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'transparent',
-                borderBottom: '1px solid var(--border)',
+                marginBottom: 4,
               }}
               onMouseEnter={e => { if (value !== null) (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface2)' }}
               onMouseLeave={e => { if (value !== null) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}

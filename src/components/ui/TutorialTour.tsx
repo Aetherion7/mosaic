@@ -510,7 +510,7 @@ export default function TutorialTour() {
         )}
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)' }}>
-            {t('STEP')} {idx + 1} / {STEPS.length}
+            {t('Step')} {idx + 1} / {STEPS.length}
           </div>
           <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text1)', lineHeight: 1.25 }}>
             {t(step.title)}

@@ -1680,24 +1680,26 @@ export default function HomePage() {
           aria-label={trash.length > 0 ? `${t('Trash')} (${trash.length})` : t('Trash')}
           style={{
             position: 'fixed', bottom: 24, right: 24, zIndex: 1200,
-            width: 46, height: 46, borderRadius: '50%',
+            width: 48, height: 48, borderRadius: '50%',
             border: '1px solid var(--border)',
-            background: 'color-mix(in srgb, var(--surface) 92%, transparent)',
-            backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+            background: 'var(--popover-bg)',
+            backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
             color: 'var(--text2)', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 6px 24px rgba(0,0,0,0.35)',
+            boxShadow: POPOVER_SHADOW,
           }}
         >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
           </svg>
           {trash.length > 0 && (
             <span style={{
-              position: 'absolute', top: -4, right: -4, minWidth: 17, height: 17,
-              borderRadius: 9, padding: '0 4px', boxSizing: 'border-box',
-              background: 'var(--danger)', color: 'white',
-              fontSize: 9, fontWeight: 700,
+              // Zähl-Chip in der Akzentfarbe (wie in der Mehrfachauswahl-Leiste) —
+              // der Papierkorb selbst ist keine zerstörende Aktion
+              position: 'absolute', top: -3, right: -3, minWidth: 19, height: 19,
+              borderRadius: 999, padding: '0 5px', boxSizing: 'border-box',
+              background: 'var(--accent)', color: 'var(--on-accent, white)',
+              fontSize: 10.5, fontWeight: 700,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               pointerEvents: 'none',
             }}>{trash.length}</span>
@@ -1710,11 +1712,7 @@ export default function HomePage() {
         {trashOpen && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{
-              position: 'fixed', inset: 0, zIndex: 2000,
-              background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-            }}
+            style={backdropStyle}
             onClick={() => { setTrashOpen(false); setConfirmEmptyTrash(false) }}
           >
             <motion.div
@@ -1724,56 +1722,56 @@ export default function HomePage() {
               transition={{ duration: 0.18 }}
               onClick={e => e.stopPropagation()}
               style={{
-                width: '100%', maxWidth: 560, maxHeight: '78vh',
-                display: 'flex', flexDirection: 'column',
-                background: 'var(--popover-bg)',
-                backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
-                border: '1px solid var(--border)', borderRadius: 18,
-                boxShadow: '0 24px 70px rgba(0,0,0,0.55)', overflow: 'hidden',
+                ...modalStyle,
+                width: '100%', maxWidth: 600, maxHeight: '80vh',
+                display: 'flex', flexDirection: 'column', overflow: 'hidden',
               }}
             >
-              {/* Kopf */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '15px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                </svg>
-                <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)', flex: 1 }}>
-                  {t('Trash')} ({trash.length})
+              {/* Kopf — ohne Trennlinie, Abstand trennt Kopf und Liste */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '18px 18px 10px 22px', flexShrink: 0 }}>
+                <span style={{ ...modalTitle, flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {t('Trash')}
+                  {trash.length > 0 && (
+                    <span style={{
+                      minWidth: 22, height: 22, padding: '0 7px', borderRadius: 999, boxSizing: 'border-box',
+                      background: 'color-mix(in srgb, var(--accent) 14%, transparent)', color: 'var(--accent)',
+                      fontSize: 12, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    }}>{trash.length}</span>
+                  )}
                 </span>
                 {trash.length > 0 && !confirmEmptyTrash && (
-                  <button
-                    onClick={() => setConfirmEmptyTrash(true)}
-                    style={{
-                      fontSize: 11, fontWeight: 600, padding: '6px 12px', borderRadius: 999,
-                      border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.1)',
-                      color: 'var(--danger)', cursor: 'pointer', flexShrink: 0,
-                    }}
-                  >{t('Empty trash')}</button>
+                  <button onClick={() => setConfirmEmptyTrash(true)} style={{ ...pillBtn('danger-soft'), height: 32, padding: '0 14px', fontSize: 12.5 }}>
+                    {t('Empty trash')}
+                  </button>
                 )}
-                <button onClick={() => { setTrashOpen(false); setConfirmEmptyTrash(false) }} style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>×</button>
+                <CloseBtn onClick={() => { setTrashOpen(false); setConfirmEmptyTrash(false) }} label={t('Close')} />
               </div>
 
-              {/* Alle-löschen-Bestätigung */}
+              {/* Alle-löschen-Bestätigung — getönte, runde Kachel statt Leiste */}
               {confirmEmptyTrash && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 20px', background: 'rgba(239,68,68,0.08)', borderBottom: '1px solid rgba(239,68,68,0.25)', flexShrink: 0 }}>
-                  <span style={{ fontSize: 12, color: 'var(--text2)', flex: 1 }}>
-                    {t('Delete all permanently?')} <strong style={{ color: 'var(--danger)' }}>{t('This action cannot be undone.')}</strong>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flexShrink: 0,
+                  margin: '4px 16px 6px', padding: '12px 12px 12px 16px', borderRadius: 14,
+                  background: 'color-mix(in srgb, var(--danger) 10%, transparent)',
+                }}>
+                  <span style={{ fontSize: 13, color: 'var(--text1)', flex: '1 1 220px', lineHeight: 1.45 }}>
+                    {t('Delete all permanently?')} <strong style={{ color: 'var(--danger)', fontWeight: 650 }}>{t('This action cannot be undone.')}</strong>
                   </span>
                   <button
                     onClick={() => { emptyTrash(); setConfirmEmptyTrash(false); setTrashOpen(false) }}
-                    style={{ fontSize: 11, fontWeight: 700, padding: '6px 12px', borderRadius: 999, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer', flexShrink: 0 }}
+                    style={{ ...pillBtn('danger'), height: 32, padding: '0 14px', fontSize: 12.5 }}
                   >{t('Yes, empty it')}</button>
                   <button
                     onClick={() => setConfirmEmptyTrash(false)}
-                    style={{ fontSize: 11, padding: '6px 10px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', flexShrink: 0 }}
+                    style={{ ...pillBtn('ghost'), height: 32, padding: '0 14px', fontSize: 12.5 }}
                   >{t('Cancel')}</button>
                 </div>
               )}
 
               {/* Liste */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '6px 16px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {trash.length === 0 && (
-                  <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>
+                  <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text3)', fontSize: 13.5, borderRadius: 14, background: TONAL }}>
                     {t('The trash is empty.')}
                   </div>
                 )}
@@ -1782,36 +1780,39 @@ export default function HomePage() {
                   const widgetN  = Object.keys(entry.board.widgets).length
                   return (
                     <div key={entry.board.id} style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      padding: '9px 13px', borderRadius: 11,
-                      background: 'var(--surface)', border: '1px solid var(--border)',
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '8px 8px 8px 8px', borderRadius: 14,
+                      background: TONAL,
                     }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                        <path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                      </svg>
-                      <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {entry.board.name}
-                      </span>
-                      <span style={{ fontSize: 10, color: 'var(--text3)', flexShrink: 0 }} suppressHydrationWarning>
-                        {widgetN} {widgetN !== 1 ? t('Widgets') : t('Widget')} · {t('expires in {n} days').replace('{n}', String(daysLeft))}
-                      </span>
+                      {/* Hintergrund-Muster des Boards statt generischem Papierkorb-
+                          Symbol — Boards sind auf einen Blick wiederzuerkennen */}
+                      <div style={{ width: 52, height: 36, borderRadius: 10, flexShrink: 0, border: '1px solid var(--border)', boxSizing: 'border-box', ...bgPreview(entry.board) }} />
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {entry.board.name}
+                        </span>
+                        <span style={{ fontSize: 12, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} suppressHydrationWarning>
+                          {widgetN} {widgetN !== 1 ? t('Widgets') : t('Widget')} · {t('expires in {n} days').replace('{n}', String(daysLeft))}
+                        </span>
+                      </div>
                       <button
                         onClick={() => restoreBoard(entry.board.id)}
-                        style={{
-                          flexShrink: 0, fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 999,
-                          border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
-                        }}
+                        style={{ ...pillBtn('accent'), height: 32, padding: '0 14px', fontSize: 12.5 }}
                       >{t('Restore')}</button>
                       <button
                         onClick={() => purgeBoard(entry.board.id)}
-                        title={t('Delete permanently')}
+                        title={t('Delete permanently')} aria-label={t('Delete permanently')}
                         style={{
-                          flexShrink: 0, width: 24, height: 24, borderRadius: 7,
-                          border: '1px solid var(--border)', background: 'var(--surface2)',
-                          color: 'var(--danger)', cursor: 'pointer', fontSize: 12, lineHeight: 1,
+                          flexShrink: 0, width: 32, height: 32, borderRadius: '50%',
+                          border: 'none', background: DANGER_TINT,
+                          color: 'var(--danger)', cursor: 'pointer',
                           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
                         }}
-                      >×</button>
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                        </svg>
+                      </button>
                     </div>
                   )
                 })}
@@ -1828,11 +1829,7 @@ export default function HomePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{
-              position: 'fixed', inset: 0, zIndex: 2000,
-              background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
+            style={backdropStyle}
             onClick={() => setConfirmDelete(null)}
           >
             <motion.div
@@ -1841,31 +1838,22 @@ export default function HomePage() {
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
               style={{
-                background: 'var(--surface)', border: '1px solid var(--border)',
-                borderRadius: 18, padding: 28,
-                display: 'flex', flexDirection: 'column', gap: 12, width: 320,
-                boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+                ...modalStyle,
+                padding: 24,
+                display: 'flex', flexDirection: 'column', gap: 12, width: 'min(380px, 92vw)',
               }}
             >
-              <div style={{ fontSize: 16, fontWeight: 700 }}>{t('Move board to trash?')}</div>
-              <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.55 }}>
+              <div style={modalTitle}>{t('Move board to trash?')}</div>
+              <div style={{ fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.6 }}>
                 {t('The board')} <strong>&quot;{boards.find(b => b.id === confirmDelete)?.name}&quot;</strong> {t('will move to the trash and can be restored there for')} <strong>{t('30 days')}</strong>.
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                {/* Papierkorb ist umkehrbar → getönte statt gefüllte Rot-Pille */}
                 <button
                   onClick={() => { deleteBoard(confirmDelete); setConfirmDelete(null) }}
-                  style={{
-                    flex: 1, padding: '9px', fontSize: 13, fontWeight: 600,
-                    borderRadius: 999, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer',
-                  }}
+                  style={{ ...pillBtn('danger-soft'), flex: 1 }}
                 >{t('Move to trash')}</button>
-                <button
-                  onClick={() => setConfirmDelete(null)}
-                  style={{
-                    flex: 1, padding: '9px', fontSize: 13,
-                    borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer',
-                  }}
-                >{t('Cancel')}</button>
+                <button onClick={() => setConfirmDelete(null)} style={{ ...pillBtn('ghost'), flex: 1 }}>{t('Cancel')}</button>
               </div>
             </motion.div>
           </motion.div>
@@ -1877,25 +1865,20 @@ export default function HomePage() {
         {confirmFolderDelete && (
           <motion.div key="folder-delete-confirm"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{
-              position: 'fixed', inset: 0, zIndex: 2000,
-              background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
+            style={backdropStyle}
             onClick={() => setConfirmFolderDelete(null)}
           >
             <motion.div role="dialog" aria-modal="true" aria-label={t('Confirm delete folder')}
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
               style={{
-                background: 'var(--surface)', border: '1px solid var(--border)',
-                borderRadius: 18, padding: 28,
-                display: 'flex', flexDirection: 'column', gap: 12, width: 340,
-                boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+                ...modalStyle,
+                padding: 24,
+                display: 'flex', flexDirection: 'column', gap: 12, width: 'min(400px, 92vw)',
               }}
             >
-              <div style={{ fontSize: 16, fontWeight: 700 }}>{t('Delete folder?')}</div>
-              <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.55 }}>
+              <div style={modalTitle}>{t('Delete folder?')}</div>
+              <div style={{ fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.6 }}>
                 {t('The folder')} <strong>&quot;{confirmFolderDelete}&quot;</strong> {t('will be dissolved.')}
                 {deleteBoardsToo
                   ? (inFolder(confirmFolderDelete).length === 1
@@ -1906,35 +1889,26 @@ export default function HomePage() {
                     : <> {t('The')} {inFolder(confirmFolderDelete).length} {t('boards it contains are')} <strong>{t('not deleted')}</strong> — {t('they move back to the overview.')}</>)}
               </div>
               <label style={{
-                display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer',
-                padding: '9px 11px', borderRadius: 10, fontSize: 12.5, color: 'var(--text1)',
-                border: `1px solid ${deleteBoardsToo ? 'color-mix(in srgb, var(--danger) 45%, transparent)' : 'var(--border)'}`,
-                background: deleteBoardsToo ? 'color-mix(in srgb, var(--danger) 8%, transparent)' : 'var(--surface2)',
-                transition: 'background 0.15s, border-color 0.15s',
+                display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
+                minHeight: 42, padding: '0 14px', borderRadius: 14, fontSize: 13.5, color: 'var(--text1)',
+                background: deleteBoardsToo ? 'color-mix(in srgb, var(--danger) 10%, transparent)' : TONAL,
+                boxShadow: deleteBoardsToo ? 'inset 0 0 0 1px color-mix(in srgb, var(--danger) 40%, transparent)' : 'none',
+                transition: 'background 0.15s, box-shadow 0.15s',
               }}>
                 <input
                   type="checkbox"
                   checked={deleteBoardsToo}
                   onChange={e => setDeleteBoardsToo(e.target.checked)}
-                  style={{ accentColor: 'var(--danger)', width: 14, height: 14, cursor: 'pointer', flexShrink: 0 }}
+                  style={{ accentColor: 'var(--danger)', width: 16, height: 16, cursor: 'pointer', flexShrink: 0 }}
                 />
                 {t('Also delete contained boards')}
               </label>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                 <button
                   onClick={() => deleteFolder(confirmFolderDelete, deleteBoardsToo)}
-                  style={{
-                    flex: 1, padding: '9px', fontSize: 13, fontWeight: 600,
-                    borderRadius: 999, border: 'none', background: 'var(--danger)', color: 'white', cursor: 'pointer',
-                  }}
+                  style={{ ...pillBtn(deleteBoardsToo ? 'danger' : 'danger-soft'), flex: 1, padding: '0 14px' }}
                 >{deleteBoardsToo ? t('Delete folder & boards') : t('Delete folder')}</button>
-                <button
-                  onClick={() => setConfirmFolderDelete(null)}
-                  style={{
-                    flex: 1, padding: '9px', fontSize: 13,
-                    borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer',
-                  }}
-                >{t('Cancel')}</button>
+                <button onClick={() => setConfirmFolderDelete(null)} style={{ ...pillBtn('ghost'), flex: 1 }}>{t('Cancel')}</button>
               </div>
             </motion.div>
           </motion.div>
@@ -1946,26 +1920,22 @@ export default function HomePage() {
         {renamingFolder && (
           <motion.div key="folder-rename"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{
-              position: 'fixed', inset: 0, zIndex: 2000,
-              background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
+            style={backdropStyle}
             onClick={() => setRenamingFolder(null)}
           >
             <motion.div role="dialog" aria-modal="true" aria-label={t('Rename folder')}
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
               style={{
-                width: 'min(420px, 92vw)', padding: '26px 28px',
-                background: 'var(--popover-bg)',
-                backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
-                border: '1px solid var(--border)',
-                borderRadius: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
-                display: 'flex', flexDirection: 'column', gap: 14,
+                ...modalStyle,
+                width: 'min(440px, 92vw)', padding: 22,
+                display: 'flex', flexDirection: 'column', gap: 16,
               }}
             >
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)' }}>{t('Rename folder')}</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <span style={modalTitle}>{t('Rename folder')}</span>
+                <CloseBtn onClick={() => setRenamingFolder(null)} label={t('Close')} />
+              </div>
               <input
                 autoFocus
                 value={renameFolderValue}
@@ -1973,25 +1943,18 @@ export default function HomePage() {
                 onKeyDown={e => { if (e.key === 'Enter') renameFolder(renamingFolder, renameFolderValue); if (e.key === 'Escape') setRenamingFolder(null) }}
                 placeholder={t('Name…')}
                 maxLength={30}
-                style={{
-                  fontSize: 14, padding: '10px 13px', borderRadius: 10,
-                  border: '1px solid var(--border)', background: 'var(--surface2)',
-                  color: 'var(--text1)', outline: 'none',
-                }}
+                style={inputStyle}
               />
               {renameFolderValue.trim() !== renamingFolder && folderNames.includes(renameFolderValue.trim().slice(0, 30)) && (
-                <div style={{ fontSize: 12, color: 'var(--danger)' }}>{t('A folder with this name already exists.')}</div>
+                <div style={{ fontSize: 13, color: 'var(--danger)', marginTop: -6, paddingLeft: 4 }}>{t('A folder with this name already exists.')}</div>
               )}
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button onClick={() => setRenamingFolder(null)}
-                  style={{ padding: '9px 16px', fontSize: 13, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}
-                >{t('Cancel')}</button>
+                <button onClick={() => setRenamingFolder(null)} style={pillBtn('ghost')}>{t('Cancel')}</button>
                 <button
                   onClick={() => renameFolder(renamingFolder, renameFolderValue)}
                   disabled={!renameFolderValue.trim() || (renameFolderValue.trim() !== renamingFolder && folderNames.includes(renameFolderValue.trim().slice(0, 30)))}
                   style={{
-                    padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 999, border: 'none',
-                    background: 'var(--accent)', color: 'var(--on-accent, white)',
+                    ...pillBtn('accent'), padding: '0 22px',
                     cursor: renameFolderValue.trim() ? 'pointer' : 'default',
                     opacity: (!renameFolderValue.trim() || (renameFolderValue.trim() !== renamingFolder && folderNames.includes(renameFolderValue.trim().slice(0, 30)))) ? 0.4 : 1,
                   }}
@@ -2037,19 +2000,22 @@ export default function HomePage() {
 // ── Kleine Bausteine ──────────────────────────────────────────────────────────
 
 function StatChip({ label, warn, onClick, title }: { label: string; warn?: boolean; onClick?: () => void; title?: string }) {
+  // Getönte Pille; Backup-Warnung in Bernstein (Hinweis, nicht zerstörend)
+  const restBorder = warn ? 'color-mix(in srgb, var(--amber) 35%, transparent)' : 'var(--border)'
   const style: React.CSSProperties = {
-    fontSize: 11, fontWeight: 600, padding: '4px 11px', borderRadius: 20,
-    background: warn ? 'rgba(245,158,11,0.1)' : 'var(--surface)',
-    border: `1px solid ${warn ? 'rgba(245,158,11,0.35)' : 'var(--border)'}`,
-    color: warn ? '#f59e0b' : 'var(--text2)',
+    display: 'inline-flex', alignItems: 'center', height: 32, boxSizing: 'border-box',
+    fontSize: 12.5, fontWeight: 600, padding: '0 14px', borderRadius: 999,
+    background: warn ? 'color-mix(in srgb, var(--amber) 12%, transparent)' : 'var(--surface)',
+    border: `1px solid ${restBorder}`,
+    color: warn ? 'var(--amber)' : 'var(--text2)',
     whiteSpace: 'nowrap',
   }
   if (onClick) {
     return (
       <button onClick={onClick} title={title} suppressHydrationWarning
-        style={{ ...style, cursor: 'pointer', transition: 'border-color 0.15s' }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = warn ? '#f59e0b' : 'var(--accent)' }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = warn ? 'rgba(245,158,11,0.35)' : 'var(--border)' }}
+        style={{ ...style, cursor: 'pointer', transition: 'border-color 0.15s, color 0.15s' }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = warn ? 'var(--amber)' : 'var(--accent)'; if (!warn) e.currentTarget.style.color = 'var(--text1)' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = restBorder; if (!warn) e.currentTarget.style.color = 'var(--text2)' }}
       >
         {label}
       </button>
@@ -2062,10 +2028,10 @@ function CardBtn({ children, onClick, title }: { children: React.ReactNode; onCl
   return (
     <button
       onClick={e => { e.stopPropagation(); e.preventDefault(); onClick() }}
-      title={title}
+      title={title} aria-label={title}
       style={{
-        width: 28, height: 28, borderRadius: '50%',
-        background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+        width: 30, height: 30, borderRadius: '50%', padding: 0,
+        background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         border: '1px solid rgba(255,255,255,0.15)',
         color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
         cursor: 'pointer',
@@ -2076,9 +2042,24 @@ function CardBtn({ children, onClick, title }: { children: React.ReactNode; onCl
   )
 }
 
+// Pin-Markierung oben links auf der Vorschau (rund, wie die Karten-Knöpfe)
+function PinBadge() {
+  return (
+    <div style={{
+      position: 'absolute', top: 10, left: 10,
+      width: 28, height: 28, borderRadius: '50%',
+      background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+      border: '1px solid rgba(255,255,255,0.15)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <PinIcon filled />
+    </div>
+  )
+}
+
 function MenuIco({ d }: { d: string }) {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d={d} />
     </svg>
   )
