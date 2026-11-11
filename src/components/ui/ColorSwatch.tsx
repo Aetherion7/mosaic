@@ -123,10 +123,10 @@ function InAppEyeDropper({ capture, onPick, onCancel }: {
           position: 'fixed', left: pos.x + 16, top: pos.y + 16, zIndex: 100001,
           pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 6,
           background: 'rgba(20,20,20,0.85)', backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8,
-          padding: '4px 8px', boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+          border: '1px solid rgba(255,255,255,0.2)', borderRadius: 999,
+          padding: '4px 10px 4px 4px', boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
         }}>
-          <div style={{ width: 16, height: 16, borderRadius: 4, background: hoverHex, border: '1px solid rgba(255,255,255,0.4)', flexShrink: 0 }} />
+          <div style={{ width: 16, height: 16, borderRadius: 999, background: hoverHex, border: '1px solid rgba(255,255,255,0.4)', flexShrink: 0 }} />
           <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'white' }}>{hoverHex}</span>
         </div>
       )}
@@ -299,16 +299,15 @@ export function ColorSwatch({
             onClick={openPicker}
             title={safe}
             style={{
-              width: 28, height: 24, borderRadius: 7,
+              width: 28, height: 24, borderRadius: 999,
               background: safe, cursor: 'pointer', flexShrink: 0,
               // Feste Akzentfarbe statt Schwarz/Theme-Rahmen: eine dunkle
               // Swatch-Farbe im Dark Theme war sonst kaum vom Panel-
               // Hintergrund zu unterscheiden, egal wie das Theme selbst aussieht.
+              // Kein Glühen: offen = kräftiger Akzentrand, sonst gedämpfter
               border: open ? '2px solid var(--accent)' : '1.5px solid color-mix(in srgb, var(--accent) 55%, transparent)',
-              boxShadow: open
-                ? '0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent)'
-                : '0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent)',
-              transition: 'border-color 0.1s, box-shadow 0.1s',
+              boxSizing: 'border-box',
+              transition: 'border-color 0.1s',
             }}
           />
         )}
@@ -331,8 +330,8 @@ export function ColorSwatch({
             background: 'var(--popover-bg)',
             backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
             border: '1px solid var(--border)',
-            borderRadius: 14, padding: 10,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
+            borderRadius: 16, padding: 10,
+            boxShadow: '0 10px 32px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)',
             userSelect: 'none',
           }}
         >
@@ -344,13 +343,13 @@ export function ColorSwatch({
             onPointerUp={onSVUp}
             style={{
               position: 'relative', width: '100%', height: 140,
-              borderRadius: 8, cursor: 'crosshair', overflow: 'hidden',
+              borderRadius: 10, cursor: 'crosshair', overflow: 'hidden',
               background: `hsl(${h}, 100%, 50%)`,
               marginBottom: 8,
             }}
           >
-            <div style={{ position:'absolute', inset:0, borderRadius:8, background:'linear-gradient(to right,#fff,transparent)' }} />
-            <div style={{ position:'absolute', inset:0, borderRadius:8, background:'linear-gradient(to bottom,transparent,#000)' }} />
+            <div style={{ position:'absolute', inset:0, borderRadius:10, background:'linear-gradient(to right,#fff,transparent)' }} />
+            <div style={{ position:'absolute', inset:0, borderRadius:10, background:'linear-gradient(to bottom,transparent,#000)' }} />
             <div style={{
               position:'absolute', pointerEvents:'none',
               left:`${s}%`, top:`${100-v}%`,
@@ -380,7 +379,7 @@ export function ColorSwatch({
 
           {/* Preview + hex + eyedropper */}
           <div style={{ display:'flex', gap:6, alignItems:'center', marginBottom:8 }}>
-            <div style={{ width:22, height:22, borderRadius:5, background:currentHex, border:'1px solid var(--border)', flexShrink:0 }} />
+            <div style={{ width:24, height:24, borderRadius:999, background:currentHex, border:'1px solid var(--border)', flexShrink:0 }} />
             <input
               value={hexStr}
               onChange={e => {
@@ -395,8 +394,8 @@ export function ColorSwatch({
               onFocus={e => e.target.select()}
               style={{
                 flex:1, minWidth:0, background:'var(--surface2)', border:'1px solid var(--border)',
-                borderRadius:7, color:'var(--text1)', fontSize:12, boxSizing:'border-box',
-                padding:'4px 8px', outline:'none', fontFamily:'monospace',
+                borderRadius:999, color:'var(--text1)', fontSize:12, boxSizing:'border-box',
+                padding:'4px 10px', outline:'none', fontFamily:'monospace',
               }}
             />
             {hasEyeDropper && (
@@ -421,7 +420,7 @@ export function ColorSwatch({
                   } catch { /* cancelled */ }
                 }}
                 style={{
-                  flexShrink:0, width:26, height:26, borderRadius:7, cursor:'pointer',
+                  flexShrink:0, width:26, height:26, borderRadius:999, cursor:'pointer',
                   background:'var(--surface2)', border:'1px solid var(--border)',
                   color:'var(--text2)', display:'flex', alignItems:'center', justifyContent:'center', padding:0,
                 }}
@@ -440,7 +439,7 @@ export function ColorSwatch({
                 key={c}
                 onClick={() => { const [nh,ns,nv]=hexToHsv(c); setH(nh);setS(ns);setV(nv);setHexStr(c);lastEmitted.current=c;onChange(c) }}
                 style={{
-                  width:20, height:20, borderRadius:5, background:c, cursor:'pointer',
+                  width:20, height:20, borderRadius:999, background:c, cursor:'pointer',
                   border: currentHex.toLowerCase()===c ? '2px solid var(--text1)' : '1px solid var(--border)',
                   boxSizing:'border-box', transition:'transform 0.1s',
                 }}
@@ -451,8 +450,8 @@ export function ColorSwatch({
           </div>
 
           {/* Eigene Palette — gemerkte Farben, global für alle Farbauswahlen */}
-          <div style={{ marginTop:8, paddingTop:8, borderTop:'1px solid var(--border)' }}>
-            <div style={{ fontSize:9, fontWeight:700, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5 }}>
+          <div style={{ marginTop:8, padding:'7px 8px 8px', borderRadius:12, background:'color-mix(in srgb, var(--surface2) 70%, transparent)' }}>
+            <div style={{ fontSize:12, fontWeight:600, color:'var(--text2)', marginBottom:6 }}>
               {t('My palette')}
             </div>
             <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
@@ -474,7 +473,7 @@ export function ColorSwatch({
                     onContextMenu={e => { e.preventDefault(); saveCustomColors(customColors.filter(x => x !== c)) }}
                     title={c}
                     style={{
-                      width:20, height:20, borderRadius:5, background:c, cursor:'pointer',
+                      width:20, height:20, borderRadius:999, background:c, cursor:'pointer',
                       border: currentHex.toLowerCase()===c.toLowerCase() ? '2px solid var(--text1)' : '1px solid var(--border)',
                       boxSizing:'border-box', transition:'transform 0.1s',
                     }}
@@ -485,11 +484,13 @@ export function ColorSwatch({
                     style={{
                       position: 'absolute', top: -5, right: -5, width: 13, height: 13, borderRadius: '50%',
                       border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--danger)',
-                      fontSize: 9, fontWeight: 700, lineHeight: 1, padding: 0, cursor: 'pointer',
+                      lineHeight: 1, padding: 0, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       opacity: 0, transition: 'opacity 0.12s',
                     }}
-                  >×</button>
+                  >
+                    <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+                  </button>
                 </div>
               ))}
               <button
@@ -499,12 +500,14 @@ export function ColorSwatch({
                 }}
                 title={t('Add current color to palette')}
                 style={{
-                  width:20, height:20, borderRadius:5, cursor:'pointer',
+                  width:20, height:20, borderRadius:999, cursor:'pointer',
                   border:'1.5px dashed var(--border)', background:'transparent',
-                  color:'var(--text3)', fontSize:13, lineHeight:1, padding:0,
+                  color:'var(--text3)', lineHeight:1, padding:0,
                   display:'flex', alignItems:'center', justifyContent:'center', boxSizing:'border-box',
                 }}
-              >+</button>
+              >
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
             </div>
           </div>
         </div>,

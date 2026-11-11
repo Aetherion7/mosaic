@@ -5,7 +5,7 @@ import { useUIStore } from '@/store/uiStore'
 import type { Lang } from '@/lib/i18n'
 import { useT } from '@/hooks/useT'
 import { useIsDesktop } from '@/hooks/useIsDesktop'
-import { SectionTitle, SettingItem, Row } from './shared'
+import { SectionTitle, SettingItem, Row, pillBtn, POPOVER_SHADOW } from './shared'
 import { FontSection } from './ErscheinungsbildPanel'
 import { APP_VERSION } from '@/lib/version'
 
@@ -59,7 +59,7 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
           last={homeAmbient}
         />
         {homeAmbient && (
-          <div style={{ paddingLeft: 16, borderLeft: '2px solid var(--border)', marginLeft: 2 }}>
+          <div style={{ marginLeft: 16, marginTop: 6 }}>
             <Row
               label={t('Mosaic tile hover effect')}
               desc={t('Tiles light up around the cursor and fade out again')}
@@ -69,7 +69,7 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
           </div>
         )}
 
-        <div style={{ marginTop: 20 }}>
+        <div>
           <SettingItem
             label={t('Language')}
             desc={t('Switches every label, button and message in the app')}
@@ -80,11 +80,11 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
         {/* FontSection zeigt hier (ohne offenes Board) nur die Programm-
             Schrift — der Board-Schrift-Teil rendert nur, wenn ein Board offen
             ist, s. Kommentar dort. */}
-        <div style={{ marginTop: 20 }}>
+        <div>
           <FontSection showBoardFont={false} />
         </div>
 
-        <div style={{ marginTop: 20 }}>
+        <div>
           <Row
             label={t('Keyboard shortcut hints')}
             desc={t('Shows shortcuts like [N] in the header')}
@@ -125,12 +125,7 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
           control={
             <button
               onClick={() => { setSetting({ hasSeenHomeTutorial: false }); onClose() }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '7px 12px', borderRadius: 8, whiteSpace: 'nowrap',
-                border: '1px solid var(--border)', background: 'var(--surface2)',
-                color: 'var(--text1)', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-              }}
+              style={{ ...pillBtn('ghost'), color: 'var(--text1)' }}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -156,7 +151,7 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
         desc={t('Switches every label, button and message in the app')}
         control={<LanguageSelect value={language} onChange={lng => setSetting({ language: lng })} />}
       />
-      <div style={{ marginTop: 20 }}>
+      <div>
         <Row
           label={t('Keyboard shortcut hints')}
           desc={t('Shows shortcuts like [E] in the header')}
@@ -197,12 +192,7 @@ export default function GeneralPanel({ onClose, home }: { onClose: () => void; h
         control={
           <button
             onClick={() => { setSetting({ hasSeenTutorial: false }); onClose() }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '7px 12px', borderRadius: 8, whiteSpace: 'nowrap',
-              border: '1px solid var(--border)', background: 'var(--surface2)',
-              color: 'var(--text1)', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-            }}
+            style={{ ...pillBtn('ghost'), color: 'var(--text1)' }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -242,11 +232,11 @@ function VersionSection() {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-      padding: '14px 16px', borderRadius: 12,
-      border: '1px solid var(--border)', background: 'var(--surface2)',
+      padding: '14px 16px', borderRadius: 16,
+      background: 'color-mix(in srgb, var(--surface2) 70%, transparent)',
     }}>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)' }}>
+        <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--text1)' }}>
           {t('Version')} {APP_VERSION}
         </div>
         {ready ? (
@@ -267,9 +257,9 @@ function VersionSection() {
         onClick={ready ? () => window.mosaicDesktop?.installUpdate() : check}
         disabled={checking}
         style={{
-          flexShrink: 0, fontSize: 12.5, fontWeight: 700, padding: '9px 16px', borderRadius: 999, border: 'none', whiteSpace: 'nowrap',
+          flexShrink: 0, fontSize: 12.5, fontWeight: 600, padding: '9px 16px', borderRadius: 999, border: 'none', whiteSpace: 'nowrap',
           background: ready ? 'var(--accent)' : 'var(--surface3)',
-          color: ready ? 'white' : 'var(--text2)',
+          color: ready ? 'var(--on-accent, white)' : 'var(--text2)',
           cursor: checking ? 'default' : 'pointer',
           opacity: checking ? 0.6 : 1,
         }}
@@ -306,8 +296,8 @@ function ThemeModeSelect({ value, onChange }: { value: ThemeMode; onChange: (m: 
         aria-expanded={open}
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          padding: '6px 10px', borderRadius: 8,
-          border: `1.5px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
+          padding: '6px 12px 6px 14px', borderRadius: 999,
+          border: `1px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
           background: 'var(--surface2)', cursor: 'pointer',
           fontSize: 12.5, fontWeight: 600, color: 'var(--text1)', whiteSpace: 'nowrap',
           transition: 'border-color 0.12s',
@@ -326,8 +316,8 @@ function ThemeModeSelect({ value, onChange }: { value: ThemeMode; onChange: (m: 
           minWidth: 130,
           background: 'var(--popover-bg)',
           backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid var(--border)', borderRadius: 10,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.35)', overflow: 'hidden',
+          border: '1px solid var(--border)', borderRadius: 14, padding: 4,
+          boxShadow: POPOVER_SHADOW, overflow: 'hidden',
         }}>
           {THEME_MODES.map(mode => {
             const active = mode.id === value
@@ -339,13 +329,13 @@ function ThemeModeSelect({ value, onChange }: { value: ThemeMode; onChange: (m: 
                 onClick={() => { onChange(mode.id); setOpen(false) }}
                 style={{
                   display: 'flex', alignItems: 'center', width: '100%',
-                  padding: '9px 12px', border: 'none', cursor: 'pointer', textAlign: 'left',
+                  padding: '8px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', textAlign: 'left',
                   background: active ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'transparent',
                 }}
                 onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface2)' }}
                 onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
               >
-                <span style={{ fontSize: 13, fontWeight: active ? 700 : 500, color: active ? 'var(--accent)' : 'var(--text1)' }}>
+                <span style={{ fontSize: 13, fontWeight: active ? 600 : 500, color: active ? 'var(--accent)' : 'var(--text1)' }}>
                   {t(mode.label)}
                 </span>
                 {active && (
@@ -388,8 +378,8 @@ function LanguageSelect({ value, onChange }: { value: Lang; onChange: (l: Lang) 
         aria-expanded={open}
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          padding: '6px 10px', borderRadius: 8,
-          border: `1.5px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
+          padding: '6px 12px 6px 14px', borderRadius: 999,
+          border: `1px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
           background: 'var(--surface2)', cursor: 'pointer',
           fontSize: 12.5, fontWeight: 600, color: 'var(--text1)', whiteSpace: 'nowrap',
           transition: 'border-color 0.12s',
@@ -410,8 +400,8 @@ function LanguageSelect({ value, onChange }: { value: Lang; onChange: (l: Lang) 
           // (Crystal-Glass-Theme) deckend & lesbar statt komplett durchsichtig
           background: 'var(--popover-bg)',
           backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid var(--border)', borderRadius: 10,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.35)', overflow: 'hidden',
+          border: '1px solid var(--border)', borderRadius: 14, padding: 4,
+          boxShadow: POPOVER_SHADOW, overflow: 'hidden',
         }}>
           {LANGUAGES.map(lng => {
             const active = lng.id === value
@@ -423,7 +413,7 @@ function LanguageSelect({ value, onChange }: { value: Lang; onChange: (l: Lang) 
                 onClick={() => { onChange(lng.id); setOpen(false) }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                  padding: '9px 12px', border: 'none', cursor: 'pointer', textAlign: 'left',
+                  padding: '8px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', textAlign: 'left',
                   background: active ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'transparent',
                 }}
                 onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface2)' }}

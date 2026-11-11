@@ -15,7 +15,7 @@ import { useBoardStore } from '@/store/boardStore'
 import { useSettings } from '@/store/settingsStore'
 import { IconSparkle, renderInlineMd, MessageActions } from '@/components/ui/aiShared'
 import { widgetTypeIcon, TYPE_LABELS } from '@/components/board/TileWrapper'
-import { Toggle } from './shared'
+import { Toggle, CloseButton, pillBtn, MODAL_SHADOW } from './shared'
 import type { Board, Widget } from '@/types'
 
 type ConvKey = 'board' | `widget:${string}`
@@ -141,19 +141,19 @@ export default function ChatHistoryModal({ onClose }: { onClose: () => void }) {
             width: 'min(920px, 94vw)', height: 'min(640px, 88vh)',
             background: 'var(--popover-bg)',
             backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
-            border: '1px solid var(--border)', borderRadius: 18,
+            border: '1px solid var(--border)', borderRadius: 22,
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+            boxShadow: MODAL_SHADOW,
           }}
         >
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)' }}>{t('Chat history')}</span>
-            <button onClick={onClose} title={t('Close')} style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>×</button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 10px', flexShrink: 0 }}>
+            <span style={{ fontSize: 16, fontWeight: 650, color: 'var(--text1)' }}>{t('Chat history')}</span>
+            <CloseButton onClick={onClose} title={t('Close')} size={28} />
           </div>
 
           {/* Auto-expire + clear-all row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0, gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 8px 8px 14px', margin: '0 16px 12px', borderRadius: 999, background: 'color-mix(in srgb, var(--surface2) 70%, transparent)', flexShrink: 0, gap: 12 }}>
             <div
               onClick={() => setSetting({ aiHistoryAutoExpire: !autoExpire })}
               style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
@@ -165,9 +165,7 @@ export default function ChatHistoryModal({ onClose }: { onClose: () => void }) {
               onClick={clearAll}
               disabled={conversations.length === 0}
               style={{
-                fontSize: 11, fontWeight: 600, padding: '6px 12px', borderRadius: 8,
-                border: '1px solid var(--border)', background: 'var(--surface2)',
-                color: conversations.length === 0 ? 'var(--text3)' : '#ef4444',
+                ...pillBtn('danger'), fontSize: 11.5, padding: '6px 12px',
                 cursor: conversations.length === 0 ? 'default' : 'pointer',
                 opacity: conversations.length === 0 ? 0.5 : 1, flexShrink: 0,
               }}
@@ -179,7 +177,7 @@ export default function ChatHistoryModal({ onClose }: { onClose: () => void }) {
           {/* Body */}
           <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
             {/* Left: conversation list */}
-            <div style={{ width: 240, flexShrink: 0, borderRight: '1px solid var(--border)', overflowY: 'auto', padding: 8 }}>
+            <div style={{ width: 240, flexShrink: 0, overflowY: 'auto', padding: '0 8px 8px 16px' }}>
               {conversations.length === 0 && (
                 <div style={{ fontSize: 11.5, color: 'var(--text3)', textAlign: 'center', padding: '24px 12px', lineHeight: 1.6 }}>
                   {t('No chat history yet.')}
@@ -189,9 +187,9 @@ export default function ChatHistoryModal({ onClose }: { onClose: () => void }) {
                 <div key={c.key}
                   onClick={() => setSelectedKey(c.key)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 8, padding: '8px 9px', borderRadius: 9,
-                    cursor: 'pointer', marginBottom: 2,
-                    background: selectedKey === c.key ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'transparent',
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '8px 8px 8px 12px', borderRadius: 14,
+                    cursor: 'pointer', marginBottom: 4,
+                    background: selectedKey === c.key ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'color-mix(in srgb, var(--surface2) 70%, transparent)',
                   }}
                 >
                   <span style={{ color: c.resolvable ? 'var(--text2)' : 'var(--text3)', display: 'flex', flexShrink: 0 }}>{c.icon}</span>
@@ -202,7 +200,7 @@ export default function ChatHistoryModal({ onClose }: { onClose: () => void }) {
                   <button
                     onClick={e => { e.stopPropagation(); deleteConversation(c.key) }}
                     title={t('Delete')}
-                    style={{ width: 20, height: 20, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: 5 }}
+                    style={{ width: 24, height: 24, border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: 999, padding: 0 }}
                   >
                     <IconTrash />
                   </button>
@@ -211,7 +209,7 @@ export default function ChatHistoryModal({ onClose }: { onClose: () => void }) {
             </div>
 
             {/* Right: selected transcript */}
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', margin: '0 16px 16px 8px', borderRadius: 16, background: 'color-mix(in srgb, var(--surface2) 40%, transparent)', overflow: 'hidden' }}>
               {!selected ? (
                 <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text3)', fontSize: 12, padding: 24 }}>
                   {t('Select a conversation to view it.')}
@@ -223,7 +221,7 @@ export default function ChatHistoryModal({ onClose }: { onClose: () => void }) {
                     const isError = item.kind === 'error'
                     if (isError) {
                       return (
-                        <div key={item.id} style={{ fontSize: 11, color: '#e53e3e', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.25)', borderRadius: 10, padding: '7px 10px', lineHeight: 1.5, wordBreak: 'break-word', alignSelf: 'flex-start', maxWidth: '85%' }}>
+                        <div key={item.id} style={{ fontSize: 11, color: 'var(--danger)', background: 'color-mix(in srgb, var(--danger) 12%, transparent)', borderRadius: 12, padding: '7px 10px', lineHeight: 1.5, wordBreak: 'break-word', alignSelf: 'flex-start', maxWidth: '85%' }}>
                           {item.text}
                         </div>
                       )
@@ -234,8 +232,8 @@ export default function ChatHistoryModal({ onClose }: { onClose: () => void }) {
                           fontSize: 12.5, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                           color: isUser ? 'var(--on-accent, white)' : 'var(--text1)',
                           background: isUser ? 'var(--accent)' : 'var(--surface2)',
-                          border: isUser ? 'none' : '1px solid var(--border)',
-                          borderRadius: isUser ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+                          border: 'none',
+                          borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
                           padding: '9px 12px',
                         }}>
                           {isUser ? item.text : renderInlineMd(item.text)}

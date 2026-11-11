@@ -4,7 +4,7 @@ import { useBoardStore, selectBoard } from '@/store/boardStore'
 import { useT } from '@/hooks/useT'
 import { TYPE_LABELS } from '@/components/board/TileWrapper'
 import type { WidgetType } from '@/types'
-import { Row, SectionTitle, SettingItem } from './shared'
+import { Row, SectionTitle, SettingItem, XIcon, pillInput } from './shared'
 import { BUILT_IN_WIDGETS } from './widgetCatalog'
 import { Dropdown } from '@/components/ui/Dropdown'
 
@@ -26,16 +26,16 @@ function CalendarIcsSources() {
     })
 
   if (entries.length === 0)
-    return <div style={{ fontSize: 11, color: 'var(--text3)', padding: '4px 0' }}>{t('No ICS calendars imported.')}</div>
+    return <div style={{ fontSize: 11.5, color: 'var(--text3)', padding: '4px 2px' }}>{t('No ICS calendars imported.')}</div>
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {entries.map((src, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '5px 8px', borderRadius: 7, background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px 7px 14px', borderRadius: 14, background: 'color-mix(in srgb, var(--surface2) 70%, transparent)' }}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
             <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
           </svg>
-          <span style={{ flex: 1, fontSize: 11, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{src.name}</span>
+          <span style={{ flex: 1, fontSize: 12, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{src.name}</span>
           <span style={{ fontSize: 10, color: 'var(--text3)', flexShrink: 0 }}>{src.ids.length} {src.ids.length !== 1 ? t('events') : t('event')}</span>
           <button
             onClick={() => {
@@ -50,8 +50,8 @@ function CalendarIcsSources() {
               })
             }}
             title={t('Remove')}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: '2px 4px', borderRadius: 4, flexShrink: 0, fontSize: 14, lineHeight: 1 }}
-          >×</button>
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, background: 'color-mix(in srgb, var(--danger) 16%, transparent)', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 0, borderRadius: 999, flexShrink: 0 }}
+          ><XIcon size={8} /></button>
         </div>
       ))}
     </div>
@@ -86,9 +86,8 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '4px 0 18px' }}>
         <div style={{
-          width: 42, height: 42, borderRadius: 12, flexShrink: 0,
-          background: disabled ? 'var(--surface2)' : 'color-mix(in srgb, var(--accent) 12%, var(--surface2))',
-          border: `1px solid ${disabled ? 'var(--border)' : 'color-mix(in srgb, var(--accent) 30%, transparent)'}`,
+          width: 42, height: 42, borderRadius: 14, flexShrink: 0,
+          background: disabled ? 'var(--surface2)' : 'color-mix(in srgb, var(--accent) 14%, transparent)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: disabled ? 'var(--text3)' : 'var(--accent)',
           transition: 'all 0.15s',
@@ -96,7 +95,7 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
           {entry?.icon}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text1)' }}>{label}</div>
+          <div style={{ fontSize: 16, fontWeight: 650, color: 'var(--text1)' }}>{label}</div>
           {entry && <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>{t(entry.desc)}</div>}
         </div>
       </div>
@@ -217,7 +216,7 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
             onChange={v => setSetting({ calendarFadePastEvents: v })}
           />
           <div style={{ marginTop: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 7 }}>{t('Imported ICS calendars')}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', margin: '0 2px 8px' }}>{t('Imported ICS calendars')}</div>
             <CalendarIcsSources />
           </div>
         </>
@@ -229,12 +228,10 @@ export default function WidgetSettingsPage({ type }: { type: WidgetType }) {
 
 const selStyle: React.CSSProperties = {
   fontSize: 12, background: 'var(--surface2)', color: 'var(--text1)',
-  border: '1px solid var(--border)', borderRadius: 7,
-  padding: '5px 8px', cursor: 'pointer', height: 28,
+  border: '1px solid var(--border)', borderRadius: 999,
+  padding: '5px 12px', cursor: 'pointer', height: 30,
 }
 
 const textInputStyle: React.CSSProperties = {
-  fontSize: 12, background: 'var(--surface2)', color: 'var(--text1)',
-  border: '1px solid var(--border)', borderRadius: 7,
-  padding: '5px 8px', height: 28, width: 220, outline: 'none',
+  ...pillInput, fontSize: 12, height: 30, padding: '5px 14px', width: 220,
 }

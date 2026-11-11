@@ -91,9 +91,10 @@ export default function GlobalContextMenu() {
       data-gctx="1"
       style={{
         position: 'fixed', zIndex: 10000, left: menu.x, top: menu.y,
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: 8, padding: '4px 0', minWidth: 160,
-        boxShadow: '0 6px 20px rgba(0,0,0,0.4)',
+        background: 'var(--popover-bg)', border: '1px solid var(--border)',
+        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+        borderRadius: 16, padding: 5, minWidth: 160,
+        boxShadow: '0 10px 32px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)',
       }}
     >
       {items.map(item => (
@@ -101,7 +102,7 @@ export default function GlobalContextMenu() {
           key={item.label}
           onPointerDown={e => { e.preventDefault(); if (item.enabled) item.action() }}
           style={{
-            padding: '6px 14px', fontSize: 12,
+            padding: '7px 11px', fontSize: 12, borderRadius: 10,
             cursor: item.enabled ? 'pointer' : 'default',
             color: item.enabled ? 'var(--text1)' : 'var(--text3)',
           }}

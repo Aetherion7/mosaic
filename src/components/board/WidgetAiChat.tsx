@@ -70,8 +70,8 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
     transform: counterScale !== 1 ? `scale(${counterScale})` : undefined,
     transformOrigin: side === 'right' ? 'top left' : 'top right',
     display: 'flex',
-    borderRadius: 16, padding: 3,
-    boxShadow: '0 16px 56px rgba(0,0,0,0.45)',
+    borderRadius: 22, padding: 3,
+    boxShadow: '0 24px 64px color-mix(in srgb, var(--shadow-color, #000) 55%, transparent)',
   }
 
   return (
@@ -89,24 +89,24 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
       display: 'flex', flexDirection: 'column',
       background: 'var(--popover-bg)',
       backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-      borderRadius: 13,
-      padding: 14,
+      borderRadius: 19,
+      padding: 12,
     }}>
       {/* Kopfzeile */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6, flexShrink: 0 }}>
-        <span style={{ color: 'var(--accent)', display: 'flex' }}><IconSparkle size={13} /></span>
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 2, padding: '2px 2px 0 6px', flexShrink: 0 }}>
+        <span style={{ color: 'var(--accent)', display: 'flex' }}><IconSparkle size={14} /></span>
+        <span style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--text1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {label}
         </span>
         {items.length > 0 && (
           <button onClick={() => clear(widget.id)} title={t('Clear conversation')}
-            style={{ border: 'none', background: 'none', color: 'var(--text3)', fontSize: 11, cursor: 'pointer', padding: '2px 6px' }}>
+            style={{ height: 24, padding: '0 10px', borderRadius: 999, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text2)', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
             {t('Clear')}
           </button>
         )}
         <button onClick={onClose} title={t('Close')} aria-label={t('Close')}
-          style={{ width: 24, height: 24, borderRadius: 8, border: 'none', background: 'var(--surface2)', color: 'var(--text2)', fontSize: 16, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          ×
+          style={{ width: 24, height: 24, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
         </button>
       </div>
 
@@ -124,14 +124,14 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
         )}
         {items.map(item => {
           if (item.kind === 'action') return (
-            <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', alignSelf: 'flex-start', fontSize: 10, fontWeight: 600, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)', borderRadius: 999, padding: '2px 9px' }}>
+            <span key={item.id} style={{ display: 'inline-flex', alignItems: 'center', alignSelf: 'flex-start', fontSize: 10, fontWeight: 600, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 14%, transparent)', borderRadius: 999, padding: '3px 10px' }}>
               {item.text === '🔍' ? <IconSearchGlass size={10} /> : item.text}
             </span>
           )
           if (item.kind === 'error') {
             const [first, ...rest] = (item.text === 'NO_KEY' ? t('No API key configured.') : item.text === 'NO_PROVIDER' ? t('No provider selected.') : item.text).split('\n')
             return (
-              <div key={item.id} style={{ fontSize: 11, color: '#e53e3e', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.25)', borderRadius: 10, padding: '7px 10px', lineHeight: 1.5, wordBreak: 'break-word' }}>
+              <div key={item.id} style={{ fontSize: 11, color: 'var(--danger)', background: 'color-mix(in srgb, var(--danger) 12%, transparent)', borderRadius: 12, padding: '7px 11px', lineHeight: 1.5, wordBreak: 'break-word' }}>
                 {first}
                 {rest.length > 0 && <div style={{ fontSize: 9.5, opacity: 0.7, marginTop: 3 }}>{rest.join(' ')}</div>}
               </div>
@@ -144,8 +144,7 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
                 fontSize: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                 color: isUser ? 'white' : 'var(--text1)',
                 background: isUser ? 'var(--accent)' : 'var(--surface2)',
-                border: isUser ? 'none' : '1px solid var(--border)',
-                borderRadius: isUser ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+                borderRadius: isUser ? '16px 16px 6px 16px' : '16px 16px 16px 6px',
                 padding: '8px 11px',
               }}>
                 {isUser ? item.text : renderInlineMd(item.text)}
@@ -182,8 +181,8 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
           rows={1}
           style={{
             flex: 1, resize: 'none', fontSize: 12, lineHeight: 1.5,
-            background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10,
-            color: 'var(--text1)', padding: '8px 10px', outline: 'none', fontFamily: 'inherit',
+            background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 17,
+            color: 'var(--text1)', padding: '7px 14px', outline: 'none', fontFamily: 'inherit',
             maxHeight: 96, overflowY: 'auto',
           }}
         />
@@ -192,7 +191,7 @@ export default function WidgetAiChat({ widget, label, side, top = 0, onClose }: 
           disabled={!running && !input.trim()}
           title={running ? t('Stop') : t('Send')} aria-label={running ? t('Stop') : t('Send')}
           style={{
-            width: 34, height: 34, borderRadius: 10, border: 'none', flexShrink: 0,
+            width: 34, height: 34, borderRadius: 999, border: 'none', flexShrink: 0,
             background: running || input.trim() ? 'var(--accent)' : 'var(--surface2)',
             color: running || input.trim() ? 'white' : 'var(--text3)',
             cursor: running || input.trim() ? 'pointer' : 'default',

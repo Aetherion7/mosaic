@@ -13,6 +13,7 @@ import { DEFAULT_BG } from '@/lib/defaults'
 import { todayStr } from '@/lib/dates'
 import { TileContent, buildStyle, widgetTypeIcon, TYPE_LABELS } from '@/components/board/TileWrapper'
 import WidgetErrorBoundary from '@/components/board/WidgetErrorBoundary'
+import { CloseButton, pillBtn, optionCardStyle, MODAL_SHADOW } from './shared'
 import type { BoardBg, WidgetStyle, GradientDir, PatternType, Widget, NoteData, TaskData, WaterData, TimerData } from '@/types'
 
 // Interaktiver Theme-Editor: ersetzt die vorherige "JSON einfügen"-Fläche in
@@ -158,30 +159,30 @@ export default function ThemeEditorModal({ initial, onClose }: { initial?: Custo
             width: 'min(1200px, 95vw)', height: 'min(780px, 90vh)',
             background: 'var(--popover-bg)',
             backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
-            border: '1px solid var(--border)', borderRadius: 18,
+            border: '1px solid var(--border)', borderRadius: 22,
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+            boxShadow: MODAL_SHADOW,
           }}
         >
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 10px 22px', flexShrink: 0 }}>
             <input
               autoFocus
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder={t('Theme name')}
               style={{
-                fontSize: 15, fontWeight: 700, color: 'var(--text1)', background: 'none',
+                fontSize: 16, fontWeight: 650, color: 'var(--text1)', background: 'none',
                 border: 'none', outline: 'none', minWidth: 0, flex: 1, marginRight: 12,
               }}
             />
-            <button onClick={onClose} title={t('Close')} style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>×</button>
+            <CloseButton onClick={onClose} title={t('Close')} size={28} />
           </div>
 
           {/* Body */}
           <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
             {/* Left: form */}
-            <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: '8px 22px 18px', display: 'flex', flexDirection: 'column', gap: 26 }}>
 
               <FSection label={t('Colors')}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 18px' }}>
@@ -204,13 +205,11 @@ export default function ThemeEditorModal({ initial, onClose }: { initial?: Custo
                       value={cssVars['--popover-bg'] ?? 'var(--surface)'}
                       onChange={e => setVar('--popover-bg', e.target.value)}
                       placeholder="var(--surface) / rgba(...)"
-                      style={{ flex: 1, fontSize: 11.5, fontFamily: 'monospace', padding: '5px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text1)', outline: 'none' }}
+                      style={{ flex: 1, fontSize: 11.5, fontFamily: 'monospace', padding: '6px 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text1)', outline: 'none' }}
                     />
                   </FRow>
                 )}
               </FSection>
-
-              <Divider />
 
               <FSection label={t('Board background')}>
                 <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
@@ -261,17 +260,15 @@ export default function ThemeEditorModal({ initial, onClose }: { initial?: Custo
                 />
               </FSection>
 
-              <Divider />
-
               <FSection label={t('Widget style')}>
-                <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 50, padding: 2, marginBottom: 4, maxWidth: 220 }}>
+                <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 999, padding: 3, marginBottom: 4, maxWidth: 220 }}>
                   <SlidingTabs
                     options={[{ value: 'solid', label: t('Solid') }, { value: 'gradient', label: t('Gradient') }]}
                     value={style.gradient ? 'gradient' : 'solid'}
                     onChange={v => setStyle(v === 'gradient'
                       ? { gradient: [style.bgColor.startsWith('#') ? style.bgColor : '#16192b', '#8b74f0'] }
                       : { gradient: null })}
-                    slotH={24} radius={50} fontSize={11}
+                    slotH={24} radius={999} fontSize={11}
                   />
                 </div>
                 {!style.gradient ? (
@@ -303,7 +300,7 @@ export default function ThemeEditorModal({ initial, onClose }: { initial?: Custo
                   <div style={{ display: 'flex', gap: 5, flex: 1 }}>
                     {SHADOW_OPTS.map(sh => (
                       <button key={sh} onClick={() => setStyle({ shadow: sh })} style={{
-                        flex: 1, padding: '5px 0', fontSize: 10, fontWeight: 600, borderRadius: 8,
+                        flex: 1, padding: '5px 0', fontSize: 10, fontWeight: 600, borderRadius: 999,
                         border: `1px solid ${style.shadow === sh ? 'var(--accent)' : 'var(--border)'}`,
                         background: style.shadow === sh ? 'var(--accent)' : 'var(--surface2)',
                         color: style.shadow === sh ? 'var(--on-accent, white)' : 'var(--text3)',
@@ -327,8 +324,8 @@ export default function ThemeEditorModal({ initial, onClose }: { initial?: Custo
             </div>
 
             {/* Right: live preview */}
-            <div style={{ width: 420, flexShrink: 0, borderLeft: '1px solid var(--border)', padding: 18, display: 'flex', flexDirection: 'column', gap: 10, background: 'color-mix(in srgb, var(--surface2) 40%, transparent)' }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('Live preview')}</span>
+            <div style={{ width: 420, flexShrink: 0, margin: '0 16px 0 0', borderRadius: 16, padding: 14, display: 'flex', flexDirection: 'column', gap: 10, background: 'color-mix(in srgb, var(--surface2) 55%, transparent)' }}>
+              <span style={{ fontSize: 13, fontWeight: 650, color: 'var(--text1)', padding: '0 2px' }}>{t('Live preview')}</span>
               <div style={{ flex: 1, minHeight: 0 }}>
                 <LivePreview cssVars={cssVars} bg={bg} style={style} hoverColorKey={hoverColorKey} onHoverColorKey={setHoverColorKey} />
               </div>
@@ -336,11 +333,11 @@ export default function ThemeEditorModal({ initial, onClose }: { initial?: Custo
           </div>
 
           {/* Footer */}
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 20px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
-            <button onClick={onClose} style={{ fontSize: 12, padding: '8px 16px', borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 20px 16px', flexShrink: 0 }}>
+            <button onClick={onClose} style={{ ...pillBtn('ghost'), padding: '8px 16px' }}>
               {t('Cancel')}
             </button>
-            <button onClick={save} disabled={!canSave} style={{ fontSize: 12, fontWeight: 700, padding: '8px 18px', borderRadius: 999, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: canSave ? 'pointer' : 'default', opacity: canSave ? 1 : 0.4 }}>
+            <button onClick={save} disabled={!canSave} style={{ ...pillBtn('accent'), padding: '8px 18px', cursor: canSave ? 'pointer' : 'default', opacity: canSave ? 1 : 0.4 }}>
               {initial ? t('Save changes') : t('Create theme')}
             </button>
           </div>
@@ -585,7 +582,7 @@ function LivePreview({ cssVars, bg, style, hoverColorKey, onHoverColorKey }: {
           onMouseEnter={() => onHoverColorKey('--on-accent')}
           onMouseLeave={() => onHoverColorKey(null)}
           style={{
-            padding: '5px 14px', borderRadius: 9, border: 'none', cursor: 'default',
+            padding: '5px 14px', borderRadius: 999, border: 'none', cursor: 'default',
             background: v('--accent', '#7c6fe8'), color: v('--on-accent', '#fff'),
             fontSize: 12, fontWeight: 700, ...refRing(hoverColorKey === '--on-accent'),
           }}>{t('Undo')}</button>
@@ -594,9 +591,8 @@ function LivePreview({ cssVars, bg, style, hoverColorKey, onHoverColorKey }: {
           onMouseEnter={() => onHoverColorKey('--danger')}
           onMouseLeave={() => onHoverColorKey(null)}
           style={{
-            padding: '4px 12px', borderRadius: 999, cursor: 'default',
-            border: `1px solid color-mix(in srgb, ${v('--danger', '#f87171')} 40%, transparent)`,
-            background: 'none', color: v('--danger', '#f87171'),
+            padding: '5px 12px', borderRadius: 999, cursor: 'default', border: 'none',
+            background: `color-mix(in srgb, ${v('--danger', '#f87171')} 16%, transparent)`, color: v('--danger', '#f87171'),
             fontSize: 11, fontWeight: 600, ...refRing(hoverColorKey === '--danger'),
           }}>{t('Empty trash')}</button>
         <div
@@ -604,7 +600,7 @@ function LivePreview({ cssVars, bg, style, hoverColorKey, onHoverColorKey }: {
           onMouseEnter={() => onHoverColorKey('--shadow-color')}
           onMouseLeave={() => onHoverColorKey(null)}
           style={{
-            marginLeft: 'auto', width: 24, height: 24, borderRadius: 8, flexShrink: 0,
+            marginLeft: 'auto', width: 24, height: 24, borderRadius: 999, flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: v('--popover-bg', v('--surface2', '#191a2c')),
             boxShadow: `0 12px 28px color-mix(in srgb, ${v('--shadow-color', 'rgba(0,0,0,0.45)')} 45%, transparent)`,
@@ -624,9 +620,8 @@ function LivePreview({ cssVars, bg, style, hoverColorKey, onHoverColorKey }: {
         onMouseLeave={() => onHoverColorKey(null)}
         style={{
           flexShrink: 0, margin: '10px 14px 0', display: 'flex', alignItems: 'flex-start', gap: 8,
-          padding: '8px 10px', borderRadius: 10,
-          background: `color-mix(in srgb, ${v('--amber', '#fbbf24')} 8%, ${v('--surface2', '#1e2236')})`,
-          border: `1px solid color-mix(in srgb, ${v('--amber', '#fbbf24')} 25%, transparent)`,
+          padding: '8px 10px', borderRadius: 14,
+          background: `color-mix(in srgb, ${v('--amber', '#fbbf24')} 10%, transparent)`,
           ...refRing(hoverColorKey === '--amber'),
         }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={v('--amber', '#fbbf24')} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
@@ -670,11 +665,11 @@ function LivePreview({ cssVars, bg, style, hoverColorKey, onHoverColorKey }: {
               onMouseLeave={() => onHoverColorKey(null)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px 5px',
-                borderBottom: '1px solid var(--border)', flexShrink: 0,
+                flexShrink: 0,
                 ...refRing(hoverColorKey === '--text3'),
               }}>
               <span style={{ opacity: 0.55, color: 'var(--text2)', display: 'flex' }}>{widgetTypeIcon(widget)}</span>
-              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)' }}>
                 {t(TYPE_LABELS[widget.type])}
               </span>
             </div>
@@ -728,14 +723,10 @@ function LivePreview({ cssVars, bg, style, hoverColorKey, onHoverColorKey }: {
 function FSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--text1)' }}>{label}</div>
       {children}
     </div>
   )
-}
-
-function Divider() {
-  return <div style={{ height: 1, background: 'var(--border)' }} />
 }
 
 // `active`/`onMouseEnter`/`onMouseLeave` are only passed by the Colors rows
@@ -771,7 +762,7 @@ function FRow({ label, title, children, active, onMouseEnter, onMouseLeave }: {
 // convention already used for Drawboard shape selection.
 function refRing(active: boolean): React.CSSProperties {
   return {
-    boxShadow: active ? '0 0 0 2px #3b82f6, 0 0 10px 1px rgba(59,130,246,0.5)' : 'none',
+    boxShadow: active ? '0 0 0 2px #3b82f6' : 'none',
     transition: 'box-shadow 0.12s',
   }
 }
@@ -795,7 +786,7 @@ function DirPicker({ value, onChange }: { value: GradientDir; onChange: (v: Grad
       <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
         {DIR_OPTIONS.map(d => (
           <button key={d.value} onClick={() => onChange(d.value)} style={{
-            width: 24, height: 24, borderRadius: 6, border: '1px solid var(--border)',
+            width: 26, height: 26, borderRadius: 999, border: '1px solid var(--border)',
             background: value === d.value ? 'var(--accent)' : 'var(--surface2)',
             color: value === d.value ? 'var(--on-accent, white)' : 'var(--text2)',
             fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -819,8 +810,8 @@ function ImagePicker({ imageName, onUpload }: { imageName: string | null; onUplo
   return (
     <>
       <button onClick={() => fileRef.current?.click()} style={{
-        padding: '9px 12px', fontSize: 11, borderRadius: 10, border: '1.5px dashed var(--text3)',
-        background: 'var(--surface2)', color: imageName ? 'var(--text1)' : 'var(--text3)',
+        padding: '8px 14px', fontSize: 11.5, borderRadius: 999, border: '1px dashed var(--border)',
+        background: 'transparent', color: imageName ? 'var(--text1)' : 'var(--text3)',
         cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, overflow: 'hidden',
       }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
@@ -852,12 +843,11 @@ function PatternPicker({ value, onChange, color, onColorChange, opacity, onOpaci
         {patterns.map(p => (
           <button key={p.id} onClick={() => onChange(p.id)} style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '6px 4px 8px',
-            borderRadius: 9, border: `2px solid ${value === p.id ? 'var(--accent)' : 'var(--border)'}`,
-            background: value === p.id ? 'color-mix(in srgb, var(--accent) 8%, var(--surface2))' : 'var(--surface2)',
+            ...optionCardStyle(value === p.id),
             cursor: 'pointer',
           }}>
-            <div style={{ width: '100%', height: 30, borderRadius: 5, background: '#1a1a2e', overflow: 'hidden', border: '1px solid var(--border)' }}>{p.preview}</div>
-            <span style={{ fontSize: 9.5, fontWeight: 600, color: value === p.id ? 'var(--accent)' : 'var(--text2)' }}>{p.label}</span>
+            <div style={{ width: '100%', height: 30, borderRadius: 10, background: '#1a1a2e', overflow: 'hidden', border: '1px solid var(--border)' }}>{p.preview}</div>
+            <span style={{ fontSize: 10.5, fontWeight: 600, color: value === p.id ? 'var(--accent)' : 'var(--text2)' }}>{p.label}</span>
           </button>
         ))}
       </div>
@@ -875,7 +865,7 @@ function PatternPicker({ value, onChange, color, onColorChange, opacity, onOpaci
 }
 
 const tabBtn = (active: boolean): React.CSSProperties => ({
-  padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 50,
+  padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 999,
   border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
   background: active ? 'var(--accent)' : 'var(--surface2)',
   color: active ? 'var(--on-accent, white)' : 'var(--text2)',

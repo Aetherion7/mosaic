@@ -197,25 +197,20 @@ function DonateCard({ href, icon, label, sub, glow }: { href: string; icon: Reac
       href={href} target="_blank" rel="noopener noreferrer"
       style={{
         flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-        gap: 6, padding: '16px 10px', borderRadius: 12,
-        border: `1px solid color-mix(in srgb, ${glow} 35%, var(--border))`,
+        gap: 6, padding: '16px 10px', borderRadius: 16,
+        // Nur tonale Marken-Tönung, kein farbiges Glühen (Designprinzip 3)
         background: `color-mix(in srgb, ${glow} 10%, var(--surface2))`,
-        textDecoration: 'none', transition: 'background 0.15s, border-color 0.15s, transform 0.15s, box-shadow 0.15s',
-        boxShadow: `0 2px 10px color-mix(in srgb, ${glow} 12%, transparent)`,
+        textDecoration: 'none', transition: 'background 0.15s, transform 0.15s',
       }}
       onMouseEnter={e => {
         const el = e.currentTarget as HTMLAnchorElement
         el.style.background = `color-mix(in srgb, ${glow} 20%, var(--surface2))`
-        el.style.borderColor = `color-mix(in srgb, ${glow} 60%, var(--border))`
         el.style.transform = 'translateY(-2px)'
-        el.style.boxShadow = `0 8px 20px color-mix(in srgb, ${glow} 25%, transparent)`
       }}
       onMouseLeave={e => {
         const el = e.currentTarget as HTMLAnchorElement
         el.style.background = `color-mix(in srgb, ${glow} 10%, var(--surface2))`
-        el.style.borderColor = `color-mix(in srgb, ${glow} 35%, var(--border))`
         el.style.transform = 'none'
-        el.style.boxShadow = `0 2px 10px color-mix(in srgb, ${glow} 12%, transparent)`
       }}
     >
       <span style={{ height: 40, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
@@ -245,9 +240,9 @@ function DonateOverlay({ onClose }: { onClose: () => void }) {
           position: 'relative', width: 640, maxWidth: 'calc(100vw - 24px)',
           background: 'var(--popover-bg)',
           backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-          border: '1px solid var(--border)', borderRadius: 20,
+          border: '1px solid var(--border)', borderRadius: 22,
           padding: '26px 30px 24px',
-          boxShadow: '0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent)',
+          boxShadow: '0 32px 80px color-mix(in srgb, var(--shadow-color, #000) 55%, transparent)',
         }}
       >
         {/* Links: Logo + Schriftzug (kompakt) — Trennstrich — rechts: Anliegen
@@ -266,7 +261,7 @@ function DonateOverlay({ onClose }: { onClose: () => void }) {
             <svg width="30" height="30" viewBox="0 0 24 24" fill="var(--accent)" style={{ flexShrink: 0 }}>
               <path d="M12 21s-7.5-4.6-10.2-9.3C.3 8.9 1.4 5.4 4.6 4.2c2.2-.8 4.4 0 5.7 1.8L12 8l1.7-2c1.3-1.8 3.5-2.6 5.7-1.8 3.2 1.2 4.3 4.7 2.8 7.5C19.5 16.4 12 21 12 21z"/>
             </svg>
-            <span style={{ fontSize: 19, fontWeight: 800, color: 'var(--text1)', lineHeight: 1.25 }}>
+            <span style={{ fontSize: 19, fontWeight: 700, color: 'var(--text1)', lineHeight: 1.25 }}>
               {t('Asking for')}<br/>{t('your support')}
             </span>
           </div>
@@ -299,7 +294,7 @@ function DonateOverlay({ onClose }: { onClose: () => void }) {
             Elemente im Fenster bleiben — nicht das Wegklicken. */}
         <button onClick={onClose} style={{
           display: 'block', margin: '0 auto', fontSize: 12.5, fontWeight: 600,
-          padding: '8px 16px', borderRadius: 8,
+          padding: '8px 16px', borderRadius: 999,
           border: 'none', background: 'none', color: 'var(--text3)', cursor: 'pointer',
           transition: 'color 0.12s',
         }}
@@ -508,18 +503,16 @@ export default function TutorialTour() {
               width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'color-mix(in srgb, var(--accent) 14%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
-              boxShadow: '0 0 24px color-mix(in srgb, var(--accent) 22%, transparent)',
               color: 'var(--accent)',
             }}>
             {step.icon}
           </motion.div>
         )}
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em' }}>
-            {t('STEP')} {idx + 1} / {STEPS.length}
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)' }}>
+            {t('Step')} {idx + 1} / {STEPS.length}
           </div>
-          <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text1)', lineHeight: 1.25 }}>
+          <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text1)', lineHeight: 1.25 }}>
             {t(step.title)}
           </div>
         </div>
@@ -534,10 +527,9 @@ export default function TutorialTour() {
       {step.kbd && (
         <div style={{ marginBottom: 18 }}>
           <span style={{
-            fontSize: 11.5, fontWeight: 700, color: 'var(--accent)',
-            background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--accent) 28%, transparent)',
-            borderRadius: 6, padding: '4px 10px', letterSpacing: '0.04em',
+            fontSize: 11.5, fontWeight: 600, color: 'var(--accent)',
+            background: 'color-mix(in srgb, var(--accent) 14%, transparent)',
+            borderRadius: 999, padding: '4px 11px',
             fontVariantNumeric: 'tabular-nums',
           }}>
             {t(step.kbd)}
@@ -582,8 +574,7 @@ export default function TutorialTour() {
           <span style={{
             display: 'flex', alignItems: 'center', gap: 8,
             fontSize: 12, fontWeight: 600, color: 'var(--accent)',
-            background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)',
+            background: 'color-mix(in srgb, var(--accent) 14%, transparent)',
             borderRadius: 999, padding: '8px 14px',
           }}>
             <motion.span
@@ -595,9 +586,8 @@ export default function TutorialTour() {
           </span>
         ) : (
           <button onClick={() => isLast ? setShowDonate(true) : setIdx(i => i + 1)} style={{
-            fontSize: 13, fontWeight: 700, padding: '9px 22px', borderRadius: 999,
+            fontSize: 13, fontWeight: 600, padding: '9px 22px', borderRadius: 999,
             border: 'none', background: 'var(--accent)', color: 'var(--on-accent, white)', cursor: 'pointer',
-            boxShadow: '0 4px 18px color-mix(in srgb, var(--accent) 45%, transparent)',
           }}>
             {idx === 0 ? t('Let’s go') : isLast ? t('Finish tour') : t('Next')}
           </button>
@@ -614,9 +604,9 @@ export default function TutorialTour() {
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
     border: '1px solid var(--border)',
-    borderRadius: 18,
+    borderRadius: 22,
     padding: '22px 26px 20px',
-    boxShadow: '0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent)',
+    boxShadow: '0 32px 80px color-mix(in srgb, var(--shadow-color, #000) 55%, transparent)',
   }
 
   const cardMotion = {

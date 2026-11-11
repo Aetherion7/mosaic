@@ -5,7 +5,7 @@ import { useAiStore, useWidgetAiStore } from '@/store/aiStore'
 import { DEFAULT_MODELS } from '@/lib/ai/client'
 import { useT } from '@/hooks/useT'
 import { IconSparkle } from '@/components/ui/aiShared'
-import { SectionTitle, SettingItem, Row } from './shared'
+import { SectionTitle, SettingItem, Row, pillInput, pillBtn, POPOVER_SHADOW } from './shared'
 import ChatHistoryModal from './ChatHistoryModal'
 
 // Nie '' — das ist nur der "noch nicht gewählt"-Zustand von AiProvider, kein
@@ -33,11 +33,7 @@ export default function AiSettingsPanel() {
   const widgetChatCount = useWidgetAiStore(s => Object.values(s.chats).filter(c => c.length > 0).length)
   const conversationCount = (boardChatCount > 0 ? 1 : 0) + widgetChatCount
 
-  const inputStyle: React.CSSProperties = {
-    width: 220, fontSize: 12, padding: '7px 10px', borderRadius: 8,
-    border: '1px solid var(--border)', background: 'var(--surface2)',
-    color: 'var(--text1)', outline: 'none',
-  }
+  const inputStyle: React.CSSProperties = { ...pillInput, width: 220, fontSize: 12 }
   const provider = PROVIDERS.find(p => p.id === aiProvider)
 
   return (
@@ -94,7 +90,7 @@ export default function AiSettingsPanel() {
                     style={inputStyle}
                   />
                   <button onClick={() => setShowKey(v => !v)} title={showKey ? t('Hide') : t('Show')}
-                    style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    style={{ width: 30, height: 30, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {showKey
                       ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                       : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
@@ -144,14 +140,14 @@ export default function AiSettingsPanel() {
             : t('No chat history yet')}
           control={
             <button onClick={() => setHistoryOpen(true)}
-              style={{ fontSize: 11.5, fontWeight: 600, padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text1)', cursor: 'pointer' }}>
+              style={{ ...pillBtn('ghost'), fontSize: 11.5, color: 'var(--text1)' }}>
               {t('Open')}
             </button>
           }
         />
 
         <SectionTitle>{t('Privacy')}</SectionTitle>
-        <div style={{ fontSize: 11, color: 'var(--text3)', lineHeight: 1.6, padding: '4px 0 12px' }}>
+        <div style={{ fontSize: 11.5, color: 'var(--text3)', lineHeight: 1.6, padding: '0 2px 12px' }}>
           {t('When you send a message, the assistant transmits your request plus a summary of the current board (widget types, positions, titles and contents) directly from your browser to the selected provider. Nothing runs through mosaic servers, and nothing is sent until you write a message. The API key is stored unencrypted in this browser profile and is never included in backups.')}
         </div>
       </div>
@@ -187,8 +183,8 @@ function ProviderSelect({ value, onChange }: { value: AiProvider; onChange: (p: 
         aria-expanded={open}
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          padding: '6px 10px', borderRadius: 8,
-          border: `1.5px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
+          padding: '6px 12px 6px 14px', borderRadius: 999,
+          border: `1px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
           background: 'var(--surface2)', cursor: 'pointer',
           fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap',
           color: current ? 'var(--text1)' : 'var(--text3)',
@@ -209,8 +205,8 @@ function ProviderSelect({ value, onChange }: { value: AiProvider; onChange: (p: 
           // Deckend auch bei transparentem --surface (Crystal-Glass-Theme)
           background: 'var(--popover-bg)',
           backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid var(--border)', borderRadius: 10,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.35)', overflow: 'hidden',
+          border: '1px solid var(--border)', borderRadius: 14, padding: 4,
+          boxShadow: POPOVER_SHADOW, overflow: 'hidden',
         }}>
           {PROVIDERS.map(p => {
             const active = p.id === value
@@ -222,7 +218,7 @@ function ProviderSelect({ value, onChange }: { value: AiProvider; onChange: (p: 
                 onClick={() => { onChange(p.id); setOpen(false) }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                  padding: '9px 12px', border: 'none', cursor: 'pointer', textAlign: 'left',
+                  padding: '8px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', textAlign: 'left',
                   background: active ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'transparent',
                 }}
                 onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface2)' }}

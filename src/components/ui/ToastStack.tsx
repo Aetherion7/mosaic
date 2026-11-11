@@ -35,19 +35,21 @@ export default function ToastStack() {
               pointerEvents: 'auto',
               flexShrink: 0,
               width: 'fit-content',
-              background: 'color-mix(in srgb, var(--surface) 95%, transparent)',
+              // Insel wie Mehrfachauswahl-Leiste: einzeilige, voll runde Pille
+              background: 'var(--popover-bg)',
               backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
               border: '1px solid var(--border)',
-              borderRadius: 14,
-              padding: '10px 14px',
-              display: 'flex', alignItems: 'center', gap: 12,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              borderRadius: 999,
+              padding: '5px 5px 5px 16px',
+              display: 'flex', alignItems: 'center', gap: 10,
+              boxShadow: '0 10px 32px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)',
               minWidth: toast.kind === 'undo' ? 260 : 220,
             }}
           >
             {toast.kind === 'undo' ? (
               <>
-                <span style={{ fontSize: 13, color: 'var(--text2)', flex: 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text2)', flex: 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <WidgetTypeBadge type={toast.widget.type} /> {t('deleted')}
                 </span>
                 <button
@@ -57,27 +59,27 @@ export default function ToastStack() {
                     dismissToast(toast.id)
                   }}
                   style={{
-                    padding: '5px 14px', borderRadius: 9, border: 'none',
+                    height: 30, padding: '0 14px', borderRadius: 999, border: 'none',
                     background: 'var(--accent)', color: 'var(--on-accent, white)',
-                    fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0,
+                    fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0,
                   }}
                 >
                   {t('Undo')}
                 </button>
               </>
             ) : (
-              <span style={{ fontSize: 13, color: 'var(--text2)', flex: 1, whiteSpace: 'nowrap' }}>{toast.message}</span>
+              <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text2)', flex: 1, whiteSpace: 'nowrap', padding: '6px 0' }}>{toast.message}</span>
             )}
             <button
               onClick={() => dismissToast(toast.id)}
               style={{
-                width: 22, height: 22, borderRadius: 6, border: '1px solid var(--border)',
-                background: 'var(--surface2)', color: 'var(--text3)',
-                fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 28, height: 28, borderRadius: 999, border: '1px solid var(--border)', padding: 0,
+                background: 'var(--surface2)', color: 'var(--text2)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}
             >
-              ×
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
             </button>
           </motion.div>
       ))}

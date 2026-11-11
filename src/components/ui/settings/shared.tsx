@@ -15,12 +15,84 @@ export function Toggle({ value, onChange, label }: { value: boolean; onChange: (
   )
 }
 
-// `last`: unterdrückt den unteren Trennstrich — für das letzte Element einer
-// Liste/Sektion gesetzt, sonst hinge dort eine Linie vor leerem Raum (statt
-// zwischen zwei sichtbaren Zeilen zu trennen).
+// ─── Gemeinsame Stile (Designprinzipien, KONZEPT.md §6) ───────────────────────
+
+// Einstellungszeile als eigene tonale Kachel statt Trennlinie. `last` lässt nur
+// den Abstand zur nächsten Kachel weg.
+export function tileStyle(last?: boolean): React.CSSProperties {
+  return {
+    padding: '12px 14px', borderRadius: 14,
+    background: 'color-mix(in srgb, var(--surface2) 70%, transparent)',
+    marginBottom: last ? 0 : 6,
+  }
+}
+
+// Pillen-Knöpfe: Akzent (gefüllt), Ghost (Rand), Danger (getönt), Danger-Solid
+// (nur für die endgültige "Ja, löschen"-Bestätigung).
+export function pillBtn(kind: 'accent' | 'soft' | 'ghost' | 'danger' | 'dangerSolid' = 'ghost'): React.CSSProperties {
+  return {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+    padding: '7px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    border: kind === 'ghost' ? '1px solid var(--border)' : 'none',
+    background:
+      kind === 'accent' ? 'var(--accent)'
+      : kind === 'soft' ? 'color-mix(in srgb, var(--accent) 14%, transparent)'
+      : kind === 'danger' ? 'color-mix(in srgb, var(--danger) 16%, transparent)'
+      : kind === 'dangerSolid' ? 'var(--danger)'
+      : 'transparent',
+    color:
+      kind === 'accent' ? 'var(--on-accent, white)'
+      : kind === 'soft' ? 'var(--accent)'
+      : kind === 'danger' ? 'var(--danger)'
+      : kind === 'dangerSolid' ? 'white'
+      : 'var(--text2)',
+  }
+}
+
+// Einzeilige Eingaben sind Pillen; Textareas bekommen Radius 14.
+export const pillInput: React.CSSProperties = {
+  padding: '8px 14px', borderRadius: 999, border: '1px solid var(--border)',
+  background: 'var(--surface2)', color: 'var(--text1)', fontSize: 12.5, outline: 'none',
+  boxSizing: 'border-box',
+}
+
+// Ausgewählte Optionskarte: Akzent-Tönung + innerer Ring statt 2px-Rand.
+export function optionCardStyle(active: boolean): React.CSSProperties {
+  return {
+    border: 'none', borderRadius: 14,
+    background: active ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'var(--surface2)',
+    boxShadow: active ? 'inset 0 0 0 1.5px var(--accent)' : 'inset 0 0 0 1px var(--border)',
+  }
+}
+
+export const POPOVER_SHADOW = '0 10px 32px color-mix(in srgb, var(--shadow-color, #000) 40%, transparent)'
+export const MODAL_SHADOW = '0 32px 80px color-mix(in srgb, var(--shadow-color, #000) 55%, transparent)'
+
+export function XIcon({ size = 10 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+      <line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" />
+    </svg>
+  )
+}
+
+// Runder Schließen-Knopf (Vorlage: ThemePanel)
+export function CloseButton({ onClick, title, ariaLabel, size = 26 }: { onClick: () => void; title?: string; ariaLabel?: string; size?: number }) {
+  return (
+    <button type="button" onClick={onClick} title={title} aria-label={ariaLabel} style={{
+      width: size, height: size, borderRadius: 999, flexShrink: 0, padding: 0,
+      border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)',
+      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <XIcon size={size >= 28 ? 11 : 10} />
+    </button>
+  )
+}
+
 export function Row({ label, desc, value, onChange, last }: { label: string; desc?: React.ReactNode; value: boolean; onChange: (v: boolean) => void; last?: boolean }) {
   return (
-    <div onClick={() => onChange(!value)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '10px 0', borderBottom: last ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}>
+    <div onClick={() => onChange(!value)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, ...tileStyle(last), cursor: 'pointer' }}>
       <div>
         <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text1)' }}>{label}</div>
         {desc && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>{desc}</div>}
@@ -31,16 +103,16 @@ export function Row({ label, desc, value, onChange, last }: { label: string; des
 }
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 20, marginBottom: 8 }}>{children}</div>
+  return <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--text1)', marginTop: 22, marginBottom: 10 }}>{children}</div>
 }
 
 export function KbdRow({ keys, action, last }: { keys: string[]; action: string; last?: boolean }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 0', borderBottom: last ? 'none' : '1px solid var(--border)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, ...tileStyle(last), padding: '9px 14px' }}>
       <span style={{ fontSize: 12, color: 'var(--text2)' }}>{action}</span>
       <div style={{ display: 'flex', gap: 4 }}>
         {keys.map((k, i) => (
-          <kbd key={i} style={{ fontSize: 11, fontFamily: 'monospace', padding: '2px 7px', borderRadius: 5, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text1)' }}>{k}</kbd>
+          <kbd key={i} style={{ fontSize: 11, fontFamily: 'monospace', padding: '2px 8px', borderRadius: 7, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text1)' }}>{k}</kbd>
         ))}
       </div>
     </div>
@@ -51,7 +123,7 @@ export function SettingItem({ label, desc, control, last }: { label: string; des
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '12px 0', borderBottom: last ? 'none' : '1px solid var(--border)', gap: 16,
+      ...tileStyle(last), gap: 16,
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text1)' }}>{label}</div>
@@ -65,12 +137,11 @@ export function SettingItem({ label, desc, control, last }: { label: string; des
 export function HeaderStyleCard({ active, label, desc, preview, onClick }: { active: boolean; label: string; desc: string; preview: React.ReactNode; onClick: () => void }) {
   return (
     <button onClick={onClick} style={{
-      flex: 1, padding: '12px 14px', borderRadius: 12, cursor: 'pointer', textAlign: 'left',
-      border: `2px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
-      background: active ? 'color-mix(in srgb, var(--accent) 8%, var(--surface2))' : 'var(--surface2)',
+      flex: 1, padding: '12px 14px', cursor: 'pointer', textAlign: 'left',
+      ...optionCardStyle(active),
       transition: 'all 0.15s',
     }}>
-      <div style={{ width: '100%', height: 52, borderRadius: 8, background: '#0f0f1a', marginBottom: 10, position: 'relative', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)' }}>
+      <div style={{ width: '100%', height: 52, borderRadius: 10, background: '#0f0f1a', marginBottom: 10, position: 'relative', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)' }}>
         {preview}
       </div>
       <div style={{ fontSize: 13, fontWeight: 600, color: active ? 'var(--accent)' : 'var(--text1)', marginBottom: 2 }}>{label}</div>
@@ -119,20 +190,19 @@ export function AddCardButton({ title, desc, icon, onClick }: { title: string; d
     <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{
         display: 'flex', alignItems: 'center', gap: 11, width: '100%', padding: '10px 12px',
-        borderRadius: 11, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
-        border: `1px solid ${hover ? 'color-mix(in srgb, var(--accent) 45%, var(--border))' : 'var(--border)'}`,
-        background: hover ? 'color-mix(in srgb, var(--accent) 7%, var(--surface2))' : 'var(--surface2)',
+        borderRadius: 14, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
+        border: 'none',
+        background: hover ? 'color-mix(in srgb, var(--accent) 10%, var(--surface2))' : 'color-mix(in srgb, var(--surface2) 70%, transparent)',
       }}>
       <div style={{
         width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-        background: 'color-mix(in srgb, var(--accent) 14%, var(--surface))',
-        border: '1px solid color-mix(in srgb, var(--accent) 32%, transparent)',
+        background: 'color-mix(in srgb, var(--accent) 14%, transparent)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)',
       }}>
         {icon}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text1)' }}>{title}</div>
+        <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text1)' }}>{title}</div>
         <div style={{ fontSize: 10.5, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</div>
       </div>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
@@ -148,26 +218,26 @@ export function TemplateBox({ json, filename, onInsert }: { json: string; filena
   const [open, setOpen] = useState(false)
   const t = useT()
   return (
-    <div style={{ borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)', overflow: 'hidden' }}>
+    <div style={{ borderRadius: 14, background: 'color-mix(in srgb, var(--surface2) 70%, transparent)', overflow: 'hidden' }}>
       <button onClick={() => setOpen(o => !o)}
-        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}>
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}>
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
           style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.16s', flexShrink: 0 }}>
           <polyline points="9 6 15 12 9 18" />
         </svg>
-        <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('Template')}</span>
-        <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text3)' }}>{open ? t('Collapse') : t('View')}</span>
+        <span style={{ fontSize: 12, fontWeight: 600 }}>{t('Template')}</span>
+        <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text3)' }}>{open ? t('Collapse') : t('View')}</span>
       </button>
       {open && (
         <>
           <pre style={{
-            margin: 0, padding: '10px 12px', borderTop: '1px solid var(--border)',
+            margin: '0 8px', padding: '10px 12px', borderRadius: 10, background: 'var(--surface)',
             fontSize: 10.5, fontFamily: 'monospace', lineHeight: 1.65, color: 'var(--text2)',
             overflowX: 'auto', maxHeight: 200, overflowY: 'auto',
           }}>{json}</pre>
-          <div style={{ display: 'flex', gap: 8, padding: '8px 10px', borderTop: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', gap: 8, padding: '8px 12px 10px' }}>
             <button onClick={() => downloadJson(filename, json)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, fontWeight: 600, padding: '5px 11px', borderRadius: 50, border: '1px solid color-mix(in srgb, var(--accent) 35%, var(--border))', background: 'color-mix(in srgb, var(--accent) 10%, transparent)', color: 'var(--accent)', cursor: 'pointer' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, fontWeight: 600, padding: '5px 12px', borderRadius: 999, border: 'none', background: 'color-mix(in srgb, var(--accent) 14%, transparent)', color: 'var(--accent)', cursor: 'pointer' }}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
@@ -175,7 +245,7 @@ export function TemplateBox({ json, filename, onInsert }: { json: string; filena
             </button>
             {onInsert && (
               <button onClick={onInsert}
-                style={{ fontSize: 10.5, fontWeight: 600, padding: '5px 11px', borderRadius: 50, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
+                style={{ fontSize: 10.5, fontWeight: 600, padding: '5px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'none', color: 'var(--text2)', cursor: 'pointer' }}>
                 {t('Insert into field')}
               </button>
             )}

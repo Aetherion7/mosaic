@@ -15,6 +15,7 @@ import DatenschutzPanel      from './settings/DatenschutzPanel'
 import ÜberPanel             from './settings/UeberPanel'
 import WidgetSettingsPage    from './settings/WidgetSettingsPage'
 import { BUILT_IN_WIDGETS }  from './settings/widgetCatalog'
+import { CloseButton }       from './settings/shared'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -146,20 +147,19 @@ export default function SettingsModal({ onClose, categories, initialCat }: { onC
             background: 'var(--popover-bg)',
             backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
             border: '1px solid var(--border)',
-            borderRadius: 18, overflow: 'hidden', display: 'flex',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+            borderRadius: 22, overflow: 'hidden', display: 'flex',
+            boxShadow: '0 32px 80px color-mix(in srgb, var(--shadow-color, #000) 55%, transparent)',
           }}
         >
           {/* Left sidebar */}
-          <div style={{ width: 200, flexShrink: 0, borderRight: '1px solid var(--border)', padding: '20px 8px 16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, background: 'color-mix(in srgb, var(--surface2) 60%, var(--surface))' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.09em', padding: '0 10px 12px' }}>{t('Settings')}</div>
+          <div style={{ width: 200, flexShrink: 0, padding: '18px 10px 16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, background: 'color-mix(in srgb, var(--surface2) 60%, var(--surface))' }}>
+            <div style={{ fontSize: 16, fontWeight: 650, color: 'var(--text1)', padding: '2px 12px 12px' }}>{t('Settings')}</div>
             {visibleSidebar.map((entry, i) =>
               entry.kind === 'divider' ? (
-                <div key={`divider-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '14px 10px 6px' }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.09em', flexShrink: 0 }}>
+                <div key={`divider-${i}`} style={{ margin: '16px 12px 6px' }}>
+                  <span style={{ fontSize: 12, fontWeight: 650, color: 'var(--text3)' }}>
                     {t(entry.label)}
                   </span>
-                  <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
                 </div>
               ) : (
                 <button
@@ -167,7 +167,7 @@ export default function SettingsModal({ onClose, categories, initialCat }: { onC
                   onClick={() => setActive(entry.id)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '9px 10px', borderRadius: 8, border: 'none', width: '100%',
+                    padding: '8px 12px', borderRadius: 999, border: 'none', width: '100%', flexShrink: 0,
                     background: active === entry.id ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'none',
                     color: active === entry.id ? 'var(--accent)' : 'var(--text2)',
                     fontWeight: active === entry.id ? 600 : 400,
@@ -184,11 +184,11 @@ export default function SettingsModal({ onClose, categories, initialCat }: { onC
 
           {/* Right content */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px 10px', flexShrink: 0 }}>
+              <span style={{ fontSize: 16, fontWeight: 650, color: 'var(--text1)' }}>
                 {t(activeLabel)}
               </span>
-              <button onClick={onClose} title={t('Close')} style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>×</button>
+              <CloseButton onClick={onClose} title={t('Close')} size={28} />
             </div>
             {/* General bekommt oben denselben Abstand wie an den anderen drei
                 Seiten (die Versions-Karte braucht dort mehr Luft als der

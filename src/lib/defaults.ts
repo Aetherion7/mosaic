@@ -51,7 +51,7 @@ export function makeBoard(name: string, themeId: string = 'ocean'): Board {
 }
 
 // Default colSpan × rowSpan per type
-const DEFAULT_SPANS: Record<WidgetType, { colSpan: number; rowSpan: number }> = {
+export const DEFAULT_SPANS: Record<WidgetType, { colSpan: number; rowSpan: number }> = {
   task:        { colSpan: 3, rowSpan: 3 },
   note:        { colSpan: 4, rowSpan: 2 },
   timer:       { colSpan: 3, rowSpan: 3 },
