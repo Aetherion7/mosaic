@@ -6,7 +6,7 @@ import { useUIStore } from '@/store/uiStore'
 import { useSettings } from '@/store/settingsStore'
 import { useFocusTrap } from '@/hooks/useFocusTrap'
 import { useT } from '@/hooks/useT'
-import { defaultWidget, findNextPos, findPosNear } from '@/lib/defaults'
+import { defaultWidget, findNextPos, findPosNear, DEFAULT_SPANS } from '@/lib/defaults'
 import { INFINITE_COL_W, INFINITE_GRID_COLS, GRID_GAP } from './TileWrapper'
 import { getTheme } from '@/lib/themes'
 import type { WidgetType } from '@/types'
@@ -42,65 +42,71 @@ export const TILES: { type: WidgetType; icon: React.ReactNode; label: string; de
   { type: 'html',        icon: <IconHtml />,       label: 'HTML',       desc: 'Paste your own HTML page — rendered live' },
 ]
 
-function TileCard({
-  icon, label, desc, hovered, onHover, onLeave, onClick, compact, id,
-}: {
-  icon: React.ReactNode; label: string; desc: string
-  hovered: boolean; onHover: () => void; onLeave: () => void; onClick: () => void
-  compact?: boolean
-  id?: string
-}) {
-  const t = useT()
-  const iconSize = compact ? 28 : 36
-  const boxSize  = compact ? 44 : 60
+// Gruppen für die Navigation links — jede Widget-Art genau einer Gruppe
+// zugeordnet. label = englischer Quelltext, mit t() übersetzt.
+type Cat = 'plan' | 'notes' | 'health' | 'data' | 'world' | 'media'
+const CATS: { id: Cat; label: string; types: WidgetType[] }[] = [
+  { id: 'plan',   label: 'Plan & organize',  types: ['task', 'calendar', 'agenda', 'timer'] },
+  { id: 'notes',  label: 'Notes & reading',  types: ['note', 'reader', 'drawboard'] },
+  { id: 'health', label: 'Health',           types: ['water', 'sleep'] },
+  { id: 'data',   label: 'Data',             types: ['spreadsheet', 'chart'] },
+  { id: 'world',  label: 'World & time',     types: ['weather', 'map', 'clock'] },
+  { id: 'media',  label: 'Media & web',      types: ['image', 'quicklinks', 'html'] },
+]
 
+type Tile = (typeof TILES)[number]
+
+function TileCard({ tile, onClick, id }: { tile: Tile; onClick: () => void; id?: string }) {
+  const t = useT()
+  const [hover, setHover] = useState(false)
+  const span = DEFAULT_SPANS[tile.type]
   return (
     <button
       id={id}
-      onClick={onClick} onMouseEnter={onHover} onMouseLeave={onLeave}
-      aria-label={t(label)}
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      onFocus={() => setHover(true)} onBlur={() => setHover(false)}
+      aria-label={`${t('Add')}: ${t(tile.label)}`}
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: compact ? 5 : 6,
-        padding: compact ? '10px 6px' : '20px 10px',
-        borderRadius: 12,
-        border: `1px solid ${hovered ? 'var(--accent)' : 'var(--border)'}`,
-        background: hovered ? 'color-mix(in srgb, var(--accent) 8%, var(--surface2))' : 'var(--surface2)',
-        cursor: 'pointer', transition: 'all 0.14s',
-        textAlign: 'center',
-        width: '100%',
-        height: '100%',
+        position: 'relative', display: 'flex', alignItems: 'flex-start', gap: 14,
+        padding: 14, minHeight: 96, width: '100%', textAlign: 'left',
+        borderRadius: 18, border: 'none', cursor: 'pointer',
+        background: hover ? 'color-mix(in srgb, var(--accent) 9%, var(--surface2))' : 'color-mix(in srgb, var(--surface2) 70%, transparent)',
+        boxShadow: hover ? 'inset 0 0 0 1.5px var(--accent)' : 'none',
+        transition: 'background 0.14s, box-shadow 0.14s',
       }}
     >
       <div style={{
-        flexShrink: 0,
-        width: boxSize, height: boxSize, borderRadius: compact ? 10 : 14,
-        background: hovered ? 'color-mix(in srgb, var(--accent) 18%, var(--surface3))' : 'var(--surface3)',
-        border: `1px solid ${hovered ? 'color-mix(in srgb, var(--accent) 35%, transparent)' : 'var(--border)'}`,
+        flexShrink: 0, width: 52, height: 52, borderRadius: 16,
+        background: hover ? 'color-mix(in srgb, var(--accent) 20%, var(--surface3))' : 'var(--surface3)',
+        color: hover ? 'var(--accent)' : 'var(--text2)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: hovered ? 'var(--accent)' : 'var(--text2)',
-        transform: hovered ? 'scale(1.06)' : 'scale(1)', transition: 'all 0.14s',
+        transition: 'all 0.14s',
       }}>
-        {isValidElement(icon)
-          ? cloneElement(icon as React.ReactElement<{ size?: number; strokeWidth?: number }>, { size: iconSize, strokeWidth: 1.1 })
-          : icon}
+        {isValidElement(tile.icon)
+          ? cloneElement(tile.icon as React.ReactElement<{ size?: number; strokeWidth?: number }>, { size: 28, strokeWidth: 1.2 })
+          : tile.icon}
       </div>
-
-      <span style={{
-        fontSize: compact ? 10 : 12, fontWeight: 700,
-        color: hovered ? 'var(--accent)' : 'var(--text1)',
-        transition: 'color 0.14s', lineHeight: 1.2,
-      }}>{t(label)}</span>
-
-      {!compact && (
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, paddingRight: 26 }}>
+        <span style={{ fontSize: 14, fontWeight: 650, color: 'var(--text1)', lineHeight: 1.25 }}>{t(tile.label)}</span>
         <span style={{
-          fontSize: 10.5, color: hovered ? 'color-mix(in srgb, var(--accent) 70%, var(--text2))' : 'var(--text3)',
-          lineHeight: 1.35, transition: 'color 0.14s',
-        }}>{t(desc)}</span>
-      )}
+          fontSize: 12, color: 'var(--text3)', lineHeight: 1.4,
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+        }}>{t(tile.desc)}</span>
+        <span style={{ fontSize: 11, color: 'var(--text3)', opacity: 0.8, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
+          {span.colSpan} × {span.rowSpan}
+        </span>
+      </div>
+      {/* Hinzufügen-Knopf: ruhig im Ruhezustand, Akzent beim Hover */}
+      <span aria-hidden style={{
+        position: 'absolute', top: 12, right: 12, width: 26, height: 26, borderRadius: 999,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: hover ? 'var(--accent)' : 'color-mix(in srgb, var(--text1) 7%, transparent)',
+        color: hover ? 'var(--on-accent, white)' : 'var(--text3)',
+        transition: 'all 0.14s',
+      }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </span>
     </button>
   )
 }
@@ -113,24 +119,31 @@ export default function TilePicker() {
   const openPanel        = useUIStore(s => s.openPanel)
   const disabledTypes    = useSettings(s => s.disabledWidgetTypes)
 
-  const [hovered,     setHovered]     = useState<string | null>(null)
-  const [search,      setSearch]      = useState('')
+  const [search, setSearch] = useState('')
+  const [cat, setCat]       = useState<Cat | 'all'>('all')
   const desktopRef = useRef<HTMLDivElement>(null)
+  const scrollRef  = useRef<HTMLDivElement>(null)
   const isOpen = panel === 'addWidget'
 
-  useEffect(() => { if (!isOpen) setSearch('') }, [isOpen])
+  useEffect(() => { if (!isOpen) { setSearch(''); setCat('all') } }, [isOpen])
+  useEffect(() => { scrollRef.current?.scrollTo({ top: 0 }) }, [cat, search])
   useFocusTrap(desktopRef, isOpen)
 
   const allTiles = TILES.filter(tile => !disabledTypes.includes(tile.type))
+  const q = search.trim().toLowerCase()
+  const matches = (tile: Tile) =>
+    // Sucht sowohl im englischen Quelltext als auch in der aktuell angezeigten Übersetzung
+    tile.label.toLowerCase().includes(q) || t(tile.label).toLowerCase().includes(q) ||
+    tile.desc.toLowerCase().includes(q)  || t(tile.desc).toLowerCase().includes(q)
+  const inCat = (c: Cat) => (tile: Tile) => CATS.find(x => x.id === c)!.types.includes(tile.type)
 
-  const q = search.toLowerCase()
-  const filteredTiles = q.trim()
-    ? allTiles.filter(tile =>
-        // Sucht sowohl im englischen Quelltext als auch in der aktuell angezeigten Übersetzung
-        tile.label.toLowerCase().includes(q) || t(tile.label).toLowerCase().includes(q) ||
-        tile.desc.toLowerCase().includes(q)  || t(tile.desc).toLowerCase().includes(q)
-      )
-    : allTiles
+  // Suche gilt immer über alle Widgets (unabhängig vom gewählten Bereich)
+  const searchResults = q ? allTiles.filter(matches) : []
+  const sections = q
+    ? []
+    : (cat === 'all' ? CATS : CATS.filter(c => c.id === cat))
+        .map(c => ({ ...c, tiles: allTiles.filter(inCat(c.id)) }))
+        .filter(c => c.tiles.length > 0)
 
   function add(type: WidgetType) {
     const b = board ?? useBoardStore.getState().boards[useBoardStore.getState().currentBoardId]
@@ -157,6 +170,14 @@ export default function TilePicker() {
     openPanel(null)
   }
 
+  const grid = (tiles: Tile[]) => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 10 }}>
+      {tiles.map(tile => (
+        <TileCard key={tile.type} tile={tile} onClick={() => add(tile.type)}
+          id={tile.type === 'task' ? 'tour-tile-task' : undefined} />
+      ))}
+    </div>
+  )
 
   return (
     <AnimatePresence>
@@ -170,102 +191,147 @@ export default function TilePicker() {
             onClick={() => openPanel(null)}
             style={{
               position: 'fixed', inset: 0, zIndex: 900,
-              background: 'rgba(0,0,0,0.22)',
-              backdropFilter: 'blur(4px)',
-              WebkitBackdropFilter: 'blur(4px)',
+              background: 'rgba(0,0,0,0.32)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
             }}
           />
 
           {/* Fade-only overlay, inner div centered via flex (no transform conflict) */}
           <motion.div
-              key="panel-desktop"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              onClick={() => openPanel(null)}
-              style={{ position: 'fixed', inset: 0, zIndex: 901, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            key="panel-desktop"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => openPanel(null)}
+            style={{ position: 'fixed', inset: 0, zIndex: 901, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <motion.div
+              ref={desktopRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('Add widget')}
+              onClick={e => e.stopPropagation()}
+              initial={{ scale: 0.97, y: 8 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.97, y: 8 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+              style={{
+                width: 'min(1100px, calc(100vw - 48px))',
+                height: 'min(740px, calc(100vh - 64px))',
+                display: 'flex',
+                background: 'var(--popover-bg)',
+                backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
+                border: '1px solid var(--border)',
+                borderRadius: 24,
+                // Clips the scrollable grid's native scrollbar to the rounded corners
+                overflow: 'hidden',
+                boxShadow: '0 32px 80px color-mix(in srgb, var(--shadow-color, #000) 55%, transparent)',
+              }}
             >
-              <div
-                ref={desktopRef}
-                role="dialog"
-                aria-modal="true"
-                aria-label={t('Add widget')}
-                onClick={e => e.stopPropagation()}
-                style={{
-                  width: 'min(960px, calc(100vw - 48px))',
-                  height: 'min(640px, calc(100vh - 80px))',
-                  display: 'flex', flexDirection: 'column',
-                  background: 'var(--popover-bg)',
-                  backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 20,
-                  // Without this, the scrollable grid's own native scrollbar
-                  // (rendered flush against ITS box's right/bottom edge) isn't
-                  // clipped to this container's rounded corners and visibly
-                  // pokes out past the bottom-right corner once the grid is
-                  // tall enough to scroll.
-                  overflow: 'hidden',
-                  boxShadow: '0 32px 80px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,0.04)',
-                }}
-              >
-                {/* Sticky header + search */}
-                <div style={{ padding: '24px 24px 0', flexShrink: 0 }}>
-                  <PanelHeader title={t('Add widget')} onClose={() => openPanel(null)} />
-                  <SearchBar search={search} setSearch={setSearch} autoFocus />
+              {/* Navigation links: Bereiche */}
+              <nav style={{
+                width: 220, flexShrink: 0, padding: '22px 12px', display: 'flex', flexDirection: 'column', gap: 4,
+                background: 'color-mix(in srgb, var(--surface2) 45%, transparent)', overflowY: 'auto',
+              }}>
+                <div style={{ fontSize: 16, fontWeight: 650, color: 'var(--text1)', padding: '0 10px 14px' }}>{t('Add widget')}</div>
+                {([{ id: 'all' as const, label: 'All', count: allTiles.length },
+                   ...CATS.map(c => ({ id: c.id, label: c.label, count: allTiles.filter(inCat(c.id)).length }))])
+                  .filter(c => c.count > 0)
+                  .map(c => {
+                    const on = !q && cat === c.id
+                    return (
+                      <button key={c.id} onClick={() => { setSearch(''); setCat(c.id) }} style={{
+                        display: 'flex', alignItems: 'center', gap: 8, width: '100%', height: 36, padding: '0 8px 0 14px',
+                        borderRadius: 999, border: 'none', cursor: 'pointer', textAlign: 'left',
+                        background: on ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'transparent',
+                        color: on ? 'var(--accent)' : 'var(--text2)', fontSize: 13, fontWeight: on ? 600 : 500,
+                      }}>
+                        <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t(c.label)}</span>
+                        <span style={{
+                          minWidth: 22, height: 20, padding: '0 6px', borderRadius: 999, boxSizing: 'border-box',
+                          fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: on ? 'var(--accent)' : 'color-mix(in srgb, var(--text1) 7%, transparent)',
+                          color: on ? 'var(--on-accent, white)' : 'var(--text3)',
+                        }}>{c.count}</span>
+                      </button>
+                    )
+                  })}
+              </nav>
+
+              {/* Rechts: Suche + Karten */}
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 22px 6px' }}>
+                  <SearchBar search={search} setSearch={setSearch} autoFocus
+                    onEnter={() => { const first = (q ? searchResults : sections[0]?.tiles)?.[0]; if (first) add(first.type) }} />
+                  <button onClick={() => openPanel(null)} aria-label={t('Close')} title={t('Close')} style={{
+                    width: 34, height: 34, flexShrink: 0, borderRadius: 999, border: '1px solid var(--border)',
+                    background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+                  </button>
                 </div>
 
-                {/* Scrollable grid area — top edge fades out instead of hard-
-                    clipping whatever row has scrolled up under the search
-                    bar (mask fades actual pixels, so it looks right against
-                    any theme's popover background without hardcoding a color).
-                    The matching paddingTop gives the fade a blank buffer to
-                    dissolve into when not scrolled, instead of always
-                    shaving the top edge off the very first row. */}
-                <div style={{
-                  flex: 1, overflowY: 'auto', padding: '14px 24px 24px',
-                  maskImage: 'linear-gradient(to bottom, transparent, black 14px)',
-                  WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 14px)',
+                {/* Scrollbereich — oberer Rand blendet weich aus statt hart abzuschneiden */}
+                <div ref={scrollRef} style={{
+                  flex: 1, overflowY: 'auto', padding: '16px 22px 24px',
+                  maskImage: 'linear-gradient(to bottom, transparent, black 16px)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 16px)',
                 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
-                    {filteredTiles.map(t => (
-                      <TileCard key={t.type} icon={t.icon} label={t.label} desc={t.desc}
-                        id={t.type === 'task' ? 'tour-tile-task' : undefined}
-                        hovered={hovered === t.type} onHover={() => setHovered(t.type)} onLeave={() => setHovered(null)}
-                        onClick={() => add(t.type)} />
-                    ))}
-                  </div>
-                  {filteredTiles.length === 0 && <EmptySearch query={search} />}
+                  {q ? (
+                    searchResults.length > 0 ? grid(searchResults) : <EmptySearch query={search} />
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
+                      {sections.map(sec => (
+                        <section key={sec.id}>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '0 4px 12px' }}>
+                            <span style={{ fontSize: 14, fontWeight: 650, color: 'var(--text1)' }}>{t(sec.label)}</span>
+                            <span style={{ fontSize: 12, color: 'var(--text3)' }}>{sec.tiles.length}</span>
+                          </div>
+                          {grid(sec.tiles)}
+                        </section>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
+          </motion.div>
         </>
       )}
     </AnimatePresence>
   )
 }
 
-function SearchBar({ search, setSearch, autoFocus }: { search: string; setSearch: (v: string) => void; autoFocus: boolean }) {
+function SearchBar({ search, setSearch, autoFocus, onEnter }: { search: string; setSearch: (v: string) => void; autoFocus: boolean; onEnter: () => void }) {
   const t = useT()
   return (
-    <div style={{ position: 'relative', marginBottom: 12 }}>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-        style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)', pointerEvents: 'none' }}>
+    <div style={{ position: 'relative', flex: 1 }}>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+        style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)', pointerEvents: 'none' }}>
         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
       <input
         value={search}
         onChange={e => setSearch(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onEnter() } }}
         placeholder={t('Search widgets…')}
         aria-label={t('Search widgets')}
         autoFocus={autoFocus}
         onPointerDown={e => e.stopPropagation()}
         style={{
-          width: '100%', padding: '9px 34px 9px 34px', fontSize: 13,
-          background: 'var(--surface2)', border: '1px solid var(--border)',
-          borderRadius: 10, color: 'var(--text1)', outline: 'none', boxSizing: 'border-box',
+          width: '100%', height: 40, padding: '0 40px', fontSize: 14,
+          background: 'color-mix(in srgb, var(--surface2) 80%, transparent)', border: '1px solid var(--border)',
+          borderRadius: 999, color: 'var(--text1)', outline: 'none', boxSizing: 'border-box',
         }}
       />
       {search && (
-        <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text3)', fontSize: 16, lineHeight: 1, cursor: 'pointer', padding: '0 2px' }}>×</button>
+        <button onClick={() => setSearch('')} aria-label={t('Clear')} style={{
+          position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+          width: 24, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer',
+          background: 'color-mix(in srgb, var(--text1) 8%, transparent)', color: 'var(--text2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+        </button>
       )}
     </div>
   )
@@ -274,25 +340,8 @@ function SearchBar({ search, setSearch, autoFocus }: { search: string; setSearch
 function EmptySearch({ query }: { query: string }) {
   const t = useT()
   return (
-    <div style={{ textAlign: 'center', padding: '28px 0', color: 'var(--text3)', fontSize: 12 }}>
+    <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text3)', fontSize: 13 }}>
       {t('No widget found for')} “{query}”
-    </div>
-  )
-}
-
-function PanelHeader({ title, onClose }: { title: string; onClose: () => void }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingLeft: 2 }}>
-      <span style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--text1)' }}>
-        {title}
-      </span>
-      <button onClick={onClose} aria-label="Close" style={{
-        width: 24, height: 24, borderRadius: 999, border: '1px solid var(--border)',
-        background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
-      </button>
     </div>
   )
 }

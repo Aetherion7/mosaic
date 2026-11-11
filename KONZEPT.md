@@ -263,6 +263,18 @@ Die App ist dunkel-first und token-basiert. Themes setzen CSS-Variablen
    Live-Vorschau des Ergebnisses und teilen Aufgaben in Reiter (Vorbild:
    Theme-Panel mit Vorschau → Theme | Hintergrund | Muster).
 
+**Bausteine nach diesen Prinzipien:**
+
+- **Einstellungs-Zeilen** sind einzelne tonale Kacheln (`surface2` 70 %, Radius 14,
+  6 px Abstand) statt Listen mit Trennlinien.
+- **Menüs/Popover:** Radius 16, Einträge als runde Zeilen (Radius 10) mit tonalem Hover,
+  Kopfzeilen in Satzschreibung.
+- **Schließen-Knöpfe:** 24–34 px Kreis, `--surface2`, 1 px `--border`, SVG-X — kein „ד-Zeichen.
+- **Auswahl:** Akzent-Tönung 14 % + `inset 0 0 0 1.5px var(--accent)` statt dicker Rahmen.
+- **Widget hinzufügen:** Bereichs-Navigation links (Alle, Planen & Organisieren, Notizen &
+  Lesen, Gesundheit, Daten, Welt & Zeit, Medien & Web), Suche oben (Enter fügt den ersten
+  Treffer hinzu), große Karten mit Beschreibung und Standardgröße.
+
 **Wiederkehrende Muster (verbindlich für neue UI):**
 
 - **Karten:** `background: var(--surface2)`, `border: 1px solid var(--border)`, `borderRadius: 7–10`
