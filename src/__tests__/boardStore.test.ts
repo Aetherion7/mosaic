@@ -28,11 +28,11 @@ describe('createBoard', () => {
     expect(useBoardStore.getState().currentBoardId).toBe(id)
   })
 
-  it('fällt bei unbekanntem Standard-Theme auf dark zurück', () => {
+  it('fällt bei unbekanntem Standard-Theme auf ocean (Deep Ocean) zurück', () => {
     useSettings.setState({ defaultThemeId: 'gibt-es-nicht' })
     const id = useBoardStore.getState().createBoard('Neu')
-    expect(useBoardStore.getState().boards[id].themeId).toBe('dark')
-    useSettings.setState({ defaultThemeId: 'dark' })
+    expect(useBoardStore.getState().boards[id].themeId).toBe('ocean')
+    useSettings.setState({ defaultThemeId: 'ocean' })
   })
 })
 

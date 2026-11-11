@@ -137,7 +137,7 @@ export const useSettings = create<SettingsStore>()(
       sleepReminderMessage:        '',
       statsDisabledTypes:     [],
       lastThemeId:            null,
-      defaultThemeId:         'dark',
+      defaultThemeId:         'ocean',
       homeThemeMode:          'system',
       homeAmbient:            false,
       homeAmbientTiles:       true,
@@ -183,6 +183,20 @@ export const useSettings = create<SettingsStore>()(
         customFonts: s.customFonts.filter(f => f.id !== id),
       })),
     }),
-    { name: 'planboard-settings' }
+    {
+      name: 'planboard-settings',
+      // v1: Deep Ocean ist das neue Standard-Theme und die Island-TopBar der
+      // Standard-Kopf. Einmalig auch für bestehende Installationen, die noch
+      // auf den alten Defaults standen (Deep Space / klassische Leiste).
+      version: 1,
+      migrate: (persisted: unknown, fromVersion: number) => {
+        const s = (persisted ?? {}) as Partial<AppSettings>
+        if (fromVersion < 1) {
+          if (!s.defaultThemeId || s.defaultThemeId === 'dark') s.defaultThemeId = 'ocean'
+          s.headerStyle = 'island'
+        }
+        return s as AppSettings
+      },
+    }
   )
 )

@@ -282,17 +282,17 @@ function EmptySearch({ query }: { query: string }) {
 
 function PanelHeader({ title, onClose }: { title: string; onClose: () => void }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingLeft: 2 }}>
+      <span style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--text1)' }}>
         {title}
       </span>
-      <button onClick={onClose} style={{
-        width: 24, height: 24, borderRadius: 8, border: 'none',
-        background: 'var(--surface2)', color: 'var(--text2)',
-        fontSize: 16, lineHeight: 1, cursor: 'pointer',
+      <button onClick={onClose} aria-label="Close" style={{
+        width: 24, height: 24, borderRadius: 999, border: '1px solid var(--border)',
+        background: 'var(--surface2)', color: 'var(--text2)', cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'background 0.12s',
-      }}>×</button>
+      }}>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
     </div>
   )
 }

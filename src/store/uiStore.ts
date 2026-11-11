@@ -37,6 +37,8 @@ interface UIState {
   canvasView:         { x: number; y: number; zoom: number }
   pendingCanvasFocus: { col: number; row: number; colSpan: number; rowSpan: number } | null
   focusedId:          string | null   // Widget im Fokus-Modus (Vollbild-Overlay)
+  // Zweites Widget im geteilten Fokus-Modus (zwei markierte Widgets nebeneinander)
+  focusPairId:        string | null
   // Desktop-Update, fertig heruntergeladen und installationsbereit (s.
   // ElectronBridge.tsx, das den einzigen `onUpdateAvailable`-Listener hält —
   // globaler Store statt lokalem State, damit sowohl UpdateAvailablePopup.tsx
@@ -46,6 +48,7 @@ interface UIState {
 
   setMode:               (m: UIMode) => void
   setFocusedWidget:      (id: string | null) => void
+  setFocusedPair:        (a: string, b: string) => void
   selectWidget:          (id: string | null) => void
   openPanel:             (p: PanelId) => void
   setSettingsOpen:       (v: boolean) => void
@@ -75,18 +78,20 @@ export const useUIStore = create<UIState>()((set, get) => ({
   canvasView:         { x: 0, y: 0, zoom: 1 },
   pendingCanvasFocus: null,
   focusedId:          null,
+  focusPairId:        null,
   pendingUpdate:      null,
 
-  setMode:             (mode)  => set({ mode, panel: null, focusedId: null }),
-  setFocusedWidget:    (id)    => set({ focusedId: id }),
+  setMode:             (mode)  => set({ mode, panel: null, focusedId: null, focusPairId: null }),
+  setFocusedWidget:    (id)    => set({ focusedId: id, focusPairId: null }),
+  setFocusedPair:      (a, b)  => set({ focusedId: a, focusPairId: b }),
   selectWidget:        (id)    => set({ selectedId: id }),
   // focusedId mit zurücksetzen: der Fokus-Modus (FocusOverlay.tsx) deckt per
   // hohem z-index die ganze Seite ab, ein währenddessen geöffnetes Panel (z. B.
   // "a" fürs Widget-Hinzufügen-Panel) läge sonst unsichtbar dahinter statt
   // sichtbar zu sein.
-  openPanel:           (panel) => set({ panel, focusedId: null }),
+  openPanel:           (panel) => set({ panel, focusedId: null, focusPairId: null }),
   setSettingsOpen:     (v)     => set({ settingsOpen: v }),
-  toggleMode:          ()      => set(s => ({ mode: s.mode === 'edit' ? 'view' : 'edit', panel: null, multiSelectedIds: [], pendingBulkDelete: false, focusedId: null })),
+  toggleMode:          ()      => set(s => ({ mode: s.mode === 'edit' ? 'view' : 'edit', panel: null, multiSelectedIds: [], pendingBulkDelete: false, focusedId: null, focusPairId: null })),
   setLastAddedWidget:  (id)    => set({ lastAddedWidgetId: id }),
   toggleMultiSelect:   (id)    => set(s => ({
     multiSelectedIds: s.multiSelectedIds.includes(id)

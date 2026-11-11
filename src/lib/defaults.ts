@@ -37,7 +37,7 @@ export const DEFAULT_BG: BoardBg = {
   patternOpacity:  0.15,
 }
 
-export function makeBoard(name: string, themeId: string = 'dark'): Board {
+export function makeBoard(name: string, themeId: string = 'ocean'): Board {
   return {
     id:         uid(),
     name,

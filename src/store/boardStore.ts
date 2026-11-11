@@ -384,7 +384,13 @@ function _compactWidgets(all: Widget[], layoutMode: string): Record<string, Widg
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
-const initialBoard = makeBoard('My Planboard')
+// Erstes Board einer frischen Installation: Deep Ocean inkl. Theme-Hintergrund
+const initialBoard = (() => {
+  const b = makeBoard('My Planboard', 'ocean')
+  const th = findTheme('ocean')
+  if (th?.bg) b.bg = { ...b.bg, ...th.bg }
+  return b
+})()
 
 export const useBoardStore = create<S>()(
   persist(
@@ -398,9 +404,9 @@ export const useBoardStore = create<S>()(
       // ── Board management ──
       createBoard: (name) => {
         // Neue Boards starten mit dem in den Einstellungen gewählten Standard-Theme
-        const themeId = useSettings.getState().defaultThemeId || 'dark'
+        const themeId = useSettings.getState().defaultThemeId || 'ocean'
         const theme   = findTheme(themeId)
-        const b = makeBoard(name, theme ? themeId : 'dark')
+        const b = makeBoard(name, theme ? themeId : 'ocean')
         if (theme?.bg) b.bg = { ...b.bg, ...theme.bg }
         set(s => ({ boards: { ...s.boards, [b.id]: b }, currentBoardId: b.id }))
         return b.id

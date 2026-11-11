@@ -93,10 +93,20 @@ export function radiusCSS(s: WidgetStyle): string {
   const c = s.cornerRadii
   return c ? `${c[0]}px ${c[1]}px ${c[2]}px ${c[3]}px` : `${s.borderRadius}px`
 }
-// Für die Kopfzeile bei transparentem Stil: nur die beiden oberen Ecken runden
-function topRadiusCSS(s: WidgetStyle): string {
-  const c = s.cornerRadii
-  return `${c ? c[0] : s.borderRadius}px ${c ? c[1] : s.borderRadius}px 0 0`
+
+// Insel-Pille der Widget-Kopfzeile (Name links, Aktionen rechts) — getönte
+// Fläche statt Trennlinie, immer voll rund wie die Island-TopBar.
+// Mehrfachauswahl: Akzent-Ring mit weichem Abstandshof statt rotem Glühen —
+// Rot bleibt ausschließlich für destruktive Aktionen reserviert.
+const MULTI_RING = '0 0 0 2px var(--accent), 0 0 0 6px color-mix(in srgb, var(--accent) 22%, transparent)'
+
+export const ISLAND: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 6,
+  height: 24, padding: '0 10px 0 8px', minWidth: 0,
+  borderRadius: 999,
+  background: 'color-mix(in srgb, var(--surface2) 88%, transparent)',
+  border: '1px solid color-mix(in srgb, var(--border) 80%, transparent)',
+  boxSizing: 'border-box',
 }
 
 export function buildStyle(s: WidgetStyle, selected: boolean): React.CSSProperties {
@@ -655,6 +665,9 @@ function TileWrapperInner({ widget, gridRef }: Props) {
       id={`widget-${widget.id}`}
       data-widget-tile={widget.id}
       onDoubleClick={handleFocusDblClick}
+      // Shift/Strg-Klick = Mehrfachauswahl — ohne preventDefault markiert der
+      // Browser dabei zusätzlich allen Text zwischen den beiden Klicks
+      onMouseDown={e => { if (mode === 'edit' && (e.shiftKey || e.ctrlKey || e.metaKey)) e.preventDefault() }}
       style={{
         gridColumn: `${effCol} / span ${effColSpan}`,
         gridRow:    `${effRow} / span ${effRowSpan}`,
@@ -716,16 +729,15 @@ function TileWrapperInner({ widget, gridRef }: Props) {
                 background:           'transparent',
                 backdropFilter:       undefined,
                 WebkitBackdropFilter: undefined,
-                border:               isSelected ? '1px dashed var(--accent)' : isMultiSelected ? '1px dashed #ef4444' : '1px dashed transparent',
+                border:               isSelected ? '1px dashed var(--accent)' : isMultiSelected ? '1px dashed var(--accent)' : '1px dashed transparent',
                 borderRadius:         radiusCSS(widget.style),
-                boxShadow:            isSelected ? '0 0 0 1px var(--accent)' : isMultiSelected ? '0 0 0 2px #ef4444, 0 0 12px rgba(239,68,68,0.5)' : 'none',
+                boxShadow:            isSelected ? '0 0 0 1px var(--accent)' : isMultiSelected ? MULTI_RING : 'none',
               }
             : {
                 ...cachedStyle,
                 boxShadow: isMultiSelected && !isSelected
                   ? [
-                      '0 0 0 2px #ef4444',
-                      '0 0 14px rgba(239,68,68,0.55)',
+                      MULTI_RING,
                       widget.style.glowColor && widget.style.glowSize ? `0 0 ${widget.style.glowSize}px ${widget.style.glowColor}` : '',
                       { none:'', sm:'0 1px 4px rgba(0,0,0,.35)', md:'0 4px 16px rgba(0,0,0,.4)', lg:'0 8px 30px rgba(0,0,0,.5)', xl:'0 16px 48px rgba(0,0,0,.6)' }[widget.style.shadow],
                     ].filter(Boolean).join(', ')
@@ -744,17 +756,17 @@ function TileWrapperInner({ widget, gridRef }: Props) {
             ref={el => { setDragRef(el); headerRef.current = el }}
             {...(mode === 'edit' && !isLocked ? { ...attributes, ...listeners } : {})}
             style={{
+              // Kopfzeile = zwei Inseln (Name links, Aktionen rechts) statt
+              // einer durchgehenden Leiste mit Trennlinie — dieselbe Sprache
+              // wie die Island-TopBar.
               display: 'flex', alignItems: 'center', gap: 6,
-              padding: '7px 12px 5px',
-              borderBottom: isTransparent ? 'none' : '1px solid var(--border)',
-              background: isTransparent ? 'rgba(0,0,0,0.25)' : undefined,
-              backdropFilter: isTransparent ? 'blur(4px)' : undefined,
-              borderRadius: isTransparent ? topRadiusCSS(widget.style) : undefined,
+              padding: '6px 6px 2px',
               cursor: mode === 'edit' && !isLocked ? 'grab' : 'default',
-              flexShrink: 0, userSelect: 'none',
+              flexShrink: 0, userSelect: 'none', minWidth: 0,
             }}
           >
-            {mode === 'edit' && !isLocked && <span style={{ opacity: 0.35, color: 'var(--text2)', display:'flex' }}><IconDrag /></span>}
+            <div style={ISLAND}>
+            {mode === 'edit' && !isLocked && <span style={{ opacity: 0.4, color: 'var(--text2)', display:'flex', marginLeft: -2 }}><IconDrag /></span>}
             {mode === 'edit' && isLocked && (
               <span style={{ opacity: 0.5, color: 'var(--accent)', display:'flex', flexShrink: 0 }}>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -762,7 +774,7 @@ function TileWrapperInner({ widget, gridRef }: Props) {
                 </svg>
               </span>
             )}
-            <span style={{ opacity: 0.55, color: 'var(--text2)', display:'flex' }}>{widgetTypeIcon(widget)}</span>
+            <span style={{ opacity: 0.7, color: 'var(--text2)', display:'flex', flexShrink: 0 }}>{widgetTypeIcon(widget)}</span>
             {editingName ? (
               <input
                 autoFocus maxLength={60} value={nameVal}
@@ -772,16 +784,15 @@ function TileWrapperInner({ widget, gridRef }: Props) {
                 onPointerDown={e => e.stopPropagation()}
                 onClick={e => e.stopPropagation()}
                 style={{
-                  flex: 1, minWidth: 0, fontSize: 10, fontWeight: 600, color: 'var(--text1)',
+                  flex: 1, minWidth: 60, fontSize: 11, fontWeight: 600, color: 'var(--text1)',
                   background: 'var(--surface)', border: 'none', outline: 'none',
                   borderRadius: 4, padding: '1px 4px',
                 }}
               />
             ) : (
               <span style={{
-                fontSize: 10, fontWeight: 700, color: 'var(--text3)',
-                textTransform: 'uppercase', letterSpacing: '0.05em',
-                flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                fontSize: 11, fontWeight: 600, color: 'var(--text2)', letterSpacing: '0.005em',
+                minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 display: 'flex', alignItems: 'center', gap: 4,
               }}>
                 {t(TYPE_LABELS[widget.type])}
@@ -794,13 +805,13 @@ function TileWrapperInner({ widget, gridRef }: Props) {
                     ? extractNoteTitle(widget.data.content as string | undefined)
                     : undefined
                   if (customName) return (
-                    <span style={{ textTransform: 'none', fontWeight: 600, color: 'var(--text2)' }}>
-                      {' · '}{customName}
+                    <span style={{ fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <span style={{ color: 'var(--text3)' }}>{' · '}</span>{customName}
                     </span>
                   )
                   if (autoTitle) return (
-                    <span style={{ textTransform: 'none', fontWeight: 600, color: 'var(--text2)' }}>
-                      {' · '}
+                    <span style={{ fontWeight: 600, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <span style={{ color: 'var(--text3)' }}>{' · '}</span>
                       <span dangerouslySetInnerHTML={{ __html: renderNoteTitleHtml(autoTitle) }} />
                     </span>
                   )
@@ -824,6 +835,7 @@ function TileWrapperInner({ widget, gridRef }: Props) {
                 )}
               </span>
             )}
+            </div>
             {mode === 'edit' && isSelected && (
               <WidgetHeaderActions actions={headerActions} headerRef={headerRef} canvasZoom={canvasZoom} />
             )}
@@ -935,7 +947,7 @@ function WidgetHeaderActions({
   useEffect(() => { if (collapsed === false) setMenuOpen(false) }, [collapsed])
 
   return (
-    <div style={{ position: 'relative', display: 'flex' }} onPointerDown={e => e.stopPropagation()}>
+    <div style={{ ...ISLAND, position: 'relative', marginLeft: 'auto', padding: 2, gap: 0, flexShrink: 0, cursor: 'default' }} onPointerDown={e => e.stopPropagation()}>
       {/* Unsichtbarer Mess-Klon — nie sichtbar, nimmt keinen Platz im Layout ein */}
       <div ref={measureRef} style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none', top: 0, left: 0, display: 'flex', gap, whiteSpace: 'nowrap' }} aria-hidden>
         {actions.map(a => (
@@ -1016,12 +1028,14 @@ function IconBtn({ children, onClick, title, danger, active, id }: {
       title={title}
       aria-label={title}
       onClick={e => { e.stopPropagation(); onClick(e) }}
+      onMouseEnter={e => { if (!active) e.currentTarget.style.background = danger ? 'color-mix(in srgb, var(--danger) 14%, transparent)' : 'color-mix(in srgb, var(--text1) 9%, transparent)' }}
+      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
       style={{
-        width: 24, height: 24, borderRadius: 8, border: 'none', fontSize: 12,
-        background: active ? 'var(--accent)' : 'var(--surface2)',
+        width: 22, height: 22, borderRadius: 999, border: 'none', fontSize: 12,
+        background: active ? 'var(--accent)' : 'transparent',
         color: danger ? 'var(--danger)' : active ? 'var(--on-accent, white)' : 'var(--text2)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        cursor: 'pointer',
+        cursor: 'pointer', transition: 'background 0.12s',
       }}
     >{children}</button>
   )
