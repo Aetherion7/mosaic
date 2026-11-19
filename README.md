@@ -26,7 +26,7 @@ No account. No server. Your data stays on your device.
 
 ---
 
-<img src="docs/screenshots/board.png" alt="A mosaic board in the Deep Ocean theme with calendar, habit tracker, clock, weather, note, chart, water and agenda widgets" width="100%">
+<img src="docs/screenshots/day-board.jpg" alt="A day board on an infinite canvas over a blurred waterfall photo, with note, clock, sleep, water, task, map, calendar, agenda, quicklinks, image, drawboard, reader, chart and table widgets" width="100%">
 
 ## What is mosaic?
 
